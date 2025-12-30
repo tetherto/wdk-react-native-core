@@ -1,5 +1,5 @@
 // React hooks
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 // Internal modules
 import type { SecureStorage } from '@tetherto/wdk-react-native-secure-storage'
@@ -25,7 +25,8 @@ import { logError } from '../utils/logger'
  * 
  * const { initializeWallet, hasWallet, deleteWallet, isInitializing, error } = useWalletSetup(
  *   secureStorage,
- *   networkConfigs
+ *   networkConfigs,
+ *   'user@example.com' // optional identifier
  * )
  * 
  * // Create new wallet
@@ -33,20 +34,28 @@ import { logError } from '../utils/logger'
  * 
  * // Load existing wallet (requires biometric authentication)
  * await initializeWallet({ createNew: false })
+ * 
+ * // Delete wallet for specific identifier
+ * await deleteWallet('user@example.com')
  * ```
  */
 export function useWalletSetup(
   secureStorage: SecureStorage,
-  networkConfigs: NetworkConfigs
+  networkConfigs: NetworkConfigs,
+  identifier?: string
 ) {
   const [isInitializing, setIsInitializing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   /**
    * Initialize wallet - either create new or load existing
+   * 
+   * @param options - Wallet initialization options
+   * @param options.createNew - If true, creates a new wallet; if false, loads existing wallet
+   * @param options.identifier - Optional identifier override (defaults to hook's identifier)
    */
   const initializeWallet = useCallback(
-    async (options: { createNew?: boolean } = {}) => {
+    async (options: { createNew?: boolean; identifier?: string } = {}) => {
       setIsInitializing(true)
       setError(null)
 
@@ -54,7 +63,10 @@ export function useWalletSetup(
         await WalletSetupService.initializeWallet(
           secureStorage,
           networkConfigs,
-          options
+          {
+            ...options,
+            identifier: options.identifier ?? identifier,
+          }
         )
       } catch (err) {
         const errorMessage =
@@ -66,21 +78,30 @@ export function useWalletSetup(
         setIsInitializing(false)
       }
     },
-    [secureStorage, networkConfigs]
+    [secureStorage, networkConfigs, identifier]
   )
 
   /**
    * Check if wallet exists
+   * 
+   * @param walletIdentifier - Optional identifier override (defaults to hook's identifier)
+   * @returns Promise resolving to true if wallet exists, false otherwise
    */
-  const hasWallet = useCallback(async (): Promise<boolean> => {
-    return WalletSetupService.hasWallet(secureStorage)
-  }, [secureStorage])
+  const hasWallet = useCallback(
+    async (walletIdentifier?: string): Promise<boolean> => {
+      return WalletSetupService.hasWallet(secureStorage, walletIdentifier ?? identifier)
+    },
+    [secureStorage, identifier]
+  )
 
   /**
    * Initialize wallet from mnemonic seedphrase
+   * 
+   * @param mnemonic - Mnemonic phrase to import
+   * @param walletIdentifier - Optional identifier override (defaults to hook's identifier)
    */
   const initializeFromMnemonic = useCallback(
-    async (mnemonic: string) => {
+    async (mnemonic: string, walletIdentifier?: string) => {
       setIsInitializing(true)
       setError(null)
 
@@ -88,7 +109,8 @@ export function useWalletSetup(
         await WalletSetupService.initializeFromMnemonic(
           secureStorage,
           networkConfigs,
-          mnemonic
+          mnemonic,
+          walletIdentifier ?? identifier
         )
       } catch (err) {
         const errorMessage =
@@ -100,28 +122,47 @@ export function useWalletSetup(
         setIsInitializing(false)
       }
     },
-    [secureStorage, networkConfigs]
+    [secureStorage, networkConfigs, identifier]
   )
 
   /**
    * Delete wallet
+   * 
+   * @param walletIdentifier - Optional identifier override (defaults to hook's identifier)
+   *                          If not provided, deletes the default wallet
    */
-  const deleteWallet = useCallback(async () => {
-    setIsInitializing(true)
-    setError(null)
+  const deleteWallet = useCallback(
+    async (walletIdentifier?: string) => {
+      setIsInitializing(true)
+      setError(null)
 
       try {
-        await WalletSetupService.deleteWallet(secureStorage)
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err)
-      logError('Failed to delete wallet:', err)
-      setError(errorMessage)
-      throw err
-    } finally {
-      setIsInitializing(false)
-    }
-  }, [secureStorage])
+        await WalletSetupService.deleteWallet(secureStorage, walletIdentifier ?? identifier)
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : String(err)
+        logError('Failed to delete wallet:', err)
+        setError(errorMessage)
+        throw err
+      } finally {
+        setIsInitializing(false)
+      }
+    },
+    [secureStorage, identifier]
+  )
+
+  // Memoize return object to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      initializeWallet,
+      initializeFromMnemonic,
+      hasWallet,
+      deleteWallet,
+      isInitializing,
+      error,
+    }),
+    [initializeWallet, initializeFromMnemonic, hasWallet, deleteWallet, isInitializing, error]
+  )
 
   return {
     initializeWallet,

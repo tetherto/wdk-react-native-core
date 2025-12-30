@@ -58,7 +58,7 @@ function evictLRUStorage(): void {
  * Two different apps will NOT share data because each app has its own isolated document directory.
  * 
  * This is for non-sensitive data persistence (wallet metadata, balances, addresses).
- * For sensitive data (encrypted seeds, keys), use SecureStorage from wdk-react-native-secure-storage.
+ * For sensitive data (encrypted seeds, keys), use SecureStorage from wdk-rn-secure-storage.
  * 
  * The encryption key is derived from a device/app identifier to ensure each app instance
  * has a unique encryption key. If no account identifier is provided, a default app-scoped

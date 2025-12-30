@@ -33,7 +33,22 @@ jest.mock('react-native-bare-kit', () => ({
   createBareKit: jest.fn(),
 }))
 
+// Suppress console.error in tests (we test error cases, but don't need the noise)
+const originalError = console.error
+beforeAll(() => {
+  console.error = jest.fn()
+})
+
+afterAll(() => {
+  console.error = originalError
+})
+
 // Reset all mocks before each test
 beforeEach(() => {
   jest.clearAllMocks()
+  // Clear mock secure storage between tests
+  const { mockSecureStorage } = require('../__mocks__/secureStorage')
+  if (typeof mockSecureStorage._clearStorage === 'function') {
+    mockSecureStorage._clearStorage()
+  }
 })

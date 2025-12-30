@@ -16,7 +16,7 @@
     "jsx": "react",
     "baseUrl": ".",
     "paths": {
-      "@tetherto/wdk-react-native-secure-storage": ["../wdk-react-native-secure-storage/src"]
+      "@tetherto/wdk-react-native-secure-storage": ["../wdk-rn-secure-storage/src"]
     },
     "noUnusedLocals": false,
     "noUnusedParameters": false,

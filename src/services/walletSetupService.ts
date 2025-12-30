@@ -18,7 +18,8 @@ export class WalletSetupService {
    */
   static async createNewWallet(
     secureStorage: SecureStorage,
-    networkConfigs: NetworkConfigs
+    networkConfigs: NetworkConfigs,
+    identifier?: string
   ): Promise<{
     encryptionKey: string
     encryptedSeed: string
@@ -40,10 +41,10 @@ export class WalletSetupService {
     // Step 3: Generate entropy and encrypt
     const result = await WorkletLifecycleService.generateEntropyAndEncrypt(DEFAULT_MNEMONIC_WORD_COUNT)
 
-    // Step 4: Store credentials securely
-    await secureStorage.setEncryptionKey(result.encryptionKey)
-    await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer)
-    await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer)
+    // Step 4: Store credentials securely with identifier for multi-wallet support
+    await secureStorage.setEncryptionKey(result.encryptionKey, identifier)
+    await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, identifier)
+    await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, identifier)
 
     log('✅ New wallet created and stored securely')
     
@@ -58,14 +59,15 @@ export class WalletSetupService {
    * Requires biometric authentication to access encryption key
    */
   static async loadExistingWallet(
-    secureStorage: SecureStorage
+    secureStorage: SecureStorage,
+    identifier?: string
   ): Promise<{
     encryptionKey: string
     encryptedSeed: string
   }> {
     log('🔓 Loading existing wallet - biometric authentication required...')
     
-    const allEncrypted = await secureStorage.getAllEncrypted()
+    const allEncrypted = await secureStorage.getAllEncrypted(identifier)
 
     const { encryptionKey, encryptedSeed } = allEncrypted
 
@@ -87,8 +89,8 @@ export class WalletSetupService {
   /**
    * Check if a wallet exists
    */
-  static async hasWallet(secureStorage: SecureStorage): Promise<boolean> {
-    return secureStorage.hasWallet()
+  static async hasWallet(secureStorage: SecureStorage, identifier?: string): Promise<boolean> {
+    return secureStorage.hasWallet(identifier)
   }
 
   /**
@@ -99,7 +101,8 @@ export class WalletSetupService {
   static async initializeFromMnemonic(
     secureStorage: SecureStorage,
     networkConfigs: NetworkConfigs,
-    mnemonic: string
+    mnemonic: string,
+    identifier?: string
   ): Promise<{
     encryptionKey: string
     encryptedSeed: string
@@ -122,10 +125,10 @@ export class WalletSetupService {
     // Step 3: Get seed and entropy from mnemonic
     const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
 
-    // Step 4: Store credentials securely
-    await secureStorage.setEncryptionKey(result.encryptionKey)
-    await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer)
-    await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer)
+    // Step 4: Store credentials securely with identifier for multi-wallet support
+    await secureStorage.setEncryptionKey(result.encryptionKey, identifier)
+    await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, identifier)
+    await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, identifier)
 
     // Step 5: Initialize WDK with the credentials
     await WorkletLifecycleService.initializeWDK({
@@ -174,6 +177,7 @@ export class WalletSetupService {
     networkConfigs: NetworkConfigs,
     options: {
       createNew?: boolean
+      identifier?: string
     }
   ): Promise<void> {
     const store = getWorkletStore()
@@ -189,11 +193,11 @@ export class WalletSetupService {
     if (options.createNew) {
       // Create new wallet
       log('Creating new wallet...')
-      credentials = await this.createNewWallet(secureStorage, networkConfigs)
+      credentials = await this.createNewWallet(secureStorage, networkConfigs, options.identifier)
     } else {
       // Load existing wallet (requires biometric authentication)
       log('Loading existing wallet...')
-      credentials = await this.loadExistingWallet(secureStorage)
+      credentials = await this.loadExistingWallet(secureStorage, options.identifier)
     }
 
     // Initialize WDK with credentials
@@ -203,18 +207,22 @@ export class WalletSetupService {
   /**
    * Delete wallet and clear all data
    * 
-   * NOTE: secureStorage parameter is optional. If not provided, a default instance
-   * is created. Since all SecureStorage instances access the same app-scoped storage,
+   * @param secureStorage - Optional secure storage instance. If not provided, a default instance is created.
+   * @param identifier - Optional identifier for multi-wallet support. If provided, deletes wallet for that identifier.
+   *                    If not provided, deletes the default wallet.
+   * 
+   * NOTE: Since all SecureStorage instances access the same app-scoped storage,
    * any instance can be used for deletion.
    */
   static async deleteWallet(
-    secureStorage?: SecureStorage
+    secureStorage?: SecureStorage,
+    identifier?: string
   ): Promise<void> {
     // Use provided instance or create default (all instances access same storage)
     const storage = secureStorage || createSecureStorage()
     
-    // Clear secure storage
-    await storage.deleteWallet()
+    // Clear secure storage for the specified identifier
+    await storage.deleteWallet(identifier)
 
     // Reset store state
     WorkletLifecycleService.reset()

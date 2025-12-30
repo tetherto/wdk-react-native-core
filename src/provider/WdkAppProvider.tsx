@@ -66,6 +66,8 @@ export interface WdkAppProviderProps {
   autoFetchBalances?: boolean
   /** Balance refresh interval in milliseconds (0 = no auto-refresh) */
   balanceRefreshInterval?: number
+  /** Optional identifier for multi-wallet support (e.g., user email, user ID) */
+  identifier?: string
   /** Child components (app content) */
   children: React.ReactNode
 }
@@ -83,6 +85,7 @@ export function WdkAppProvider({
   requireBiometric = false,
   autoFetchBalances = true,
   balanceRefreshInterval = DEFAULT_BALANCE_REFRESH_INTERVAL_MS,
+  identifier,
   children,
 }: WdkAppProviderProps) {
   // Validate props on mount and when props change
@@ -127,7 +130,8 @@ export function WdkAppProvider({
     secureStorage,
     networkConfigs,
     requireBiometric,
-    getController()
+    getController(),
+    identifier
   )
 
   // Calculate readiness state

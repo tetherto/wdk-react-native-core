@@ -40,7 +40,8 @@ export function useWdkInitialization(
   secureStorage: SecureStorage,
   networkConfigs: NetworkConfigs,
   requireBiometric: boolean,
-  abortController: AbortController | null
+  abortController: AbortController | null,
+  identifier?: string
 ): UseWdkInitializationResult {
   const [hasWalletChecked, setHasWalletChecked] = useState(false)
   const [walletExists, setWalletExists] = useState<boolean | null>(null)
@@ -65,7 +66,7 @@ export function useWdkInitialization(
     initializeWallet,
     hasWallet,
     isInitializing: isWalletInitializing,
-  } = useWalletSetup(secureStorage, networkConfigs)
+  } = useWalletSetup(secureStorage, networkConfigs, identifier)
 
   const { isInitialized: walletInitialized } = useWallet()
 
@@ -131,7 +132,7 @@ export function useWdkInitialization(
     const checkWallet = async () => {
       try {
         log('[useWdkInitialization] Checking if wallet exists...')
-        const walletExistsResult = await hasWallet()
+        const walletExistsResult = await hasWallet(identifier)
         log('[useWdkInitialization] Wallet check result:', walletExistsResult)
         if (!cancelled) {
           setHasWalletChecked(true)
@@ -151,7 +152,7 @@ export function useWdkInitialization(
     return () => {
       cancelled = true
     }
-  }, [isWorkletStarted, hasWalletChecked, hasWallet])
+  }, [isWorkletStarted, hasWalletChecked, hasWallet, identifier])
 
   // Shared wallet initialization logic
   const performWalletInitialization = useCallback(async (signal?: AbortSignal, operationId?: number) => {
@@ -172,7 +173,7 @@ export function useWdkInitialization(
 
       if (walletExists) {
         log('[useWdkInitialization] Loading existing wallet from secure storage...')
-        await initializeWallet({ createNew: false })
+        await initializeWallet({ createNew: false, identifier })
         
         if (signal?.aborted || (operationId !== undefined && operationId !== walletInitOperationId.current)) {
           throw new Error('Wallet initialization cancelled')
@@ -183,7 +184,7 @@ export function useWdkInitialization(
         }
       } else {
         log('[useWdkInitialization] Creating new wallet...')
-        await initializeWallet({ createNew: true })
+        await initializeWallet({ createNew: true, identifier })
         
         if (signal?.aborted || (operationId !== undefined && operationId !== walletInitOperationId.current)) {
           throw new Error('Wallet initialization cancelled')
@@ -212,7 +213,7 @@ export function useWdkInitialization(
       }
       throw err
     }
-  }, [walletExists, initializeWallet])
+  }, [walletExists, initializeWallet, identifier])
 
   // Initialize wallet when worklet is started, wallet check is complete, and biometric auth is done
   useEffect(() => {
