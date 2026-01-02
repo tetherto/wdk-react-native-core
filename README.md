@@ -7,7 +7,7 @@ Core functionality for React Native wallets - wallet management, balance fetchin
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/itsdeka/wdk-react-native-core.git
+git clone https://github.com/tetherto/wdk-react-native-core.git
 cd wdk-react-native-core
 
 # Install dependencies and build
@@ -20,7 +20,7 @@ npm run build
 From your app directory:
 
 ```bash
-npm install https://github.com/itsdeka/wdk-react-native-core.git
+npm install https://github.com/tetherto/wdk-react-native-core.git
 ```
 
 Or add to your `package.json`:
@@ -28,8 +28,8 @@ Or add to your `package.json`:
 ```json
 {
   "dependencies": {
-    "@tetherto/wdk-react-native-secure-storage": "github:itsdeka/wdk-react-native-secure-storage",
-    "@tetherto/wdk-react-native-core": "github:itsdeka/wdk-react-native-core"
+    "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage",
+    "@tetherto/wdk-react-native-core": "github:tetherto/wdk-react-native-core"
   }
 }
 ```

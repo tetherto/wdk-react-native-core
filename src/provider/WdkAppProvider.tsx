@@ -17,6 +17,7 @@ import { createSecureStorage } from '@tetherto/wdk-react-native-secure-storage'
 
 import { useWdkBalanceSync } from '../hooks/useWdkBalanceSync'
 import { useWdkInitialization } from '../hooks/useWdkInitialization'
+import { useWallet } from '../hooks/useWallet'
 import { WalletSetupService } from '../services/walletSetupService'
 import { DEFAULT_BALANCE_REFRESH_INTERVAL_MS } from '../utils/constants'
 import { normalizeError } from '../utils/errorUtils'
@@ -35,6 +36,10 @@ export interface WdkAppContextValue {
   isInitializing: boolean
   /** Whether a wallet exists in secure storage (null = checking) */
   walletExists: boolean | null
+  /** Whether wallet is fully initialized (addresses available) */
+  walletInitialized: boolean
+  /** Whether addresses are available (wallet loaded and addresses fetched) */
+  addressesReady: boolean
   /** Initialization error if any */
   error: Error | null
   /** Retry initialization after an error */
@@ -135,6 +140,19 @@ export function WdkAppProvider({
     walletInitialized,
   ])
 
+  // Get wallet addresses to check if addresses are ready
+  const { addresses } = useWallet()
+
+  // Check if addresses are available (at least one address for any network)
+  const addressesReady = useMemo(() => {
+    if (!walletInitialized) return false
+    const networks = Object.keys(networkConfigs)
+    return networks.some(network => {
+      const networkAddresses = addresses[network]
+      return networkAddresses && Object.keys(networkAddresses).length > 0
+    })
+  }, [walletInitialized, addresses, networkConfigs])
+
   // Balance sync hook - handles automatic and manual balance fetching
   const {
     isFetchingBalances,
@@ -152,6 +170,8 @@ export function WdkAppProvider({
       isReady,
       isInitializing: isInitializingFromHook,
       walletExists,
+      walletInitialized,
+      addressesReady,
       error: initializationError,
       retry,
       loadExisting,
@@ -159,7 +179,7 @@ export function WdkAppProvider({
       isFetchingBalances,
       refreshBalances,
     }),
-    [isReady, isInitializingFromHook, walletExists, initializationError, retry, loadExisting, createNew, isFetchingBalances, refreshBalances]
+    [isReady, isInitializingFromHook, walletExists, walletInitialized, addressesReady, initializationError, retry, loadExisting, createNew, isFetchingBalances, refreshBalances]
   )
 
   return (

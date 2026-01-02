@@ -142,6 +142,84 @@ export class WalletSetupService {
 
     return value
   }
+
+  /**
+   * Validate that encrypted data can be decrypted with the encryption key
+   * Attempts to initialize WDK with the provided credentials to verify compatibility
+   * 
+   * @param networkConfigs - Network configurations for worklet
+   * @param encryptionKey - Encryption key to test
+   * @param encryptedSeed - Encrypted seed to test
+   * @param encryptedEntropy - Optional encrypted entropy to test
+   * @throws Error if validation fails (decryption fails)
+   */
+  private static async validateEncryptionCompatibility(
+    networkConfigs: NetworkConfigs,
+    encryptionKey: string,
+    encryptedSeed: string,
+    encryptedEntropy?: string
+  ): Promise<void> {
+    const store = getWorkletStore()
+    
+    // Ensure worklet is started
+    if (!store.getState().isWorkletStarted) {
+      await WorkletLifecycleService.startWorklet(networkConfigs)
+    }
+
+    // Save current state to restore after validation
+    const wasInitialized = store.getState().isInitialized
+    const previousEncryptionKey = store.getState().encryptionKey
+    const previousEncryptedSeed = store.getState().encryptedSeed
+
+    try {
+      // Attempt to initialize WDK with the credentials
+      // This will fail if the encryption key cannot decrypt the seed
+      await WorkletLifecycleService.initializeWDK({
+        encryptionKey,
+        encryptedSeed,
+      })
+      
+      log('✅ Encryption compatibility validation passed')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const isDecryptionError = 
+        errorMessage.toLowerCase().includes('decryption failed') ||
+        errorMessage.toLowerCase().includes('failed to decrypt')
+      
+      if (isDecryptionError) {
+        log('❌ Encryption compatibility validation failed - decryption error detected')
+        throw new Error(
+          `Failed to validate encryption compatibility: The encryption key cannot decrypt the encrypted seed. ` +
+          `This indicates corrupted or mismatched wallet data. Error: ${errorMessage}`
+        )
+      }
+      
+      // Re-throw other errors as-is
+      throw error
+    } finally {
+      // Restore previous state if wallet was already initialized
+      // Only restore if we're not overwriting with the same credentials
+      if (wasInitialized && 
+          (previousEncryptionKey !== encryptionKey || previousEncryptedSeed !== encryptedSeed)) {
+        try {
+          if (previousEncryptionKey && previousEncryptedSeed) {
+            await WorkletLifecycleService.initializeWDK({
+              encryptionKey: previousEncryptionKey,
+              encryptedSeed: previousEncryptedSeed,
+            })
+          } else {
+            // If there was no previous state, reset
+            WorkletLifecycleService.reset()
+          }
+        } catch (restoreError) {
+          // If restore fails, reset to clean state
+          log('⚠️ Failed to restore previous wallet state after validation, resetting', restoreError)
+          WorkletLifecycleService.reset()
+        }
+      }
+    }
+  }
+
   /**
    * Create a new wallet
    * Generates entropy, encrypts it, and stores credentials securely
@@ -179,7 +257,25 @@ export class WalletSetupService {
     // Step 3: Generate entropy and encrypt
     const result = await WorkletLifecycleService.generateEntropyAndEncrypt(DEFAULT_MNEMONIC_WORD_COUNT)
 
-    // Step 4: Store credentials securely with identifier for multi-wallet support
+    // Step 4: Validate encryption compatibility before saving to keychain
+    // This ensures we never persist corrupted data that cannot be decrypted
+    log('🔍 Validating encryption compatibility before saving to keychain...')
+    try {
+      await this.validateEncryptionCompatibility(
+        networkConfigs,
+        result.encryptionKey,
+        result.encryptedSeedBuffer,
+        result.encryptedEntropyBuffer
+      )
+    } catch (error) {
+      log('❌ Encryption validation failed - aborting wallet creation', error)
+      // Reset worklet state on validation failure
+      WorkletLifecycleService.reset()
+      throw error
+    }
+
+    // Step 5: Store credentials securely with identifier for multi-wallet support
+    // Only save if validation passed
     await secureStorage.setEncryptionKey(result.encryptionKey, identifier)
     await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, identifier)
     await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, identifier)
@@ -310,7 +406,25 @@ export class WalletSetupService {
     // Step 3: Get seed and entropy from mnemonic
     const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
 
-    // Step 4: Store credentials securely with identifier for multi-wallet support
+    // Step 4: Validate encryption compatibility before saving to keychain
+    // This ensures we never persist corrupted data that cannot be decrypted
+    log('🔍 Validating encryption compatibility before saving to keychain...')
+    try {
+      await this.validateEncryptionCompatibility(
+        networkConfigs,
+        result.encryptionKey,
+        result.encryptedSeedBuffer,
+        result.encryptedEntropyBuffer
+      )
+    } catch (error) {
+      log('❌ Encryption validation failed - aborting wallet import', error)
+      // Reset worklet state on validation failure
+      WorkletLifecycleService.reset()
+      throw error
+    }
+
+    // Step 5: Store credentials securely with identifier for multi-wallet support
+    // Only save if validation passed
     await secureStorage.setEncryptionKey(result.encryptionKey, identifier)
     await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, identifier)
     await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, identifier)
@@ -323,7 +437,8 @@ export class WalletSetupService {
       result.encryptedEntropyBuffer
     )
 
-    // Step 5: Initialize WDK with the credentials
+    // Step 6: Initialize WDK with the credentials
+    // Note: This is safe now since validation already passed
     await WorkletLifecycleService.initializeWDK({
       encryptionKey: result.encryptionKey,
       encryptedSeed: result.encryptedSeedBuffer,

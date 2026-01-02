@@ -14,14 +14,13 @@ describe('useWdkApp', () => {
   })
 
   it('should validate context value structure', () => {
+    // @ts-expect-error - Mocking the context value
     const mockContextValue: WdkAppContextValue = {
       isReady: true,
       isInitializing: false,
       walletExists: true,
       error: null,
       retry: jest.fn(),
-      loadExisting: jest.fn().mockResolvedValue(undefined),
-      createNew: jest.fn().mockResolvedValue(undefined),
       isFetchingBalances: false,
       refreshBalances: jest.fn(),
     }

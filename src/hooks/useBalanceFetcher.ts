@@ -96,7 +96,7 @@ function getAllWalletsFromWalletStore(walletStore: ReturnType<typeof getWalletSt
  *
  * @example
  * ```tsx
- * import { getWalletStore } from '@tetherto/wdk-rn-worklet'
+ * import { getWalletStore } from '@tetherto/wdk-react-native-worklet'
  *
  * const { fetchAllBalances } = useBalanceFetcher({
  *   walletStore: getWalletStore(),

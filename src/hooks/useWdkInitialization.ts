@@ -17,7 +17,8 @@ import { useWallet } from './useWallet'
 import { useWalletSetup } from './useWalletSetup'
 import { useWorklet } from './useWorklet'
 import { isAuthenticationError, normalizeError } from '../utils/errorUtils'
-import { log, logError } from '../utils/logger'
+import { log, logError, logWarn } from '../utils/logger'
+import { WalletSetupService } from '../services/walletSetupService'
 import type { NetworkConfigs } from '../types'
 
 export interface UseWdkInitializationResult {
@@ -299,8 +300,29 @@ export function useWdkInitialization(
   const loadExisting = useCallback(async (): Promise<void> => {
     await checkPrerequisites()
 
-    // Check if wallet exists
-    const walletExists = stateContext.walletExists ?? false
+    // Check if wallet exists - check WDK state first, then keychain directly if needed
+    // This fixes race condition where WDK state hasn't updated yet but wallet exists in keychain
+    let walletExists = stateContext.walletExists ?? false
+    
+    // If WDK state is null or false, check keychain directly (source of truth)
+    // This handles the case where useOnboarding detected wallet via hasLocalWallet()
+    // but WDK hasn't finished its own check yet
+    if (!walletExists) {
+      log('[useWdkInitialization] WDK state says wallet does not exist, checking keychain directly...')
+      try {
+        const keychainCheck = await hasWallet(identifier)
+        if (keychainCheck) {
+          log('[useWdkInitialization] Keychain check confirms wallet exists, proceeding with load')
+          walletExists = true
+        } else {
+          log('[useWdkInitialization] Keychain check confirms wallet does not exist')
+        }
+      } catch (error) {
+        logError('[useWdkInitialization] Failed to check keychain directly', error)
+        // Continue with walletExists = false, will throw error below
+      }
+    }
+    
     if (!walletExists) {
       throw new Error('Cannot load existing wallet - wallet does not exist')
     }
@@ -308,24 +330,66 @@ export function useWdkInitialization(
     dispatch({ type: 'INITIALIZE_WALLET', walletExists })
 
     try {
-          log('[useWdkInitialization] Loading existing wallet from secure storage...')
-          await initializeWallet({ createNew: false, identifier })
+      log('[useWdkInitialization] Loading existing wallet from secure storage...')
+      await initializeWallet({ createNew: false, identifier })
       log('[useWdkInitialization] Wallet loaded successfully')
-        dispatch({ type: 'WALLET_INITIALIZED' })
-      } catch (error) {
-        const err = normalizeError(error, true, {
-          component: 'useWdkInitialization',
+      dispatch({ type: 'WALLET_INITIALIZED' })
+    } catch (error) {
+      const err = normalizeError(error, true, {
+        component: 'useWdkInitialization',
         operation: 'loadExisting',
-        })
-      logError('[useWdkInitialization] Failed to load existing wallet:', error)
+      })
+      
+      const errorMessage = err.message.toLowerCase()
+      const isDecryptionError = 
+        errorMessage.includes('decryption failed') ||
+        errorMessage.includes('failed to decrypt') ||
+        errorMessage.includes('decrypt seed')
+      
+      // Handle decryption errors by cleaning up corrupted wallet data
+      if (isDecryptionError) {
+        logError('[useWdkInitialization] Decryption failed - wallet data may be corrupted. Cleaning up...', error)
         
-        if (isAuthenticationError(err)) {
-          lastAuthErrorRef.current = Date.now()
+        try {
+          // Clear credentials cache for this identifier
+          WalletSetupService.clearCredentialsCache(identifier)
+          log('[useWdkInitialization] Cleared credentials cache for corrupted wallet')
+          
+          // Attempt to delete corrupted wallet data from keychain
+          try {
+            await secureStorage.deleteWallet(identifier)
+            log('[useWdkInitialization] Deleted corrupted wallet data from keychain')
+          } catch (deleteError) {
+            logWarn('[useWdkInitialization] Failed to delete corrupted wallet data from keychain', deleteError)
+            // Continue even if delete fails - at least cache is cleared
+          }
+          
+          // Create a more descriptive error message
+          const cleanupError = new Error(
+            `Failed to decrypt wallet: The stored wallet data appears to be corrupted or encrypted with a different key. ` +
+            `Corrupted data has been cleaned up. Error: ${err.message}`
+          )
+          cleanupError.name = err.name || 'DecryptionError'
+          
+          dispatch({ type: 'WALLET_INIT_ERROR', error: cleanupError })
+          throw cleanupError
+        } catch (cleanupError) {
+          // If cleanup itself fails, still throw the original error
+          logError('[useWdkInitialization] Error during cleanup of corrupted wallet data', cleanupError)
+          dispatch({ type: 'WALLET_INIT_ERROR', error: err })
+          throw err
         }
-        
-        dispatch({ type: 'WALLET_INIT_ERROR', error: err })
-      throw err
       }
+      
+      // Handle authentication errors
+      if (isAuthenticationError(err)) {
+        lastAuthErrorRef.current = Date.now()
+      }
+      
+      logError('[useWdkInitialization] Failed to load existing wallet:', error)
+      dispatch({ type: 'WALLET_INIT_ERROR', error: err })
+      throw err
+    }
   }, [
     checkPrerequisites,
     stateContext.walletExists,
