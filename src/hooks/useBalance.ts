@@ -55,8 +55,7 @@ import {
   DEFAULT_QUERY_STALE_TIME_MS,
   DEFAULT_QUERY_GC_TIME_MS,
 } from '../utils/constants'
-import { log, logError } from '../utils/logger'
-import { balanceStringSchema } from '../utils/schemas'
+import { logError } from '../utils/logger'
 import { validateWalletParams } from '../utils/validation'
 import type { BalanceFetchResult, TokenConfigProvider } from '../types'
 
@@ -218,7 +217,6 @@ async function fetchBalance(
     // IMPORTANT: Zustand is the single source of truth for balances.
     // TanStack Query is a fetching/caching layer that reads from and updates Zustand.
     // This update ensures balances are persisted and available immediately on app restart.
-    const tokenKey = tokenAddress || NATIVE_TOKEN_KEY
     const targetWalletId = resolveWalletId(walletId)
     BalanceService.updateBalance(accountIndex, network, tokenAddress, balance, targetWalletId)
     BalanceService.updateLastBalanceUpdate(network, accountIndex, targetWalletId)
@@ -279,7 +277,6 @@ export function useBalance(
   tokenAddress: string | null,
   options?: BalanceQueryOptions
 ) {
-  const queryClient = useQueryClient()
   const workletStore = getWorkletStore()
   const walletStore = getWalletStore()
 

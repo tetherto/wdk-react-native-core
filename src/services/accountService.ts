@@ -10,7 +10,7 @@ import { convertBigIntToString } from '../utils/balanceUtils'
 import { ALLOWED_ACCOUNT_METHODS, type AllowedAccountMethod } from '../utils/constants'
 import { handleServiceError } from '../utils/errorHandling'
 import { safeStringify } from '../utils/jsonUtils'
-import { workletResponseSchema, balanceResponseSchema } from '../utils/schemas'
+import { workletResponseSchema } from '../utils/schemas'
 import { requireInitialized } from '../utils/storeHelpers'
 import { validateAccountIndex, validateNetworkName } from '../utils/validation'
 

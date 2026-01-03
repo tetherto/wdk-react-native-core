@@ -17,12 +17,11 @@
  * 
  * @example
  * ```tsx
- * const networkConfigs = { ethereum: { chainId: 1, blockchain: 'ethereum' } }
- * 
  * // Check if app is ready first
  * const { isReady } = useWdkApp()
  * 
  * // Then use wallet manager for lifecycle operations
+ * // networkConfigs is optional - it will be retrieved from workletStore if not provided
  * const { 
  *   createWallet,
  *   initializeWallet,
@@ -33,9 +32,10 @@
  *   createTemporaryWallet,
  *   isInitializing, 
  *   error 
- * } = useWalletManager(networkConfigs, 'user@example.com')
+ * } = useWalletManager('user@example.com')
  * 
  * // Create new wallet (persistent, requires biometrics)
+ * // networkConfigs can be passed here or retrieved from store
  * await createWallet('user@example.com', networkConfigs)
  * 
  * // Initialize wallet (create new or load existing)
@@ -70,7 +70,6 @@ import { withOperationMutex } from '../utils/operationMutex'
 import { log, logError } from '../utils/logger'
 import type { NetworkConfigs } from '../types'
 import type { WalletInfo } from '../store/walletStore'
-import type { WorkletStore } from '../store/workletStore'
 
 // Re-export WalletInfo for backward compatibility
 export type { WalletInfo }
@@ -100,7 +99,7 @@ export interface UseWalletManagerResult {
   /** Currently active wallet identifier */
   activeWalletId: string | null
   /** Create a new wallet with the given walletId (adds to list) */
-  createWallet: (walletId: string, networkConfigs: NetworkConfigs) => Promise<void>
+  createWallet: (walletId: string, networkConfigs?: NetworkConfigs) => Promise<void>
   /** Refresh the wallet list */
   refreshWalletList: (knownIdentifiers?: string[]) => Promise<void>
   /** Whether wallet list operation is in progress */
@@ -110,8 +109,8 @@ export interface UseWalletManagerResult {
 }
 
 export function useWalletManager(
-  networkConfigs: NetworkConfigs,
-  walletId?: string
+  walletId?: string,
+  networkConfigs?: NetworkConfigs
 ): UseWalletManagerResult {
   const [error, setError] = useState<string | null>(null)
   
@@ -120,6 +119,24 @@ export function useWalletManager(
   const [walletListError, setWalletListError] = useState<string | null>(null)
   
   const walletStore = getWalletStore()
+  const workletStore = getWorkletStore()
+
+  /**
+   * Get networkConfigs from parameter or workletStore
+   * Throws error if not available from either source
+   */
+  const getNetworkConfigs = useCallback((): NetworkConfigs => {
+    const networkConfigsFromStore = workletStore.getState().networkConfigs
+    const effectiveNetworkConfigs = networkConfigs ?? networkConfigsFromStore
+    
+    if (!effectiveNetworkConfigs) {
+      throw new Error(
+        'networkConfigs is required. Either provide it as a parameter or ensure the worklet is started with networkConfigs.'
+      )
+    }
+    
+    return effectiveNetworkConfigs
+  }, [networkConfigs, workletStore])
 
   // Subscribe to wallet list state and loading state from Zustand
   const walletListState = walletStore(
@@ -156,6 +173,7 @@ export function useWalletManager(
       setError(null)
       const targetWalletId = options.walletId ?? walletId
       const walletStore = getWalletStore()
+      const effectiveNetworkConfigs = getNetworkConfigs()
 
       try {
         // Update loading state in store (single source of truth)
@@ -168,7 +186,7 @@ export function useWalletManager(
         }
 
         await WalletSetupService.initializeWallet(
-          networkConfigs,
+          effectiveNetworkConfigs,
           {
             ...options,
             walletId: targetWalletId,
@@ -201,7 +219,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [networkConfigs, walletId]
+    [getNetworkConfigs, walletId]
   )
 
   /**
@@ -228,6 +246,7 @@ export function useWalletManager(
       setError(null)
       const targetWalletId = walletIdParam ?? walletId
       const walletStore = getWalletStore()
+      const effectiveNetworkConfigs = getNetworkConfigs()
 
       try {
         // Update loading state in store (single source of truth)
@@ -240,7 +259,7 @@ export function useWalletManager(
         }
 
         await WalletSetupService.initializeFromMnemonic(
-          networkConfigs,
+          effectiveNetworkConfigs,
           mnemonic,
           targetWalletId
         )
@@ -271,7 +290,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [networkConfigs, walletId]
+    [getNetworkConfigs, walletId]
   )
 
   /**
@@ -376,12 +395,11 @@ export function useWalletManager(
       setError(null)
 
       try {
-        const workletStore = getWorkletStore()
-        const networkConfigsFromStore = workletStore.getState().networkConfigs
+        const effectiveNetworkConfigs = getNetworkConfigs()
 
         // Ensure worklet is started (auto-start if needed)
         await WorkletLifecycleService.ensureWorkletStarted(
-          networkConfigsFromStore ?? networkConfigs,
+          effectiveNetworkConfigs,
           { autoStart: true }
         )
 
@@ -405,7 +423,7 @@ export function useWalletManager(
         throw err
       }
     })
-  }, [networkConfigs])
+  }, [getNetworkConfigs])
 
   /**
    * Check if a wallet exists (for wallet list operations)
@@ -460,7 +478,7 @@ export function useWalletManager(
   /**
    * Create a new wallet and add it to the wallet list
    */
-  const createWallet = useCallback(async (walletId: string, walletNetworkConfigs: NetworkConfigs) => {
+  const createWallet = useCallback(async (walletId: string, walletNetworkConfigs?: NetworkConfigs) => {
     setIsWalletListLoading(true)
     setWalletListError(null)
 
@@ -471,8 +489,11 @@ export function useWalletManager(
         throw new Error(`Wallet with walletId "${walletId}" already exists`)
       }
 
+      // Use provided networkConfigs or get from store
+      const effectiveNetworkConfigs = walletNetworkConfigs ?? getNetworkConfigs()
+
       // Create wallet using WalletSetupService
-      await WalletSetupService.createNewWallet(walletNetworkConfigs, walletId)
+      await WalletSetupService.createNewWallet(effectiveNetworkConfigs, walletId)
 
       // Add to wallet list
       walletStore.setState((state: import('../store/walletStore').WalletStore) => ({

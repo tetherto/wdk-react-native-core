@@ -4,7 +4,6 @@
  * Tests hook logic without DOM rendering
  */
 
-import { WdkAppContext } from '../../provider/WdkAppProvider'
 import type { WdkAppContextValue } from '../../provider/WdkAppProvider'
 import { AppStatus, InitializationStatus } from '../../utils/initializationState'
 

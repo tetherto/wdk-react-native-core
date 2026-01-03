@@ -51,9 +51,7 @@ import { persist, createJSONStorage, devtools } from 'zustand/middleware'
 
 // Local imports
 import type {
-  WalletAddresses,
   WalletAddressesByWallet,
-  WalletBalances,
   WalletBalancesByWallet,
   BalanceLoadingStates,
 } from '../types'

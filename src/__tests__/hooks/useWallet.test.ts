@@ -4,7 +4,6 @@
  * Tests wallet hook logic without React rendering
  */
 
-import { useWallet } from '../../hooks/useWallet'
 import { getWorkletStore } from '../../store/workletStore'
 import { getWalletStore } from '../../store/walletStore'
 import { AddressService } from '../../services/addressService'

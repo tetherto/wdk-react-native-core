@@ -7,7 +7,6 @@ import {
   clearCredentialsCache as clearWorkletCredentialsCache,
   type CachedCredentials
 } from '../store/workletStore'
-import { WalletSwitchingService } from './walletSwitchingService'
 import { WorkletLifecycleService } from './workletLifecycleService'
 import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
 import { log, logError } from '../utils/logger'

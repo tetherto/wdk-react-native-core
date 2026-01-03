@@ -15,7 +15,6 @@ import { WorkletLifecycleService } from './workletLifecycleService'
 import { getWalletStore } from '../store/walletStore'
 import { updateWalletLoadingState, getWalletIdFromLoadingState } from '../store/walletStore'
 import { withOperationMutex } from '../utils/operationMutex'
-import { handleServiceError } from '../utils/errorHandling'
 import { normalizeError } from '../utils/errorUtils'
 import { log, logError } from '../utils/logger'
 

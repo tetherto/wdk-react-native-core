@@ -114,9 +114,8 @@ export function useWallet(options?: {
   const [switchWalletError, setSwitchWalletError] = useState<Error | null>(null)
   const [isTemporaryWallet, setIsTemporaryWallet] = useState(false)
 
-  // Get activeWalletId and networkConfigs from stores
+  // Get activeWalletId from stores
   const activeWalletId = walletStore((state: WalletStore) => state.activeWalletId)
-  const networkConfigs = workletStore((state: WorkletStore) => state.networkConfigs)
 
   // Determine target walletId
   const targetWalletId = options?.walletId || activeWalletId

@@ -23,9 +23,7 @@ import { AppState, type AppStateStatus } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { createSecureStorage } from '@tetherto/wdk-react-native-secure-storage'
-import type { SecureStorage } from '@tetherto/wdk-react-native-secure-storage'
 
-import { useWallet } from '../hooks/useWallet'
 import { useWalletManager } from '../hooks/useWalletManager'
 import { useWorklet } from '../hooks/useWorklet'
 import { getWalletStore } from '../store/walletStore'
@@ -34,9 +32,7 @@ import {
   updateWalletLoadingState, 
   getWalletIdFromLoadingState,
   isWalletLoadingState,
-  isWalletReadyState,
   isWalletErrorState,
-  type WalletLoadingState
 } from '../store/walletStore'
 import {
   shouldResetToNotLoaded,
@@ -47,8 +43,8 @@ import {
 import { clearAllSensitiveData } from '../store/workletStore'
 import { WalletSetupService } from '../services/walletSetupService'
 import { WorkletLifecycleService } from '../services/workletLifecycleService'
-import { isAuthenticationError, normalizeError } from '../utils/errorUtils'
-import { log, logError, logWarn } from '../utils/logger'
+import { normalizeError } from '../utils/errorUtils'
+import { log, logError } from '../utils/logger'
 import { validateNetworkConfigs, validateTokenConfigs } from '../utils/validation'
 import { DEFAULT_QUERY_STALE_TIME_MS, DEFAULT_QUERY_GC_TIME_MS } from '../utils/constants'
 import { InitializationStatus, AppStatus, isAppReadyStatus, isAppInProgressStatus, getCombinedStatus, getWorkletStatus } from '../utils/initializationState'
@@ -227,7 +223,7 @@ export function WdkAppProvider({
   // Hooks for wallet operations
   const {
     error: walletManagerError,
-  } = useWalletManager(networkConfigs)
+  } = useWalletManager()
 
   // Derive isWalletInitializing from walletLoadingState (single source of truth)
   const isWalletInitializing = useMemo(() => {
