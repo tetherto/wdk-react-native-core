@@ -22,8 +22,8 @@ jest.mock('expo-crypto', () => ({
   getRandomBytesAsync: jest.fn(() => Promise.resolve(new Uint8Array(32))),
 }))
 
-// Mock pear-wrk-wdk
-jest.mock('pear-wrk-wdk', () => ({
+// Mock @tetherto/pear-wrk-wdk
+jest.mock('@tetherto/pear-wrk-wdk', () => ({
   Worklet: jest.fn(),
   createWorklet: jest.fn(),
 }))

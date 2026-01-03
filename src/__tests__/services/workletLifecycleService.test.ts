@@ -26,9 +26,9 @@ const mockHRPCInstance = {
   ipc: mockWorkletInstance.IPC,
 }
 
-// Mock pear-wrk-wdk with proper module structure
+// Mock @tetherto/pear-wrk-wdk with proper module structure
 // Note: We create the mock HRPC inside the factory to avoid hoisting issues
-jest.mock('pear-wrk-wdk', () => {
+jest.mock('@tetherto/pear-wrk-wdk', () => {
   const mockHRPC = jest.fn().mockImplementation(() => ({
     workletStart: jest.fn(() => Promise.resolve({ status: 'success' })),
     ipc: mockWorkletInstance.IPC,
@@ -161,7 +161,7 @@ describe('WorkletLifecycleService', () => {
     mockHRPCInstance.workletStart.mockResolvedValue({ status: 'success' })
     
     // Reset HRPC constructor mock
-    const { HRPC } = require('pear-wrk-wdk')
+    const { HRPC } = require('@tetherto/pear-wrk-wdk')
     if (HRPC && typeof HRPC.mockImplementation === 'function') {
       HRPC.mockImplementation(() => mockHRPCInstance)
     }
@@ -199,7 +199,7 @@ describe('WorkletLifecycleService', () => {
       expect(mockWorkletInstance.start).toHaveBeenCalledWith('/wdk-worklet.bundle', 'mock-bundle')
 
       // Verify HRPC was created
-      const { HRPC } = require('pear-wrk-wdk')
+      const { HRPC } = require('@tetherto/pear-wrk-wdk')
       expect(HRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
 
       // Verify workletStart was called with serialized config

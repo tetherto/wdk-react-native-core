@@ -3,7 +3,7 @@
  */
 
 import { isExtendedHRPC, asExtendedHRPC } from '../../types/hrpc'
-import type { HRPC } from 'pear-wrk-wdk'
+import type { HRPC } from '@tetherto/pear-wrk-wdk'
 
 describe('hrpc', () => {
   describe('isExtendedHRPC', () => {

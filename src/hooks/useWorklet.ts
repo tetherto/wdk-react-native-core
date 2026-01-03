@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow'
 
-import type { HRPC } from 'pear-wrk-wdk'
-import type { WorkletStartResponse } from 'pear-wrk-wdk/types/rpc'
+import type { HRPC } from '@tetherto/pear-wrk-wdk'
+import type { WorkletStartResponse } from '@tetherto/pear-wrk-wdk/types/rpc'
 import type { Worklet } from 'react-native-bare-kit'
 
 import { WorkletLifecycleService } from '../services/workletLifecycleService'

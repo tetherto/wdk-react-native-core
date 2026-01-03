@@ -499,7 +499,7 @@ The WdkAppProvider follows a specific initialization sequence:
 1. Check that `secureStorage` is properly configured and has required methods
 2. Verify `networkConfigs` are valid (use `validateNetworkConfigs()`)
 3. Check console logs for detailed error messages
-4. Verify worklet bundle is available (check `pear-wrk-wdk` dependency)
+4. Verify worklet bundle is available (check `@tetherto/pear-wrk-wdk` dependency)
 5. Try calling `retry()` method from context
 
 **Common Errors**:
