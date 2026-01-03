@@ -13,32 +13,29 @@ import type { WorkletStore } from '../store/workletStore'
  * Hook to interact with wallet data (addresses, balances, accounts)
  * 
  * PURPOSE: Use this hook for wallet operations AFTER the wallet has been initialized.
- * This hook provides access to wallet addresses, balances, account methods, and wallet state.
+ * This hook provides access to wallet addresses, balances (via Zustand store), and account methods.
+ * 
+ * **Balance Fetching**: For new code, use `useBalance()` hook instead of `getBalance()`.
+ * The `getBalance()` method is kept for backward compatibility but uses cached Zustand data.
  * 
  * For wallet initialization/setup (creating, loading, deleting wallets), use
- * the `useWalletSetup()` hook instead.
+ * the `useWalletManager()` hook instead.
  * 
  * @example
  * ```tsx
- * const { 
- *   addresses, 
- *   balances,
- *   getAddress, 
- *   getBalance,
- *   callAccountMethod,
- *   isLoadingAddress,
- *   isInitialized
- * } = useWallet()
+ * // Addresses (from Zustand - derived state)
+ * const { addresses, getAddress, isLoadingAddress, isInitialized } = useWallet()
  * 
- * useEffect(() => {
- *   if (isInitialized) {
- *     getAddress('ethereum', 0).then(console.log)
- *     const balance = getBalance(0, 'ethereum', null)
- *     // Call account methods
- *     callAccountMethod('ethereum', 0, 'signMessage', { message: 'Hello' })
- *       .then(console.log)
- *   }
- * }, [isInitialized])
+ * // Balances - NEW: Use useBalance hook for fetching
+ * import { useBalance } from '@tetherto/wdk-react-native-core'
+ * const { data: balance } = useBalance('ethereum', 0, null)
+ * 
+ * // Balances - OLD: Direct access to Zustand store (deprecated, but still works)
+ * const { getBalance } = useWallet() // Returns cached balance from Zustand
+ * 
+ * // Account methods
+ * const { callAccountMethod } = useWallet()
+ * await callAccountMethod('ethereum', 0, 'signMessage', { message: 'Hello' })
  * ```
  */
 export interface UseWalletResult {
@@ -116,10 +113,18 @@ export function useWallet(): UseWalletResult {
   }, [])
 
   // Balance management methods - direct calls to static service methods
+  // NOTE: These methods access Zustand store directly. For fetching balances,
+  // use the useBalance() hook instead which uses TanStack Query.
+  // These are kept for backward compatibility and reading cached balances.
   const updateBalance = (accountIndex: number, network: string, tokenAddress: string | null, balance: string) => {
     BalanceService.updateBalance(accountIndex, network, tokenAddress, balance)
   }
 
+  /**
+   * Get balance from Zustand store (cached data)
+   * @deprecated For fetching balances, use `useBalance()` hook instead.
+   * This method only returns cached balances from Zustand store.
+   */
   const getBalance = (accountIndex: number, network: string, tokenAddress: string | null) => {
     return BalanceService.getBalance(accountIndex, network, tokenAddress)
   }

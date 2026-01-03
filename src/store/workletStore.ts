@@ -3,14 +3,39 @@
  * 
  * This store manages worklet lifecycle state (initialization, configuration, runtime instances).
  * 
+ * ## Store Boundaries
+ * 
+ * **workletStore** (this file):
+ * - Worklet lifecycle state (isWorkletStarted, isInitialized, isLoading)
+ * - Worklet runtime instances (worklet, hrpc, ipc)
+ * - Worklet configuration (networkConfigs)
+ * - Worklet initialization results (workletStartResult, wdkInitResult)
+ * - Encrypted credentials in memory (encryptedSeed, encryptionKey) - NOT persisted
+ * 
+ * **walletStore** (walletStore.ts):
+ * - Wallet data (addresses, balances)
+ * - Wallet loading states
+ * - Balance loading states
+ * - Last balance update timestamps
+ * 
+ * ## Separation of Concerns
+ * 
+ * - **workletStore**: Manages the worklet runtime and its lifecycle
+ * - **walletStore**: Manages wallet data derived from the worklet
+ * 
+ * These stores are intentionally separate to:
+ * 1. Prevent cross-contamination of lifecycle and data concerns
+ * 2. Allow independent persistence strategies
+ * 3. Enable clear boundaries for testing and debugging
+ * 
+ * ## Important Notes
+ * 
+ * - NEVER store wallet data (addresses, balances) in workletStore
+ * - NEVER store worklet lifecycle state in walletStore
+ * - Encrypted credentials in workletStore are runtime-only (not persisted)
+ * - All operations are handled by WorkletLifecycleService, not the store itself
+ * 
  * For wallet data (addresses, balances), see walletStore.ts
- * 
- * - workletStore.ts: Stores worklet lifecycle state
- * - walletStore.ts: Stores addresses and balances
- * - types.ts: All type definitions (network, token, and wallet types)
- * - services/workletLifecycleService.ts: All worklet lifecycle operations (startWorklet, initializeWDK, etc.)
- * 
- * All operations are handled by WorkletLifecycleService, not the store itself.
  */
 
 // External packages

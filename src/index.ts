@@ -33,11 +33,16 @@ export type { WdkAppProviderProps, WdkAppContextValue } from './provider/WdkAppP
 // Hooks (public API)
 export { useWorklet } from './hooks/useWorklet'
 export { useWallet } from './hooks/useWallet'
-export { useWalletSetup } from './hooks/useWalletSetup'
 export { useWdkApp } from './hooks/useWdkApp'
-export { useBalanceFetcher } from './hooks/useBalanceFetcher'
-export { useMnemonic } from './hooks/useMnemonic'
-export type { UseMnemonicReturn } from './hooks/useMnemonic'
+
+// New consolidated hooks
+export { useWalletManager } from './hooks/useWalletManager'
+export type { UseWalletManagerResult } from './hooks/useWalletManager'
+export { useBalance, useBalancesForWallet, useRefreshBalance, balanceQueryKeys } from './hooks/useBalance'
+export { useWalletList } from './hooks/useWalletList'
+export type { UseWalletListResult, WalletInfo } from './hooks/useWalletList'
+export { useAccountList } from './hooks/useAccountList'
+export type { UseAccountListResult, AccountInfo } from './hooks/useAccountList'
 
 // Validation Utilities (for validating configs before use)
 export { 
@@ -47,6 +52,22 @@ export {
   validateAccountIndex,
   validateTokenAddress,
 } from './utils/validation'
+
+// Zod Schemas (for runtime validation)
+export {
+  networkConfigSchema,
+  networkConfigsSchema,
+  tokenConfigSchema,
+  tokenConfigsSchema,
+  walletAddressesSchema,
+  walletBalancesSchema,
+  accountIndexSchema,
+  networkNameSchema,
+  balanceStringSchema,
+  ethereumAddressSchema,
+  sparkAddressSchema,
+  addressSchema,
+} from './utils/schemas'
 
 // Type Guards (for runtime type checking)
 export { 
@@ -72,4 +93,7 @@ export { normalizeError, getErrorMessage, isErrorType, createContextualError } f
 // Result Type (for error handling patterns)
 export type { Result } from './utils/result'
 export { ok, err, toResult, toResultSync } from './utils/result'
+
+// Initialization State Machine
+export { InitializationStatus, isErrorStatus, isReadyStatus, isInProgressStatus, isWalletInitializedStatus, getStatusMessage } from './utils/initializationState'
 

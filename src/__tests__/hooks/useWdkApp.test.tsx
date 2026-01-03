@@ -14,7 +14,6 @@ describe('useWdkApp', () => {
   })
 
   it('should validate context value structure', () => {
-    // @ts-expect-error - Mocking the context value
     const mockContextValue: WdkAppContextValue = {
       isReady: true,
       isInitializing: false,

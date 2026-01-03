@@ -3,16 +3,43 @@
  * 
  * IMPORTANT: This is the ONLY place where addresses and balances are actually stored.
  * 
- * - walletStore.ts: Stores addresses and balances
- *   - Addresses: { [network]: { [accountIndex]: address } }
- *   - Balances: { [network]: { [accountIndex]: { [tokenAddress]: balance } } }
- * - types.ts: All type definitions (network, token, and wallet types)
- * - utils/walletUtils.ts: Helper functions to retrieve data from walletStore
- * - services/addressService.ts: Address operations (getAddress, callAccountMethod)
- * - services/balanceService.ts: Balance operations (updateBalance, getBalance, etc.)
+ * ## Store Boundaries
  * 
- * Addresses and balances are persisted here and retrieved by wallet stores on-the-fly.
- * All operations are handled by focused services (AddressService, BalanceService), not the store itself.
+ * **walletStore** (this file):
+ * - Wallet addresses: { [network]: { [accountIndex]: address } }
+ * - Wallet balances: { [network]: { [accountIndex]: { [tokenAddress]: balance } } }
+ * - Address loading states: { [network-accountIndex]: boolean }
+ * - Balance loading states: { [network-accountIndex-tokenAddress]: boolean }
+ * - Last balance update timestamps: { [network]: { [accountIndex]: timestamp } }
+ * 
+ * **workletStore** (workletStore.ts):
+ * - Worklet lifecycle state (isWorkletStarted, isInitialized, etc.)
+ * - Worklet runtime instances (worklet, hrpc, ipc)
+ * - Worklet configuration
+ * 
+ * ## Separation of Concerns
+ * 
+ * - **walletStore**: Manages wallet data (addresses, balances) - derived/computed from worklet
+ * - **workletStore**: Manages worklet runtime and lifecycle
+ * 
+ * These stores are intentionally separate to:
+ * 1. Prevent cross-contamination of lifecycle and data concerns
+ * 2. Allow independent persistence strategies
+ * 3. Enable clear boundaries for testing and debugging
+ * 
+ * ## Important Notes
+ * 
+ * - Addresses: Stored in Zustand (derived/computed state, deterministic, no refetching needed)
+ * - Balances: Stored in Zustand for backward compatibility, but NEW code should use TanStack Query via useBalance() hook
+ * - NEVER store worklet lifecycle state in walletStore
+ * - NEVER store worklet runtime instances in walletStore
+ * - All operations are handled by focused services (AddressService, BalanceService), not the store itself
+ * 
+ * ## Balance Fetching Migration
+ * 
+ * - **Old approach**: Manual balance fetching via BalanceService.updateBalance()
+ * - **New approach**: Use TanStack Query via useBalance() hook for automatic caching and refetching
+ * - Zustand store is still updated for backward compatibility, but new code should use useBalance()
  */
 
 // External packages

@@ -19,6 +19,89 @@ interface CachedCredentials {
  * Wallet setup service
  * Handles creating new wallets and loading existing wallets with biometric authentication
  * Caches credentials in ephemeral memory to avoid repeated biometric prompts
+ * 
+ * ## Biometric Authentication Lifecycle
+ * 
+ * ### When Biometric Authentication is Required
+ * 
+ * 1. **Creating a new wallet** (`createNewWallet`)
+ *   - Always requires biometric authentication before wallet creation
+ *   - Ensures only authorized users can create wallets
+ *   - Credentials are cached after successful authentication
+ * 
+ * 2. **Loading existing wallet** (`loadExistingWallet`)
+ *   - Requires biometric authentication if credentials are not cached
+ *   - If credentials are in cache, authentication is skipped (better UX)
+ *   - Cache is checked first before prompting for biometrics
+ * 
+ * 3. **Importing wallet from mnemonic** (`initializeFromMnemonic`)
+ *   - Always requires biometric authentication before import
+ *   - Ensures only authorized users can import wallets
+ *   - Credentials are cached after successful authentication
+ * 
+ * ### Credential Caching Behavior
+ * 
+ * - **Cache Location**: Ephemeral memory only (Map<string, CachedCredentials>)
+ *   - Cache is keyed by `identifier` (user email/ID) for multi-wallet support
+ *   - Cache persists for the lifetime of the app session
+ *   - Cache is cleared when app is terminated (not persisted to disk)
+ * 
+ * - **Cache Contents**:
+ *   - `encryptionKey`: Cached after first retrieval (most sensitive, requires biometrics)
+ *   - `encryptedSeed`: Cached after first retrieval
+ *   - `encryptedEntropy`: Cached after first retrieval
+ * 
+ * - **Cache Benefits**:
+ *   - Avoids repeated biometric prompts during the same app session
+ *   - Improves UX for operations that need credentials multiple times
+ *   - Reduces security surface (fewer biometric prompts = fewer attack vectors)
+ * 
+ * ### When Cache is Cleared
+ * 
+ * Cache is automatically cleared in the following scenarios:
+ * 
+ * 1. **Explicit cache clearing** (`clearCredentialsCache`)
+ *   - Called when wallet data is corrupted or invalid
+ *   - Called during wallet deletion
+ *   - Can be called manually for security (e.g., on logout)
+ * 
+ * 2. **App termination**
+ *   - Cache is in-memory only, so it's cleared when app closes
+ *   - Next app launch will require biometric authentication again
+ * 
+ * 3. **Wallet deletion** (`deleteWallet`)
+ *   - Cache for the deleted wallet identifier is cleared
+ *   - Other wallet caches remain intact
+ * 
+ * ### Security Considerations
+ * 
+ * - **Cache Lifetime**: Ephemeral (in-memory only, cleared on app termination)
+ * - **Cache Scope**: Per-identifier (multi-wallet support)
+ * - **Cache Invalidation**: Manual via `clearCredentialsCache()` or automatic on app termination
+ * - **Biometric Prompt Frequency**: 
+ *   - First access per app session: Always required
+ *   - Subsequent accesses in same session: Cached (no prompt)
+ *   - After app restart: Always required again
+ * 
+ * ### Best Practices
+ * 
+ * 1. **Clear cache on logout**: Call `clearCredentialsCache(identifier)` when user logs out
+ * 2. **Clear cache on errors**: Clear cache if decryption fails (may indicate corrupted data)
+ * 3. **Don't persist cache**: Cache is intentionally in-memory only for security
+ * 4. **Handle cache misses**: Always handle the case where cache is empty (will prompt for biometrics)
+ * 
+ * ### Example Usage
+ * 
+ * ```typescript
+ * // Create new wallet (always requires biometrics)
+ * await WalletSetupService.createNewWallet(networkConfigs, userEmail)
+ * 
+ * // Load existing wallet (biometrics only if not cached)
+ * const credentials = await WalletSetupService.loadExistingWallet(userEmail)
+ * 
+ * // Clear cache (e.g., on logout)
+ * WalletSetupService.clearCredentialsCache(userEmail)
+ * ```
  */
 export class WalletSetupService {
   /**

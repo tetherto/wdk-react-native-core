@@ -2,26 +2,30 @@
  * Validation utilities for WDK provider props and inputs
  * 
  * These functions throw errors for invalid inputs.
+ * Uses Zod schemas for validation with better error messages.
  * For type guards (boolean returns), see typeGuards.ts
  */
 
-import { 
-  isNetworkConfig, 
-  isNetworkConfigs, 
-  isTokenConfig, 
-  isTokenConfigs,
-  isValidAccountIndex,
-  isValidNetworkName,
-  isValidBalanceString,
-  isEthereumAddress
-} from './typeGuards'
+import {
+  networkConfigsSchema,
+  tokenConfigsSchema,
+  accountIndexSchema,
+  networkNameSchema,
+  balanceStringSchema,
+  ethereumAddressSchema,
+} from './schemas'
 import type { NetworkConfigs, TokenConfigs } from '../types'
 
 /**
  * Validate network configuration
  */
 export function validateNetworkConfigs(networkConfigs: NetworkConfigs): void {
-  if (!isNetworkConfigs(networkConfigs)) {
+  try {
+    networkConfigsSchema.parse(networkConfigs)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid networkConfigs: ${error.message}`)
+    }
     throw new Error('networkConfigs must be a valid NetworkConfigs object')
   }
 }
@@ -30,7 +34,12 @@ export function validateNetworkConfigs(networkConfigs: NetworkConfigs): void {
  * Validate token configuration
  */
 export function validateTokenConfigs(tokenConfigs: TokenConfigs): void {
-  if (!isTokenConfigs(tokenConfigs)) {
+  try {
+    tokenConfigsSchema.parse(tokenConfigs)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid tokenConfigs: ${error.message}`)
+    }
     throw new Error('tokenConfigs must be a valid TokenConfigs object')
   }
 }
@@ -79,7 +88,12 @@ export function validateRequiredMethods(
  * Validate account index
  */
 export function validateAccountIndex(accountIndex: number): void {
-  if (!isValidAccountIndex(accountIndex)) {
+  try {
+    accountIndexSchema.parse(accountIndex)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid accountIndex: ${error.message}`)
+    }
     throw new Error('accountIndex must be a non-negative integer')
   }
 }
@@ -88,7 +102,12 @@ export function validateAccountIndex(accountIndex: number): void {
  * Validate network name
  */
 export function validateNetworkName(network: string): void {
-  if (!isValidNetworkName(network)) {
+  try {
+    networkNameSchema.parse(network)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid network name: ${error.message}`)
+    }
     throw new Error('network must be a non-empty string containing only alphanumeric characters, hyphens, and underscores')
   }
 }
@@ -97,7 +116,15 @@ export function validateNetworkName(network: string): void {
  * Validate token address (can be null for native tokens)
  */
 export function validateTokenAddress(tokenAddress: string | null): void {
-  if (tokenAddress !== null && !isEthereumAddress(tokenAddress)) {
+  if (tokenAddress === null) {
+    return
+  }
+  try {
+    ethereumAddressSchema.parse(tokenAddress)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid tokenAddress: ${error.message}`)
+    }
     throw new Error('tokenAddress must be a valid Ethereum address format (0x followed by 40 hex characters) or null')
   }
 }
@@ -106,7 +133,12 @@ export function validateTokenAddress(tokenAddress: string | null): void {
  * Validate balance string
  */
 export function validateBalance(balance: string): void {
-  if (!isValidBalanceString(balance)) {
+  try {
+    balanceStringSchema.parse(balance)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid balance: ${error.message}`)
+    }
     throw new Error('balance must be a valid number string')
   }
 }
