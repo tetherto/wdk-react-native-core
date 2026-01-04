@@ -33,11 +33,12 @@ export type { WdkAppProviderProps, WdkAppContextValue } from './provider/WdkAppP
 // Hooks (public API)
 export { useWorklet } from './hooks/useWorklet'
 export { useWallet } from './hooks/useWallet'
-export { useWalletSetup } from './hooks/useWalletSetup'
 export { useWdkApp } from './hooks/useWdkApp'
-export { useBalanceFetcher } from './hooks/useBalanceFetcher'
-export { useMnemonic } from './hooks/useMnemonic'
-export type { UseMnemonicReturn } from './hooks/useMnemonic'
+
+export { useWalletManager } from './hooks/useWalletManager'
+export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManager'
+export { useBalance, useBalancesForWallet, useBalancesForWallets, useRefreshBalance, balanceQueryKeys } from './hooks/useBalance'
+export type { AccountInfo } from './store/walletStore'
 
 // Validation Utilities (for validating configs before use)
 export { 
@@ -47,6 +48,22 @@ export {
   validateAccountIndex,
   validateTokenAddress,
 } from './utils/validation'
+
+// Zod Schemas (for runtime validation)
+export {
+  networkConfigSchema,
+  networkConfigsSchema,
+  tokenConfigSchema,
+  tokenConfigsSchema,
+  walletAddressesSchema,
+  walletBalancesSchema,
+  accountIndexSchema,
+  networkNameSchema,
+  balanceStringSchema,
+  ethereumAddressSchema,
+  sparkAddressSchema,
+  addressSchema,
+} from './utils/schemas'
 
 // Type Guards (for runtime type checking)
 export { 
@@ -63,6 +80,7 @@ export { AddressService } from './services/addressService'
 export { AccountService } from './services/accountService'
 export { BalanceService } from './services/balanceService'
 export { WalletSetupService } from './services/walletSetupService'
+export { WalletSwitchingService } from './services/walletSwitchingService'
 
 // Utility Functions
 export { validateMnemonic } from './utils/mnemonicUtils'
@@ -72,4 +90,23 @@ export { normalizeError, getErrorMessage, isErrorType, createContextualError } f
 // Result Type (for error handling patterns)
 export type { Result } from './utils/result'
 export { ok, err, toResult, toResultSync } from './utils/result'
+
+// Initialization State Machine
+export { 
+  InitializationStatus, 
+  AppStatus,
+  isErrorStatus, 
+  isReadyStatus, 
+  isInProgressStatus,
+  isAppReadyStatus,
+  isAppInProgressStatus,
+  hasWorkletStarted,
+  canLoadWallet,
+  hasWorkletStartedApp,
+  canLoadWalletApp,
+  getStatusMessage,
+  getAppStatusMessage,
+  getWorkletStatus,
+  getCombinedStatus
+} from './utils/initializationState'
 

@@ -44,6 +44,7 @@ describe('AddressService', () => {
       getState: jest.fn(() => ({
         addresses: {},
         walletLoading: {},
+        activeWalletId: 'test-wallet-1',
       })),
       setState: jest.fn(),
     }
@@ -83,9 +84,10 @@ describe('AddressService', () => {
             const prevState = {
               addresses: {},
               walletLoading: {},
+              activeWalletId: 'test-wallet-1',
             }
             const newState = stateUpdater(prevState)
-            return newState.addresses?.ethereum?.[0] === mockAddress
+            return newState.addresses?.['test-wallet-1']?.ethereum?.[0] === mockAddress
           }
           return false
         }
@@ -97,11 +99,14 @@ describe('AddressService', () => {
       const cachedAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: {
-            0: cachedAddress,
+          'test-wallet-1': {
+            ethereum: {
+              0: cachedAddress,
+            },
           },
         },
         walletLoading: {},
+        activeWalletId: 'test-wallet-1',
       }))
 
       const address = await AddressService.getAddress('ethereum', 0)
@@ -167,6 +172,11 @@ describe('AddressService', () => {
         isInitialized: false,
         hrpc: null,
       }))
+      mockWalletStore.getState = jest.fn(() => ({
+        addresses: {},
+        walletLoading: {},
+        activeWalletId: 'test-wallet-1',
+      }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
         'WDK not initialized'
@@ -177,6 +187,11 @@ describe('AddressService', () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: true,
         hrpc: null,
+      }))
+      mockWalletStore.getState = jest.fn(() => ({
+        addresses: {},
+        walletLoading: {},
+        activeWalletId: 'test-wallet-1',
       }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
@@ -194,21 +209,26 @@ describe('AddressService', () => {
       mockHRPC.callMethod.mockResolvedValue({
         result: null,
       })
+      mockWalletStore.getState = jest.fn(() => ({
+        addresses: {},
+        walletLoading: {},
+        activeWalletId: 'test-wallet-1',
+      }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
-        'Failed to get address from worklet'
+        /Failed to get address|Expected string/
       )
     })
 
     it('should validate network name', async () => {
       await expect(AddressService.getAddress('', 0)).rejects.toThrow(
-        'network must be a non-empty string containing only alphanumeric characters, hyphens, and underscores'
+        /network.*non-empty|Network name must contain only|String must contain at least 1 character/
       )
     })
 
     it('should validate account index', async () => {
       await expect(AddressService.getAddress('ethereum', -1)).rejects.toThrow(
-        'accountIndex must be a non-negative integer'
+        /accountIndex.*non-negative|Number must be greater than or equal to 0/
       )
     })
 
@@ -256,6 +276,7 @@ describe('AddressService', () => {
         balanceLoading: {},
         lastBalanceUpdate: {},
         balances: {},
+        activeWalletId: 'test-wallet-1',
       }
       let loadingWasSetToTrue = false
       let loadingWasSetToFalse = false
@@ -270,12 +291,14 @@ describe('AddressService', () => {
             balanceLoading: currentState.balanceLoading || {},
             lastBalanceUpdate: currentState.lastBalanceUpdate || {},
             balances: currentState.balances || {},
+            activeWalletId: currentState.activeWalletId || 'test-wallet-1',
           }
           currentState = { ...prevState, ...stateUpdater(prevState) }
-          if (currentState.walletLoading?.['ethereum-0'] === true) {
+          // Loading state is now per-wallet: walletLoading[walletId][loadingKey]
+          if (currentState.walletLoading?.['test-wallet-1']?.['ethereum-0'] === true) {
             loadingWasSetToTrue = true
           }
-          if (currentState.walletLoading?.['ethereum-0'] === false) {
+          if (currentState.walletLoading?.['test-wallet-1']?.['ethereum-0'] === false) {
             loadingWasSetToFalse = true
           }
         }

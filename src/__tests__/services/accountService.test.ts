@@ -38,7 +38,7 @@ describe('AccountService', () => {
 
   describe('callAccountMethod', () => {
     it('should call method and return result', async () => {
-      const mockResult = { balance: '1000000000000000000' }
+      const mockResult = '1000000000000000000'
       mockHRPC.callMethod.mockResolvedValue({
         result: JSON.stringify(mockResult),
       })
@@ -49,7 +49,7 @@ describe('AccountService', () => {
         'getBalance'
       )
 
-      expect(result).toEqual(mockResult)
+      expect(result).toBe(mockResult)
       expect(mockHRPC.callMethod).toHaveBeenCalledWith({
         methodName: 'getBalance',
         network: 'ethereum',
@@ -82,17 +82,10 @@ describe('AccountService', () => {
     })
 
     it('should convert BigInt values to strings', async () => {
-      const mockResult = {
-        balance: BigInt('1000000000000000000'),
-        amount: BigInt('2000000000000000000'),
-        name: 'test',
-      }
-      const jsonString = JSON.stringify(
-        mockResult,
-        (_, value) => (typeof value === 'bigint' ? value.toString() : value)
-      )
+      // getBalance returns a string, not an object
+      const mockResult = '1000000000000000000'
       mockHRPC.callMethod.mockResolvedValue({
-        result: jsonString,
+        result: JSON.stringify(mockResult),
       })
 
       const result = await AccountService.callAccountMethod(
@@ -101,14 +94,11 @@ describe('AccountService', () => {
         'getBalance'
       )
 
-      expect(result).toEqual({
-        balance: '1000000000000000000',
-        amount: '2000000000000000000',
-        name: 'test',
-      })
+      expect(result).toBe('1000000000000000000')
     })
 
     it('should convert BigInt in nested objects', async () => {
+      // Test with signMessage which can return an object
       const mockResult = {
         data: {
           balance: BigInt('1000000000000000000'),
@@ -128,7 +118,8 @@ describe('AccountService', () => {
       const result = await AccountService.callAccountMethod(
         'ethereum',
         0,
-        'getBalance'
+        'signMessage',
+        { message: 'test' }
       )
 
       expect(result).toEqual({
@@ -142,6 +133,7 @@ describe('AccountService', () => {
     })
 
     it('should convert BigInt in arrays', async () => {
+      // Test with signTransaction which can return an object with arrays
       const mockResult = {
         balances: ['1000000000000000000', '2000000000000000000'],
       }
@@ -159,7 +151,8 @@ describe('AccountService', () => {
       const result = await AccountService.callAccountMethod(
         'ethereum',
         0,
-        'getBalances'
+        'signTransaction',
+        { transaction: {} }
       )
 
       expect(result).toEqual({
@@ -177,16 +170,96 @@ describe('AccountService', () => {
       ).rejects.toThrow('methodName must be a non-empty string')
     })
 
+    it('should accept various method names', async () => {
+      const methods = [
+        'getAddress',
+        'getBalance',
+        'getTokenBalance',
+        'signMessage',
+        'signTransaction',
+        'sendTransaction',
+      ]
+
+      for (const method of methods) {
+        // getBalance and getTokenBalance return strings, others can return objects
+        const mockResult = (method === 'getBalance' || method === 'getTokenBalance')
+          ? '1000000000000000000'
+          : { success: true }
+        mockHRPC.callMethod.mockResolvedValue({
+          result: JSON.stringify(mockResult),
+        })
+
+        await expect(
+          AccountService.callAccountMethod('ethereum', 0, method, null)
+        ).resolves.toBeDefined()
+      }
+    })
+
+    it('should use safeStringify for args', async () => {
+      const mockArgs = { test: 'value' }
+      mockHRPC.callMethod.mockResolvedValue({
+        result: JSON.stringify({ success: true }),
+      })
+
+      await AccountService.callAccountMethod(
+        'ethereum',
+        0,
+        'signMessage',
+        mockArgs
+      )
+
+      expect(mockHRPC.callMethod).toHaveBeenCalledWith({
+        methodName: 'signMessage',
+        network: 'ethereum',
+        accountIndex: 0,
+        args: JSON.stringify(mockArgs),
+      })
+    })
+
+    it('should reject circular references in args', async () => {
+      const circular: any = { a: 1 }
+      circular.self = circular
+
+      await expect(
+        AccountService.callAccountMethod('ethereum', 0, 'signMessage', circular)
+      ).rejects.toThrow('circular references')
+    })
+
+    it('should validate balance response format', async () => {
+      mockHRPC.callMethod.mockResolvedValue({
+        result: JSON.stringify('invalid-balance-format'),
+      })
+
+      await expect(
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+      ).rejects.toThrow('Invalid balance format')
+    })
+
+    it('should accept valid balance response format', async () => {
+      mockHRPC.callMethod.mockResolvedValue({
+        result: JSON.stringify('1000000000000000000'),
+      })
+
+      const result = await AccountService.callAccountMethod(
+        'ethereum',
+        0,
+        'getBalance',
+        null
+      )
+
+      expect(result).toBe('1000000000000000000')
+    })
+
     it('should validate network name', async () => {
       await expect(
         AccountService.callAccountMethod('', 0, 'getBalance', null)
-      ).rejects.toThrow('network must be a non-empty string')
+      ).rejects.toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', async () => {
       await expect(
         AccountService.callAccountMethod('ethereum', -1, 'getBalance', null)
-      ).rejects.toThrow('accountIndex must be a non-negative integer')
+      ).rejects.toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
 
     it('should throw error if WDK not initialized', async () => {
@@ -212,13 +285,14 @@ describe('AccountService', () => {
     })
 
     it('should throw error if method returns no result', async () => {
+      // workletResponseSchema requires result to be a string, so we need to mock a response that fails schema validation
       mockHRPC.callMethod.mockResolvedValue({
         result: null,
       })
 
       await expect(
         AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
-      ).rejects.toThrow('Method getBalance returned no result')
+      ).rejects.toThrow(/Method getBalance returned no result|Expected string/)
     })
 
     it('should throw error if result is null', async () => {

@@ -122,12 +122,14 @@ describe('storeHelpers', () => {
         balances: {},
       } as any
 
-      const result = updateBalanceInState(prev, 'ethereum', 0, 'native', '100')
+      const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
 
       expect(result.balances).toEqual({
-        ethereum: {
-          0: {
-            native: '100',
+        'wallet-1': {
+          ethereum: {
+            0: {
+              native: '100',
+            },
           },
         },
       })
@@ -136,59 +138,67 @@ describe('storeHelpers', () => {
     it('should update balance in existing state', () => {
       const prev = {
         balances: {
-          ethereum: {
-            0: {
-              native: '50',
+          'wallet-1': {
+            ethereum: {
+              0: {
+                native: '50',
+              },
             },
           },
         },
       } as any
 
-      const result = updateBalanceInState(prev, 'ethereum', 0, 'native', '100')
+      const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
 
-      expect(result.balances?.ethereum?.[0]?.native).toBe('100')
+      expect(result.balances?.['wallet-1']?.ethereum?.[0]?.native).toBe('100')
     })
 
     it('should add new network balance', () => {
       const prev = {
         balances: {
-          polygon: {
-            0: {
-              native: '50',
+          'wallet-1': {
+            polygon: {
+              0: {
+                native: '50',
+              },
             },
           },
         },
       } as any
 
-      const result = updateBalanceInState(prev, 'ethereum', 0, 'native', '100')
+      const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
 
-      expect(result.balances?.ethereum?.[0]?.native).toBe('100')
-      expect(result.balances?.polygon?.[0]?.native).toBe('50')
+      expect(result.balances?.['wallet-1']?.ethereum?.[0]?.native).toBe('100')
+      expect(result.balances?.['wallet-1']?.polygon?.[0]?.native).toBe('50')
     })
 
     it('should add new account balance', () => {
       const prev = {
         balances: {
-          ethereum: {
-            0: {
-              native: '50',
+          'wallet-1': {
+            ethereum: {
+              0: {
+                native: '50',
+              },
             },
           },
         },
       } as any
 
-      const result = updateBalanceInState(prev, 'ethereum', 1, 'native', '200')
+      const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 1, 'native', '200')
 
-      expect(result.balances?.ethereum?.[0]?.native).toBe('50')
-      expect(result.balances?.ethereum?.[1]?.native).toBe('200')
+      expect(result.balances?.['wallet-1']?.ethereum?.[0]?.native).toBe('50')
+      expect(result.balances?.['wallet-1']?.ethereum?.[1]?.native).toBe('200')
     })
 
     it('should add token balance', () => {
       const prev = {
         balances: {
-          ethereum: {
-            0: {
-              native: '50',
+          'wallet-1': {
+            ethereum: {
+              0: {
+                native: '50',
+              },
             },
           },
         },
@@ -196,14 +206,15 @@ describe('storeHelpers', () => {
 
       const result = updateBalanceInState(
         prev,
+        'wallet-1',
         'ethereum',
         0,
         '0x123',
         '1000'
       )
 
-      expect(result.balances?.ethereum?.[0]?.native).toBe('50')
-      expect(result.balances?.ethereum?.[0]?.['0x123']).toBe('1000')
+      expect(result.balances?.['wallet-1']?.ethereum?.[0]?.native).toBe('50')
+      expect(result.balances?.['wallet-1']?.ethereum?.[0]?.['0x123']).toBe('1000')
     })
   })
 
@@ -215,14 +226,17 @@ describe('storeHelpers', () => {
 
       const result = updateAddressInState(
         prev,
+        'wallet-1',
         'ethereum',
         0,
         '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
 
       expect(result.addresses).toEqual({
-        ethereum: {
-          0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        'wallet-1': {
+          ethereum: {
+            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          },
         },
       })
     })
@@ -230,20 +244,23 @@ describe('storeHelpers', () => {
     it('should update address in existing state', () => {
       const prev = {
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
       } as any
 
       const result = updateAddressInState(
         prev,
+        'wallet-1',
         'ethereum',
         0,
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
 
-      expect(result.addresses?.ethereum?.[0]).toBe(
+      expect(result.addresses?.['wallet-1']?.ethereum?.[0]).toBe(
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
     })
@@ -251,23 +268,26 @@ describe('storeHelpers', () => {
     it('should add new network address', () => {
       const prev = {
         addresses: {
-          polygon: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'wallet-1': {
+            polygon: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
       } as any
 
       const result = updateAddressInState(
         prev,
+        'wallet-1',
         'ethereum',
         0,
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
 
-      expect(result.addresses?.ethereum?.[0]).toBe(
+      expect(result.addresses?.['wallet-1']?.ethereum?.[0]).toBe(
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
-      expect(result.addresses?.polygon?.[0]).toBe(
+      expect(result.addresses?.['wallet-1']?.polygon?.[0]).toBe(
         '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
     })
@@ -275,23 +295,26 @@ describe('storeHelpers', () => {
     it('should add new account address', () => {
       const prev = {
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
       } as any
 
       const result = updateAddressInState(
         prev,
+        'wallet-1',
         'ethereum',
         1,
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
 
-      expect(result.addresses?.ethereum?.[0]).toBe(
+      expect(result.addresses?.['wallet-1']?.ethereum?.[0]).toBe(
         '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
-      expect(result.addresses?.ethereum?.[1]).toBe(
+      expect(result.addresses?.['wallet-1']?.ethereum?.[1]).toBe(
         '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       )
     })

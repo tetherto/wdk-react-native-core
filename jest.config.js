@@ -30,6 +30,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@tetherto/wdk-react-native-secure-storage$': '<rootDir>/src/__mocks__/secureStorage.ts',
+    '^react$': '<rootDir>/src/__mocks__/react.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   // Ignore React Native modules if not available

@@ -14,7 +14,7 @@ import { asExtendedHRPC } from '../types/hrpc'
 import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
 import { handleServiceError } from '../utils/errorHandling'
 import { normalizeError } from '../utils/errorUtils'
-import { log, logError, logWarn } from '../utils/logger'
+import { log, logWarn } from '../utils/logger'
 import { isInitialized as isWorkletInitialized } from '../utils/storeHelpers'
 import type { NetworkConfigs } from '../types'
 import type { WorkletState } from '../store/workletStore'
@@ -180,6 +180,33 @@ export class WorkletLifecycleService {
         })
       )
     }
+  }
+
+  /**
+   * Ensure worklet is started, starting it if needed
+   * 
+   * @param networkConfigs - Network configs (required if autoStart=true)
+   * @param options - Options
+   * @param options.autoStart - If true, start worklet if not started (default: false)
+   * @throws Error if worklet not started and autoStart=false or networkConfigs not provided
+   */
+  static async ensureWorkletStarted(
+    networkConfigs?: NetworkConfigs,
+    options?: { autoStart?: boolean }
+  ): Promise<void> {
+    const store = getWorkletStore()
+    const state = store.getState()
+    
+    if (state.isWorkletStarted) {
+      return // Already started
+    }
+    
+    const autoStart = options?.autoStart ?? false
+    if (!autoStart || !networkConfigs) {
+      throw new Error('Worklet must be started before this operation')
+    }
+    
+    await this.startWorklet(networkConfigs)
   }
 
   /**
