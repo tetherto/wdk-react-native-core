@@ -305,6 +305,7 @@ export function WdkAppProvider({
   // Hooks for wallet operations
   const {
     initializeWallet,
+    hasWallet,
     error: walletManagerError,
   } = useWalletManager()
   
@@ -527,16 +528,27 @@ export function WdkAppProvider({
           hasAddresses,
         })
         
-        // Call initializeWallet to trigger biometrics and properly load the wallet
-        // This will transition state to 'checking' immediately, preventing duplicate calls
-        initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
-          .then(() => {
+        // Check if wallet already exists before deciding to create new or load existing
+        ;(async () => {
+          try {
+            const walletExists = await hasWallet(activeWalletId)
+            const shouldCreateNew = !walletExists
+            
+            log('[WdkAppProvider] Wallet existence check', {
+              activeWalletId,
+              walletExists,
+              shouldCreateNew,
+            })
+            
+            // Call initializeWallet to trigger biometrics and properly load the wallet
+            // This will transition state to 'checking' immediately, preventing duplicate calls
+            await initializeWalletRef.current({ createNew: shouldCreateNew, walletId: activeWalletId })
             log('[WdkAppProvider] Wallet initialized successfully after switch')
-          })
-          .catch((error) => {
+          } catch (error) {
             logError('[WdkAppProvider] Failed to initialize wallet after switch:', error)
             // Error will be handled by the error handling logic below
-          })
+          }
+        })()
       } else {
         // Worklet not started yet - reset to not_loaded and wait
         walletStore.setState((prev) => updateWalletLoadingState(prev, { 
@@ -569,17 +581,28 @@ export function WdkAppProvider({
         walletLoadingState: walletLoadingState.type
       })
       
-      // Call initializeWallet to trigger biometrics and properly load the wallet
-      // This will transition state to 'checking' immediately, preventing duplicate calls
-      // Then it will go through: checking -> loading -> ready
-      initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
-        .then(() => {
+      // Check if wallet already exists before deciding to create new or load existing
+      ;(async () => {
+        try {
+          const walletExists = await hasWallet(activeWalletId)
+          const shouldCreateNew = !walletExists
+          
+          log('[WdkAppProvider] Wallet existence check', {
+            activeWalletId,
+            walletExists,
+            shouldCreateNew,
+          })
+          
+          // Call initializeWallet to trigger biometrics and properly load the wallet
+          // This will transition state to 'checking' immediately, preventing duplicate calls
+          // Then it will go through: checking -> loading -> ready
+          await initializeWalletRef.current({ createNew: shouldCreateNew, walletId: activeWalletId })
           log('[WdkAppProvider] Wallet initialized successfully from cache')
-        })
-        .catch((error) => {
+        } catch (error) {
           logError('[WdkAppProvider] Failed to initialize wallet from cache:', error)
           // Error will be handled by the error handling logic below
-        })
+        }
+      })()
       
       return
     }
@@ -604,16 +627,27 @@ export function WdkAppProvider({
         walletLoadingState: walletLoadingState.type
       })
       
-      // Call initializeWallet to trigger biometrics and properly load the wallet
-      // This will transition state to 'checking' immediately, preventing duplicate calls
-      initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
-        .then(() => {
+      // Check if wallet already exists before deciding to create new or load existing
+      ;(async () => {
+        try {
+          const walletExists = await hasWallet(activeWalletId)
+          const shouldCreateNew = !walletExists
+          
+          log('[WdkAppProvider] Wallet existence check', {
+            activeWalletId,
+            walletExists,
+            shouldCreateNew,
+          })
+          
+          // Call initializeWallet to trigger biometrics and properly load the wallet
+          // This will transition state to 'checking' immediately, preventing duplicate calls
+          await initializeWalletRef.current({ createNew: shouldCreateNew, walletId: activeWalletId })
           log('[WdkAppProvider] Wallet initialized successfully')
-        })
-        .catch((error) => {
+        } catch (error) {
           logError('[WdkAppProvider] Failed to initialize wallet:', error)
           // Error will be handled by the error handling logic below
-        })
+        }
+      })()
       
       return
     }
