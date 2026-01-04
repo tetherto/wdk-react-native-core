@@ -513,6 +513,15 @@ export function WdkAppProvider({
       
       // When switching to a wallet, trigger proper initialization with biometrics
       if (isWorkletStarted) {
+        // Skip if wallet is already initializing to prevent duplicate biometric prompts
+        if (isWalletInitializing) {
+          log('[WdkAppProvider] Skipping wallet switch initialization - already in progress', {
+            activeWalletId,
+            walletLoadingState: walletLoadingState.type,
+          })
+          return
+        }
+        
         log('[WdkAppProvider] Wallet switch detected - triggering initialization', { 
           activeWalletId,
           hasAddresses,
@@ -520,7 +529,7 @@ export function WdkAppProvider({
         
         // Call initializeWallet to trigger biometrics and properly load the wallet
         // This will transition state to 'checking' immediately, preventing duplicate calls
-        initializeWalletRef.current({ createNew: false, walletId: activeWalletId })
+        initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
           .then(() => {
             log('[WdkAppProvider] Wallet initialized successfully after switch')
           })
@@ -543,6 +552,15 @@ export function WdkAppProvider({
     // We need to trigger proper initialization with biometrics
     // Only trigger if we're not already in the process of loading (checking/loading state)
     if (walletLoadingState.type === 'not_loaded' && hasAddresses && activeWalletId && isWorkletStarted) {
+      // Skip if wallet is already initializing to prevent duplicate biometric prompts
+      if (isWalletInitializing) {
+        log('[WdkAppProvider] Skipping cached wallet initialization - already in progress', {
+          activeWalletId,
+          walletLoadingState: walletLoadingState.type,
+        })
+        return
+      }
+      
       log('[WdkAppProvider] Cached wallet detected on restart - triggering initialization with biometrics', { 
         activeWalletId,
         hasAddresses,
@@ -554,7 +572,7 @@ export function WdkAppProvider({
       // Call initializeWallet to trigger biometrics and properly load the wallet
       // This will transition state to 'checking' immediately, preventing duplicate calls
       // Then it will go through: checking -> loading -> ready
-      initializeWalletRef.current({ createNew: false, walletId: activeWalletId })
+      initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
         .then(() => {
           log('[WdkAppProvider] Wallet initialized successfully from cache')
         })
@@ -570,6 +588,15 @@ export function WdkAppProvider({
     // This means the user logged in but addresses were cleared during logout
     // We need to trigger initialization to load the wallet
     if (walletLoadingState.type === 'not_loaded' && !hasAddresses && activeWalletId && isWorkletStarted) {
+      // Skip if wallet is already initializing to prevent duplicate biometric prompts
+      if (isWalletInitializing) {
+        log('[WdkAppProvider] Skipping wallet initialization - already in progress', {
+          activeWalletId,
+          walletLoadingState: walletLoadingState.type,
+        })
+        return
+      }
+      
       log('[WdkAppProvider] Active wallet detected without addresses - triggering initialization', { 
         activeWalletId,
         hasAddresses,
@@ -579,7 +606,7 @@ export function WdkAppProvider({
       
       // Call initializeWallet to trigger biometrics and properly load the wallet
       // This will transition state to 'checking' immediately, preventing duplicate calls
-      initializeWalletRef.current({ createNew: false, walletId: activeWalletId })
+      initializeWalletRef.current({ createNew: true, walletId: activeWalletId })
         .then(() => {
           log('[WdkAppProvider] Wallet initialized successfully')
         })
