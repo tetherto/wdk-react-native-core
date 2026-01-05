@@ -51,3 +51,34 @@ export const WALLET_NAME_PREFIX = 'Wallet '
  */
 export const NATIVE_TOKEN_KEY = 'native'
 
+/**
+ * Default query stale time in milliseconds
+ * 
+ * How long data is considered fresh before TanStack Query refetches it.
+ * 30 seconds provides a good balance between freshness and performance.
+ */
+export const DEFAULT_QUERY_STALE_TIME_MS = 30 * 1000
+
+/**
+ * Default query garbage collection time in milliseconds
+ * 
+ * How long unused query data is kept in cache before being garbage collected.
+ * 5 minutes provides a good balance between cache efficiency and memory usage.
+ */
+export const DEFAULT_QUERY_GC_TIME_MS = 5 * 60 * 1000
+
+/**
+ * Allowed account methods whitelist
+ * Only these methods can be called through AccountService for security
+ */
+export const ALLOWED_ACCOUNT_METHODS = [
+  'getAddress',
+  'getBalance',
+  'getTokenBalance',
+  'signMessage',
+  'signTransaction',
+  'sendTransaction',
+] as const
+
+export type AllowedAccountMethod = typeof ALLOWED_ACCOUNT_METHODS[number]
+

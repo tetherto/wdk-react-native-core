@@ -35,6 +35,7 @@ describe('walletUtils', () => {
     mockWalletStore = {
       getState: jest.fn(() => ({
         addresses: {},
+        activeWalletId: 'test-wallet-1',
       })),
     }
 
@@ -57,13 +58,16 @@ describe('walletUtils', () => {
     it('should return addresses for specific account index', () => {
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          },
-          polygon: {
-            0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'test-wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
+            polygon: {
+              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
@@ -76,11 +80,14 @@ describe('walletUtils', () => {
     it('should only return addresses for specified account index', () => {
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            1: '0x942d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'test-wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+              1: '0x942d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
@@ -93,10 +100,13 @@ describe('walletUtils', () => {
     it('should handle missing account index gracefully', () => {
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'test-wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const result = getWalletAddresses(mockWalletStore, 1)
@@ -106,11 +116,14 @@ describe('walletUtils', () => {
     it('should handle undefined network addresses', () => {
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: undefined,
-          polygon: {
-            0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'test-wallet-1': {
+            ethereum: undefined,
+            polygon: {
+              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
@@ -150,10 +163,13 @@ describe('walletUtils', () => {
     it('should create wallet store with getWalletAddresses', () => {
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {
-          ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          'test-wallet-1': {
+            ethereum: {
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const store = createBaseWalletStore()

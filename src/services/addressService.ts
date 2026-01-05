@@ -7,7 +7,7 @@
 
 import { getWalletStore } from '../store/walletStore'
 import { handleServiceError } from '../utils/errorHandling'
-import { requireInitialized, updateAddressInState } from '../utils/storeHelpers'
+import { requireInitialized, resolveWalletId, updateAddressInState } from '../utils/storeHelpers'
 import { isValidAddress } from '../utils/typeGuards'
 import { validateAccountIndex, validateNetworkName } from '../utils/validation'
 
@@ -20,10 +20,15 @@ export class AddressService {
   /**
    * Get address for a specific network and account index
    * Caches the address in walletStore for future use
+   * 
+   * @param network - Network name
+   * @param accountIndex - Account index (default: 0)
+   * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
   static async getAddress(
     network: string,
-    accountIndex = 0
+    accountIndex = 0,
+    walletId?: string
   ): Promise<string> {
     // Validate inputs
     validateNetworkName(network)
@@ -32,12 +37,15 @@ export class AddressService {
     const walletStore = getWalletStore()
     const walletState = walletStore.getState()
 
-    // Check cache first
-    const cachedAddress = walletState.addresses[network]?.[accountIndex]
+    // Resolve walletId from parameter or store
+    const targetWalletId = resolveWalletId(walletId)
+
+    // Check cache first (per-wallet)
+    const cachedAddress = walletState.addresses[targetWalletId]?.[network]?.[accountIndex]
     if (cachedAddress) {
       // Validate cached address format
       if (!isValidAddress(cachedAddress)) {
-        throw new Error(`Cached address for ${network}:${accountIndex} has invalid format`)
+        throw new Error(`Cached address for ${targetWalletId}:${network}:${accountIndex} has invalid format`)
       }
       return cachedAddress
     }
@@ -48,8 +56,15 @@ export class AddressService {
     const loadingKey = `${network}-${accountIndex}`
     
     try {
+      // Update loading state (per-wallet)
       walletStore.setState((prev) => ({
-        walletLoading: { ...prev.walletLoading, [loadingKey]: true },
+        walletLoading: {
+          ...prev.walletLoading,
+          [targetWalletId]: {
+            ...(prev.walletLoading[targetWalletId] || {}),
+            [loadingKey]: true,
+          },
+        },
       }))
 
       // Call getAddress method on the account
@@ -79,18 +94,31 @@ export class AddressService {
         throw new Error(`Failed to parse address from worklet response: ${error instanceof Error ? error.message : String(error)}`)
       }
 
-      // Cache the address using helper
+      // Cache the address using helper (per-wallet)
       walletStore.setState((prev) => ({
-        ...updateAddressInState(prev, network, accountIndex, address),
-        walletLoading: { ...prev.walletLoading, [loadingKey]: false },
+        ...updateAddressInState(prev, targetWalletId, network, accountIndex, address),
+        walletLoading: {
+          ...prev.walletLoading,
+          [targetWalletId]: {
+            ...(prev.walletLoading[targetWalletId] || {}),
+            [loadingKey]: false,
+          },
+        },
       }))
 
       return address
     } catch (error) {
+      // Update loading state on error (per-wallet)
       walletStore.setState((prev) => ({
-        walletLoading: { ...prev.walletLoading, [loadingKey]: false },
+        walletLoading: {
+          ...prev.walletLoading,
+          [targetWalletId]: {
+            ...(prev.walletLoading[targetWalletId] || {}),
+            [loadingKey]: false,
+          },
+        },
       }))
-      handleServiceError(error, 'AddressService', 'getAddress', { network, accountIndex })
+      handleServiceError(error, 'AddressService', 'getAddress', { network, accountIndex, walletId: targetWalletId })
     }
   }
 }

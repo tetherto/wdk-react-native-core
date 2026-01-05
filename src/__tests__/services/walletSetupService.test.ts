@@ -35,8 +35,13 @@ jest.mock('../../store/workletStore', () => ({
     getState: jest.fn(() => ({
       isWorkletStarted: true,
       isInitialized: false,
+      credentialsCache: {},
     })),
+    setState: jest.fn(),
   })),
+  getCachedCredentials: jest.fn(() => null),
+  setCachedCredentials: jest.fn(),
+  clearCredentialsCache: jest.fn(),
 }))
 
 describe('WalletSetupService', () => {
@@ -297,7 +302,7 @@ describe('WalletSetupService', () => {
       const identifier = 'user@example.com'
       await WalletSetupService.initializeWallet(
         mockNetworkConfigs,
-        { createNew: true, identifier }
+        { createNew: true, walletId: identifier }
       )
 
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
@@ -322,7 +327,7 @@ describe('WalletSetupService', () => {
 
       await WalletSetupService.initializeWallet(
         mockNetworkConfigs,
-        { createNew: false, identifier }
+        { createNew: false, walletId: identifier }
       )
 
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(identifier)

@@ -55,14 +55,16 @@ describe('walletStore', () => {
       
       store.setState({
         addresses: {
-          ethereum: {
-            0: '0x1234567890123456789012345678901234567890',
+          'wallet-1': {
+            ethereum: {
+              0: '0x1234567890123456789012345678901234567890',
+            },
           },
         },
       })
 
       const state = store.getState()
-      expect(state.addresses.ethereum?.[0]).toBe('0x1234567890123456789012345678901234567890')
+      expect(state.addresses['wallet-1']?.ethereum?.[0]).toBe('0x1234567890123456789012345678901234567890')
     })
 
     it('should allow partial state updates', () => {
@@ -70,25 +72,29 @@ describe('walletStore', () => {
       
       store.setState({
         addresses: {
-          ethereum: {
-            0: '0x1234567890123456789012345678901234567890',
+          'wallet-1': {
+            ethereum: {
+              0: '0x1234567890123456789012345678901234567890',
+            },
           },
         },
       })
 
       store.setState({
         balances: {
-          ethereum: {
-            0: {
-              '0x0000000000000000000000000000000000000000': '1000000000000000000',
+          'wallet-1': {
+            ethereum: {
+              0: {
+                '0x0000000000000000000000000000000000000000': '1000000000000000000',
+              },
             },
           },
         },
       })
 
       const state = store.getState()
-      expect(state.addresses.ethereum?.[0]).toBe('0x1234567890123456789012345678901234567890')
-      expect(state.balances.ethereum?.[0]?.['0x0000000000000000000000000000000000000000']).toBe('1000000000000000000')
+      expect(state.addresses['wallet-1']?.ethereum?.[0]).toBe('0x1234567890123456789012345678901234567890')
+      expect(state.balances['wallet-1']?.ethereum?.[0]?.['0x0000000000000000000000000000000000000000']).toBe('1000000000000000000')
     })
   })
 })

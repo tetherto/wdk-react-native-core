@@ -130,7 +130,7 @@ async function deriveKeyFromAccount(accountIdentifier: AccountIdentifier): Promi
   // SHA-256 produces 64 hex characters (32 bytes)
   // Convert hex to bytes, then to base64
   const hexBytes = hashHex.match(/.{1,2}/g)
-  if (!hexBytes || hexBytes.length !== 64) {
+  if (!hexBytes || hashHex.length !== 64) {
     throw new Error(`Invalid SHA-256 hash format: expected 64 hex characters, got ${hashHex.length}`)
   }
   const hashBytes = new Uint8Array(

@@ -16,17 +16,16 @@ import type { WorkletStore } from '../store/workletStore'
  * 
  * For wallet-specific operations (addresses, accounts), use `useWallet()` hook instead.
  * 
+ * The worklet automatically starts when `WdkAppProvider` loads.
+ * 
  * @example
  * ```tsx
- * const { hrpc, isInitialized, isLoading, startWorklet, initializeWDK, generateEntropyAndEncrypt, error } = useWorklet()
+ * const { hrpc, isInitialized, isLoading, initializeWDK, generateEntropyAndEncrypt, error } = useWorklet()
  * 
  * useEffect(() => {
- *   if (!isInitialized && !isLoading) {
- *     // Step 1: Start worklet
- *     await startWorklet(networkConfigs)
- *     // Step 2: Get encrypted seed from secure storage (or generate for new wallet)
+ *   if (isInitialized && !isLoading) {
+ *     // Worklet is already started by WdkAppProvider
  *     const { encryptionKey, encryptedSeedBuffer } = await generateEntropyAndEncrypt(12)
- *     // Step 3: Initialize WDK with encrypted seed (NEVER use plain seed phrase)
  *     await initializeWDK({ encryptionKey, encryptedSeed: encryptedSeedBuffer })
  *   }
  * }, [isInitialized, isLoading])
@@ -46,7 +45,6 @@ export interface UseWorkletResult {
   encryptionKey: string | null
   networkConfigs: NetworkConfigs | null
   // Actions
-  startWorklet: (networkConfigs: NetworkConfigs) => Promise<void>
   initializeWDK: (options: { encryptionKey: string; encryptedSeed: string }) => Promise<void>
   generateEntropyAndEncrypt: (wordCount?: 12 | 24) => Promise<{
     encryptionKey: string
@@ -84,9 +82,7 @@ const boundActions = {
 export function useWorklet(): UseWorkletResult {
   const store = getWorkletStore()
 
-  // Subscribe to state changes using consolidated selector to minimize re-renders
-  // Use useShallow to prevent infinite loops when selector returns new object
-  // useShallow is a hook and must be called at the top level (not inside useMemo)
+  // Subscribe to state changes
   const selector = useShallow((state: WorkletStore) => ({
     isWorkletStarted: state.isWorkletStarted,
     isInitialized: state.isInitialized,
@@ -102,10 +98,7 @@ export function useWorklet(): UseWorkletResult {
   }))
   const workletState = store(selector)
 
-  // Actions are provided by WorkletLifecycleService (static methods, stable references)
-  // State values are from Zustand selectors and are already reactive
   return {
-    // State (reactive)
     isWorkletStarted: workletState.isWorkletStarted,
     isInitialized: workletState.isInitialized,
     isLoading: workletState.isLoading,
@@ -117,8 +110,13 @@ export function useWorklet(): UseWorkletResult {
     encryptedSeed: workletState.encryptedSeed,
     encryptionKey: workletState.encryptionKey,
     networkConfigs: workletState.networkConfigs,
-    // Actions (static methods, stable references)
-    ...boundActions,
+    initializeWDK: WorkletLifecycleService.initializeWDK,
+    generateEntropyAndEncrypt: WorkletLifecycleService.generateEntropyAndEncrypt,
+    getMnemonicFromEntropy: WorkletLifecycleService.getMnemonicFromEntropy,
+    getSeedAndEntropyFromMnemonic: WorkletLifecycleService.getSeedAndEntropyFromMnemonic,
+    initializeWorklet: WorkletLifecycleService.initializeWorklet,
+    reset: WorkletLifecycleService.reset,
+    clearError: WorkletLifecycleService.clearError,
   }
 }
 

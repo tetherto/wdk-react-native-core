@@ -97,6 +97,14 @@ export interface Wallet {
 export type WalletAddresses = Record<string, Record<number, string>>
 
 /**
+ * Wallet Addresses by Wallet Identifier
+ * 
+ * Maps walletId -> network -> accountIndex -> address
+ * Structure: { [walletId]: { [network]: { [accountIndex]: address } } }
+ */
+export type WalletAddressesByWallet = Record<string, WalletAddresses>
+
+/**
  * Wallet Balances
  * 
  * Maps network -> accountIndex -> tokenAddress -> balance
@@ -104,6 +112,14 @@ export type WalletAddresses = Record<string, Record<number, string>>
  * Note: balance is stored as a string to handle BigInt values
  */
 export type WalletBalances = Record<string, Record<number, Record<string, string>>>
+
+/**
+ * Wallet Balances by Wallet Identifier
+ * 
+ * Maps walletId -> network -> accountIndex -> tokenAddress -> balance
+ * Structure: { [walletId]: { [network]: { [accountIndex]: { [tokenAddress]: balance } } } }
+ */
+export type WalletBalancesByWallet = Record<string, WalletBalances>
 
 /**
  * Balance Loading States

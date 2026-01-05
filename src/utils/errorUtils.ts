@@ -1,6 +1,45 @@
 /**
  * Error utility functions for consistent error handling
+ * 
+ * ## Usage Guidelines
+ * 
+ * **For Services**: Use `handleServiceError()` from `errorHandling.ts` - this provides
+ * consistent normalization and logging for service-layer errors. Errors are NOT sanitized
+ * (sanitizeLevel: false) because services log internally and need full error details.
+ * 
+ * **For Hooks/UI**: Use `normalizeError()` directly with appropriate sanitization level.
+ * Hooks should sanitize errors before exposing them to UI components to prevent information leakage.
+ * 
+ * @example Service usage (use handleServiceError instead):
+ * ```typescript
+ * import { handleServiceError } from './errorHandling'
+ * try {
+ *   await someOperation()
+ * } catch (error) {
+ *   handleServiceError(error, 'MyService', 'operationName', { context })
+ * }
+ * ```
+ * 
+ * @example Hook/UI usage:
+ * ```typescript
+ * import { normalizeError } from './errorUtils'
+ * try {
+ *   await someOperation()
+ * } catch (error) {
+ *   const normalized = normalizeError(error, true, { component: 'MyHook', operation: 'fetchData' })
+ *   setError(normalized.message)
+ * }
+ * ```
  */
+
+/**
+ * Sanitization levels for error messages
+ */
+export enum SanitizationLevel {
+  NONE = 'none',           // No sanitization (internal debugging only)
+  DEVELOPMENT = 'dev',     // Mask sensitive strings but show structure
+  PRODUCTION = 'prod',     // Aggressive sanitization
+}
 
 /**
  * Context-aware sensitive patterns
@@ -143,17 +182,19 @@ export function sanitizeErrorMessage(
 /**
  * Normalize error to Error instance
  * Converts any error-like value to a proper Error object
- * Optionally sanitizes the error message to prevent information leakage
+ * Always sanitizes the error message (with different levels) to prevent information leakage
  * 
  * @param error - Error to normalize
- * @param sanitize - Whether to sanitize the error message (default: true in production)
+ * @param sanitizeLevel - Sanitization level or boolean (default: PRODUCTION in production, DEVELOPMENT in dev)
  * @param context - Optional context about where the error occurred
  * @returns Normalized Error instance
  */
 export function normalizeError(
   error: unknown,
-  sanitize = process.env.NODE_ENV === 'production',
-  context?: { operation?: string; component?: string }
+  sanitizeLevel: SanitizationLevel | boolean = process.env.NODE_ENV === 'production' 
+    ? SanitizationLevel.PRODUCTION 
+    : SanitizationLevel.DEVELOPMENT,
+  context?: { operation?: string; component?: string; [key: string]: unknown }
 ): Error {
   let errorMessage: string
 
@@ -167,11 +208,15 @@ export function normalizeError(
     errorMessage = String(error)
   }
 
-  // Sanitize error message if requested
-  if (sanitize) {
+  // Always sanitize, but with different levels
+  const level = typeof sanitizeLevel === 'boolean' 
+    ? (sanitizeLevel ? SanitizationLevel.PRODUCTION : SanitizationLevel.NONE)
+    : sanitizeLevel
+
+  if (level !== SanitizationLevel.NONE) {
     errorMessage = sanitizeErrorMessage(
       errorMessage,
-      process.env.NODE_ENV === 'development',
+      level === SanitizationLevel.DEVELOPMENT,
       context
     )
   }
@@ -181,11 +226,11 @@ export function normalizeError(
   // Preserve error name and stack if available
   if (error instanceof Error) {
     normalizedError.name = error.name
-    // Sanitize stack trace in production
+    // Sanitize stack trace based on level
     if (error.stack) {
-      if (sanitize) {
+      if (level !== SanitizationLevel.NONE) {
         // Mask file paths and sensitive data in stack traces
-        normalizedError.stack = sanitizeErrorMessage(error.stack, false, context)
+        normalizedError.stack = sanitizeErrorMessage(error.stack, level === SanitizationLevel.DEVELOPMENT, context)
       } else {
         normalizedError.stack = error.stack
       }

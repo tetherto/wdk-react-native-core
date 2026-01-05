@@ -24,6 +24,7 @@ describe('BalanceService', () => {
         balances: {},
         balanceLoading: {},
         lastBalanceUpdate: {},
+        activeWalletId: 'test-wallet-1',
       })),
       setState: jest.fn(),
     }
@@ -38,10 +39,10 @@ describe('BalanceService', () => {
 
       expect(mockWalletStore.setState).toHaveBeenCalled()
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
-      const prevState = { balances: {} }
+      const prevState = { balances: {}, activeWalletId: 'test-wallet-1' }
       const newState = setStateCall(prevState)
 
-      expect(newState.balances.ethereum[0].native).toBe('1000000000000000000')
+      expect(newState.balances['test-wallet-1']?.ethereum?.[0]?.native).toBe('1000000000000000000')
     })
 
     it('should update token balance', () => {
@@ -54,11 +55,11 @@ describe('BalanceService', () => {
 
       expect(mockWalletStore.setState).toHaveBeenCalled()
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
-      const prevState = { balances: {} }
+      const prevState = { balances: {}, activeWalletId: 'test-wallet-1' }
       const newState = setStateCall(prevState)
 
       const tokenKey = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-      expect(newState.balances?.ethereum?.[0]?.[tokenKey]).toBe(
+      expect(newState.balances?.['test-wallet-1']?.ethereum?.[0]?.[tokenKey]).toBe(
         '2000000000000000000'
       )
     })
@@ -66,12 +67,15 @@ describe('BalanceService', () => {
     it('should preserve existing balances', () => {
       const prevState = {
         balances: {
-          ethereum: {
-            0: {
-              native: '1000000000000000000',
+          'test-wallet-1': {
+            ethereum: {
+              0: {
+                native: '1000000000000000000',
+              },
             },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }
 
       BalanceService.updateBalance(0, 'ethereum', '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', '2000000000000000000')
@@ -79,8 +83,8 @@ describe('BalanceService', () => {
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
       const newState = setStateCall(prevState)
 
-      expect(newState.balances.ethereum[0].native).toBe('1000000000000000000')
-      expect(newState.balances.ethereum[0]['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0']).toBe(
+      expect(newState.balances['test-wallet-1']?.ethereum?.[0]?.native).toBe('1000000000000000000')
+      expect(newState.balances['test-wallet-1']?.ethereum?.[0]?.['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0']).toBe(
         '2000000000000000000'
       )
     })
@@ -88,19 +92,19 @@ describe('BalanceService', () => {
     it('should validate network name', () => {
       expect(() => {
         BalanceService.updateBalance(0, '', null, '100')
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.updateBalance(-1, 'ethereum', null, '100')
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
 
     it('should validate balance', () => {
       expect(() => {
         BalanceService.updateBalance(0, 'ethereum', null, '')
-      }).toThrow('balance must be a valid number string')
+      }).toThrow(/balance.*valid number|Balance must be a valid number string/)
     })
   })
 
@@ -108,12 +112,15 @@ describe('BalanceService', () => {
     it('should get native balance', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balances: {
-          ethereum: {
-            0: {
-              native: '1000000000000000000',
+          'test-wallet-1': {
+            ethereum: {
+              0: {
+                native: '1000000000000000000',
+              },
             },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const balance = BalanceService.getBalance(0, 'ethereum', null)
@@ -123,13 +130,16 @@ describe('BalanceService', () => {
     it('should get token balance', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balances: {
-          ethereum: {
-            0: {
-              native: '1000000000000000000',
-              '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0': '2000000000000000000',
+          'test-wallet-1': {
+            ethereum: {
+              0: {
+                native: '1000000000000000000',
+                '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0': '2000000000000000000',
+              },
             },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const balance = BalanceService.getBalance(0, 'ethereum', '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0')
@@ -139,6 +149,7 @@ describe('BalanceService', () => {
     it('should return null if balance not found', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balances: {},
+        activeWalletId: 'test-wallet-1',
       }))
 
       const balance = BalanceService.getBalance(0, 'ethereum', null)
@@ -148,13 +159,13 @@ describe('BalanceService', () => {
     it('should validate network name', () => {
       expect(() => {
         BalanceService.getBalance(0, '', null)
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getBalance(-1, 'ethereum', null)
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 
@@ -162,13 +173,16 @@ describe('BalanceService', () => {
     it('should get all balances for wallet', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balances: {
-          ethereum: {
-            0: {
-              native: '1000000000000000000',
-              '0x123': '2000000000000000000',
+          'test-wallet-1': {
+            ethereum: {
+              0: {
+                native: '1000000000000000000',
+                '0x123': '2000000000000000000',
+              },
             },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const balances = BalanceService.getBalancesForWallet(0, 'ethereum')
@@ -181,6 +195,7 @@ describe('BalanceService', () => {
     it('should return null if no balances found', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balances: {},
+        activeWalletId: 'test-wallet-1',
       }))
 
       const balances = BalanceService.getBalancesForWallet(0, 'ethereum')
@@ -190,13 +205,13 @@ describe('BalanceService', () => {
     it('should validate network name', () => {
       expect(() => {
         BalanceService.getBalancesForWallet(0, '')
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getBalancesForWallet(-1, 'ethereum')
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 
@@ -206,17 +221,20 @@ describe('BalanceService', () => {
 
       expect(mockWalletStore.setState).toHaveBeenCalled()
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
-      const prevState = { balanceLoading: {} }
+      const prevState = { balanceLoading: {}, activeWalletId: 'test-wallet-1' }
       const newState = setStateCall(prevState)
 
-      expect(newState.balanceLoading['ethereum-0-native']).toBe(true)
+      expect(newState.balanceLoading['test-wallet-1']?.['ethereum-0-native']).toBe(true)
     })
 
     it('should set loading to false', () => {
       const prevState = {
         balanceLoading: {
-          'ethereum-0-native': true,
+          'test-wallet-1': {
+            'ethereum-0-native': true,
+          },
         },
+        activeWalletId: 'test-wallet-1',
       }
 
       BalanceService.setBalanceLoading('ethereum', 0, null, false)
@@ -224,29 +242,29 @@ describe('BalanceService', () => {
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
       const newState = setStateCall(prevState)
 
-      expect(newState.balanceLoading['ethereum-0-native']).toBeUndefined()
+      expect(newState.balanceLoading['test-wallet-1']?.['ethereum-0-native']).toBeUndefined()
     })
 
     it('should handle token loading state', () => {
       BalanceService.setBalanceLoading('ethereum', 0, '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', true)
 
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
-      const prevState = { balanceLoading: {} }
+      const prevState = { balanceLoading: {}, activeWalletId: 'test-wallet-1' }
       const newState = setStateCall(prevState)
 
-      expect(newState.balanceLoading['ethereum-0-0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0']).toBe(true)
+      expect(newState.balanceLoading['test-wallet-1']?.['ethereum-0-0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0']).toBe(true)
     })
 
     it('should validate network name', () => {
       expect(() => {
         BalanceService.setBalanceLoading('', 0, null, true)
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.setBalanceLoading('ethereum', -1, null, true)
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 
@@ -254,8 +272,11 @@ describe('BalanceService', () => {
     it('should return true if balance is loading', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balanceLoading: {
-          'ethereum-0-native': true,
+          'test-wallet-1': {
+            'ethereum-0-native': true,
+          },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const isLoading = BalanceService.isBalanceLoading('ethereum', 0, null)
@@ -265,6 +286,7 @@ describe('BalanceService', () => {
     it('should return false if balance is not loading', () => {
       mockWalletStore.getState = jest.fn(() => ({
         balanceLoading: {},
+        activeWalletId: 'test-wallet-1',
       }))
 
       const isLoading = BalanceService.isBalanceLoading('ethereum', 0, null)
@@ -274,13 +296,13 @@ describe('BalanceService', () => {
     it('should validate network name', () => {
       expect(() => {
         BalanceService.isBalanceLoading('', 0, null)
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.isBalanceLoading('ethereum', -1, null)
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 
@@ -292,10 +314,10 @@ describe('BalanceService', () => {
 
       expect(mockWalletStore.setState).toHaveBeenCalled()
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
-      const prevState = { lastBalanceUpdate: {} }
+      const prevState = { lastBalanceUpdate: {}, activeWalletId: 'test-wallet-1' }
       const newState = setStateCall(prevState)
 
-      const timestamp = newState.lastBalanceUpdate.ethereum[0]
+      const timestamp = newState.lastBalanceUpdate['test-wallet-1']?.ethereum?.[0]
       expect(timestamp).toBeGreaterThanOrEqual(beforeTime)
       expect(timestamp).toBeLessThanOrEqual(afterTime)
     })
@@ -303,10 +325,13 @@ describe('BalanceService', () => {
     it('should preserve existing timestamps', () => {
       const prevState = {
         lastBalanceUpdate: {
-          polygon: {
-            0: 1234567890,
+          'test-wallet-1': {
+            polygon: {
+              0: 1234567890,
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }
 
       BalanceService.updateLastBalanceUpdate('ethereum', 0)
@@ -314,20 +339,20 @@ describe('BalanceService', () => {
       const setStateCall = mockWalletStore.setState.mock.calls[0][0]
       const newState = setStateCall(prevState)
 
-      expect(newState.lastBalanceUpdate.polygon[0]).toBe(1234567890)
-      expect(newState.lastBalanceUpdate.ethereum[0]).toBeDefined()
+      expect(newState.lastBalanceUpdate['test-wallet-1']?.polygon?.[0]).toBe(1234567890)
+      expect(newState.lastBalanceUpdate['test-wallet-1']?.ethereum?.[0]).toBeDefined()
     })
 
     it('should validate network name', () => {
       expect(() => {
         BalanceService.updateLastBalanceUpdate('', 0)
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.updateLastBalanceUpdate('ethereum', -1)
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 
@@ -336,10 +361,13 @@ describe('BalanceService', () => {
       const timestamp = 1234567890
       mockWalletStore.getState = jest.fn(() => ({
         lastBalanceUpdate: {
-          ethereum: {
-            0: timestamp,
+          'test-wallet-1': {
+            ethereum: {
+              0: timestamp,
+            },
           },
         },
+        activeWalletId: 'test-wallet-1',
       }))
 
       const result = BalanceService.getLastBalanceUpdate('ethereum', 0)
@@ -358,13 +386,13 @@ describe('BalanceService', () => {
     it('should validate network name', () => {
       expect(() => {
         BalanceService.getLastBalanceUpdate('', 0)
-      }).toThrow('network must be a non-empty string')
+      }).toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getLastBalanceUpdate('ethereum', -1)
-      }).toThrow('accountIndex must be a non-negative integer')
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
   })
 

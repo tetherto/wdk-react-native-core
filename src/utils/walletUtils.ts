@@ -31,13 +31,39 @@ export function getWalletAddresses(
   const state = walletStore.getState()
   const addresses: Record<string, string> = {}
   
+  // Get active wallet ID or use all wallets
+  const activeWalletId = state.activeWalletId
+  
   // Retrieve addresses for this accountIndex from walletStore
-  Object.entries(state.addresses).forEach(([network, networkAddresses]) => {
-    const address = networkAddresses?.[accountIndex]
-    if (address) {
-      addresses[network] = address
-    }
-  })
+  // state.addresses is WalletAddressesByWallet: { [walletId]: { [network]: { [accountIndex]: address } } }
+  if (activeWalletId && state.addresses[activeWalletId]) {
+    // Use active wallet if available
+    const walletAddresses = state.addresses[activeWalletId]
+    // walletAddresses is WalletAddresses: { [network]: { [accountIndex]: address } }
+    Object.entries(walletAddresses).forEach(([network, networkAddresses]) => {
+      if (networkAddresses && typeof networkAddresses === 'object') {
+        const address = networkAddresses[accountIndex]
+        if (address) {
+          addresses[network] = address
+        }
+      }
+    })
+  } else {
+    // Fallback: iterate over all wallets (for backward compatibility or when no active wallet)
+    Object.values(state.addresses).forEach((walletAddresses) => {
+      if (walletAddresses && typeof walletAddresses === 'object') {
+        // walletAddresses is WalletAddresses: { [network]: { [accountIndex]: address } }
+        Object.entries(walletAddresses).forEach(([network, networkAddresses]) => {
+          if (networkAddresses && typeof networkAddresses === 'object') {
+            const address = networkAddresses[accountIndex]
+            if (address) {
+              addresses[network] = address
+            }
+          }
+        })
+      }
+    })
+  }
   
   return addresses
 }
