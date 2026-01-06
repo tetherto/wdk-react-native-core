@@ -6,6 +6,7 @@ Core functionality for React Native wallets - wallet management, balance fetchin
 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
+- [Bundle Configuration](#bundle-configuration)
 - [Core Concepts](#core-concepts)
 - [Usage Examples](#usage-examples)
 - [API Reference](#api-reference)
@@ -18,10 +19,10 @@ Core functionality for React Native wallets - wallet management, balance fetchin
 
 ```typescript
 import { WdkAppProvider, useWdkApp, useWallet, useBalance } from '@tetherto/wdk-react-native-core'
-import { createSecureStorage } from '@tetherto/wdk-react-native-secure-storage'
+// Import bundle from your generated .wdk folder (see Bundle Configuration)
+import { bundle, HRPC } from './.wdk'
 
 function App() {
-  const secureStorage = createSecureStorage()
   const networkConfigs = {
     ethereum: { chainId: 1, blockchain: 'ethereum' }
   }
@@ -34,6 +35,7 @@ function App() {
 
   return (
     <WdkAppProvider
+      bundle={{ bundle, HRPC }}
       networkConfigs={networkConfigs}
       tokenConfigs={tokenConfigs}
     >
@@ -90,6 +92,103 @@ Or add to your `package.json`:
 }
 ```
 
+## Bundle Configuration
+
+The `WdkAppProvider` requires a **bundle** prop containing the worklet bundle and HRPC class. You have two options for obtaining this bundle:
+
+### Option A: Generate a Custom Bundle (Recommended)
+
+Use the `@tetherto/wdk-worklet-bundler` CLI to generate a bundle with only the blockchain modules you need:
+
+```bash
+# 1. Install the bundler CLI
+npm install -g @tetherto/wdk-worklet-bundler
+
+# 2. Initialize configuration in your React Native project
+wdk-worklet-bundler init
+
+# 3. Edit wdk.config.js to configure your networks (see example below)
+
+# 4. Install required WDK modules
+npm install @tetherto/wdk @tetherto/wdk-wallet-evm-erc-4337
+
+# 5. Generate the bundle
+wdk-worklet-bundler generate
+```
+
+Example `wdk.config.js`:
+
+```javascript
+module.exports = {
+  modules: {
+    core: '@tetherto/wdk',
+    erc4337: '@tetherto/wdk-wallet-evm-erc-4337',
+  },
+  networks: {
+    ethereum: {
+      module: 'erc4337',
+      chainId: 1,
+      blockchain: 'ethereum',
+      provider: 'https://eth.drpc.org',
+    },
+    polygon: {
+      module: 'erc4337',
+      chainId: 137,
+      blockchain: 'polygon',
+      provider: 'https://polygon.drpc.org',
+    },
+  },
+}
+```
+
+After running `wdk-worklet-bundler generate`, import and use the bundle:
+
+```typescript
+import { bundle, HRPC } from './.wdk'
+
+<WdkAppProvider
+  bundle={{ bundle, HRPC }}
+  networkConfigs={networkConfigs}
+  tokenConfigs={tokenConfigs}
+>
+  <App />
+</WdkAppProvider>
+```
+
+For full bundler documentation, see [docs/bundler-specs.md](docs/bundler-specs.md).
+
+### Option B: Use Pre-built Bundle (pear-wrk-wdk)
+
+For quick prototyping, you can use the pre-built `pear-wrk-wdk` package which includes all blockchain modules:
+
+```bash
+npm install pear-wrk-wdk
+```
+
+```typescript
+import { bundle, HRPC } from 'pear-wrk-wdk'
+
+<WdkAppProvider
+  bundle={{ bundle, HRPC }}
+  networkConfigs={networkConfigs}
+  tokenConfigs={tokenConfigs}
+>
+  <App />
+</WdkAppProvider>
+```
+
+> **Note**: The pre-built bundle includes all blockchain modules, resulting in a larger bundle size. For production apps, we recommend generating a custom bundle with only the modules you need.
+
+### TypeScript Configuration
+
+If using a generated bundle, add the `.wdk` folder to your TypeScript includes:
+
+```json
+{
+  "include": ["**/*.ts", "**/*.tsx", ".wdk/**/*"]
+}
+```
+
 ## Core Concepts
 
 ### WdkAppProvider
@@ -97,7 +196,10 @@ Or add to your `package.json`:
 The root provider that manages wallet initialization and worklet lifecycle. Wrap your app with it:
 
 ```typescript
+import { bundle, HRPC } from './.wdk'
+
 <WdkAppProvider
+  bundle={{ bundle, HRPC }}
   networkConfigs={networkConfigs}
   tokenConfigs={tokenConfigs}
 >
@@ -156,10 +258,15 @@ const { data: balance, isLoading } = useBalance({
 
 ```typescript
 import { WdkAppProvider, useWdkApp, useWalletManager } from '@tetherto/wdk-react-native-core'
+import { bundle, HRPC } from './.wdk'
 
 function App() {
   return (
-    <WdkAppProvider networkConfigs={networkConfigs} tokenConfigs={tokenConfigs}>
+    <WdkAppProvider
+      bundle={{ bundle, HRPC }}
+      networkConfigs={networkConfigs}
+      tokenConfigs={tokenConfigs}
+    >
       <WalletSetup />
     </WdkAppProvider>
   )
@@ -307,8 +414,19 @@ function RefreshButton() {
 
 ```typescript
 interface WdkAppProviderProps {
+  /** Worklet bundle configuration (see Bundle Configuration section) */
+  bundle: {
+    bundle: string      // The worklet bundle code
+    HRPC: HRPCConstructor // The HRPC class constructor
+  }
+  /** Network configurations */
   networkConfigs: NetworkConfigs
+  /** Token configurations for balance fetching */
   tokenConfigs: TokenConfigs
+  /** Enable automatic wallet initialization on app restart (default: true) */
+  enableAutoInitialization?: boolean
+  /** Current user's identifier for wallet association */
+  currentUserId?: string | null
   children: React.ReactNode
 }
 ```
