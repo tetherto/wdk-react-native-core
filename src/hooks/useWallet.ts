@@ -178,9 +178,7 @@ export function useWallet(options?: {
 
       try {
         // Use WalletSwitchingService for wallet switching logic (has mutex protection)
-        await WalletSwitchingService.switchToWallet(requestedWalletId!, {
-          autoStartWorklet: false,
-        })
+        await WalletSwitchingService.switchToWallet(requestedWalletId!)
 
         if (!cancelled) {
           setIsTemporaryWallet(false)

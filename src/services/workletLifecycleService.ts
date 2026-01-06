@@ -1,11 +1,10 @@
 /**
  * Worklet Lifecycle Service
- * 
+ *
  * Handles worklet lifecycle operations: starting, initializing, and cleaning up worklets.
  * This service is focused solely on worklet lifecycle management.
  */
 
-import { HRPC } from 'pear-wrk-wdk'
 import { Worklet } from 'react-native-bare-kit'
 
 import { getWalletStore } from '../store/walletStore'
@@ -16,7 +15,7 @@ import { handleServiceError } from '../utils/errorHandling'
 import { normalizeError } from '../utils/errorUtils'
 import { log, logWarn } from '../utils/logger'
 import { isInitialized as isWorkletInitialized } from '../utils/storeHelpers'
-import type { NetworkConfigs } from '../types'
+import type { NetworkConfigs, BundleConfig, HRPC } from '../types'
 import type { WorkletState } from '../store/workletStore'
 
 /**
@@ -101,14 +100,18 @@ export class WorkletLifecycleService {
     }
   }
   /**
-   * Start the worklet with network configurations
+   * Start the worklet with network configurations and bundle
+   *
+   * @param networkConfigs - Network configurations
+   * @param bundleConfig - Bundle configuration containing the worklet bundle and HRPC class
    */
   static async startWorklet(
-    networkConfigs: NetworkConfigs
+    networkConfigs: NetworkConfigs,
+    bundleConfig: BundleConfig
   ): Promise<void> {
     const store = getWorkletStore()
     const state = store.getState()
-    
+
     if (state.isLoading) {
       logWarn('Worklet initialization already in progress')
       return
@@ -120,8 +123,8 @@ export class WorkletLifecycleService {
     }
 
     try {
-      store.setState({ 
-        error: null, 
+      store.setState({
+        error: null,
         isLoading: true,
       })
 
@@ -133,16 +136,11 @@ export class WorkletLifecycleService {
 
       const worklet = new Worklet()
 
-      // Dynamic import of pear-wrk-wdk bundle
-      const pearWrkWdk = await import('pear-wrk-wdk')
-      const bundle = (pearWrkWdk as { bundle?: unknown }).bundle
+      // Get bundle and HRPC class from bundleConfig (passed from WdkAppProvider)
+      const { bundle, HRPC } = bundleConfig
 
-      if (!bundle) {
-        throw new Error('Failed to load pear-wrk-wdk bundle')
-      }
-
-      // Bundle file (mobile bundle for React Native) - worklet.start expects bundle parameter
-      ;(worklet.start as (path: string, bundle: unknown) => void)('/wdk-worklet.bundle', bundle)
+      // @ts-ignore - Bundle file (mobile bundle for React Native) - worklet.start expects bundle parameter
+      worklet.start('/wdk-worklet.bundle', bundle)
 
       const { IPC } = worklet
 
@@ -183,30 +181,17 @@ export class WorkletLifecycleService {
   }
 
   /**
-   * Ensure worklet is started, starting it if needed
-   * 
-   * @param networkConfigs - Network configs (required if autoStart=true)
-   * @param options - Options
-   * @param options.autoStart - If true, start worklet if not started (default: false)
-   * @throws Error if worklet not started and autoStart=false or networkConfigs not provided
+   * Ensure worklet is started
+   *
+   * @throws Error if worklet not started
    */
-  static async ensureWorkletStarted(
-    networkConfigs?: NetworkConfigs,
-    options?: { autoStart?: boolean }
-  ): Promise<void> {
+  static ensureWorkletStarted(): void {
     const store = getWorkletStore()
     const state = store.getState()
-    
-    if (state.isWorkletStarted) {
-      return // Already started
+
+    if (!state.isWorkletStarted) {
+      throw new Error('Worklet must be started before this operation. Ensure WdkAppProvider is mounted.')
     }
-    
-    const autoStart = options?.autoStart ?? false
-    if (!autoStart || !networkConfigs) {
-      throw new Error('Worklet must be started before this operation')
-    }
-    
-    await this.startWorklet(networkConfigs)
   }
 
   /**
@@ -397,16 +382,23 @@ export class WorkletLifecycleService {
 
   /**
    * Initialize both worklet and WDK in one call (convenience method) - ONLY encrypted
+   *
+   * @param options - Initialization options
+   * @param options.encryptionKey - Encryption key for the seed
+   * @param options.encryptedSeed - Encrypted seed buffer
+   * @param options.networkConfigs - Network configurations
+   * @param options.bundleConfig - Bundle configuration
    */
   static async initializeWorklet(
     options: {
       encryptionKey: string
       encryptedSeed: string
       networkConfigs: NetworkConfigs
+      bundleConfig: BundleConfig
     }
   ): Promise<void> {
     // Convenience method that does both steps - ONLY encrypted approach
-    await this.startWorklet(options.networkConfigs)
+    await this.startWorklet(options.networkConfigs, options.bundleConfig)
     await this.initializeWDK({
       encryptionKey: options.encryptionKey,
       encryptedSeed: options.encryptedSeed,

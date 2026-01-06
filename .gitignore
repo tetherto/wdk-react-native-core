@@ -29,3 +29,5 @@ yarn-error.log*
 .env
 .env.local
 
+# Docs
+docs/

@@ -1,12 +1,9 @@
 import { useShallow } from 'zustand/react/shallow'
-
-import type { HRPC } from 'pear-wrk-wdk'
-import type { WorkletStartResponse } from 'pear-wrk-wdk/types/rpc'
 import type { Worklet } from 'react-native-bare-kit'
 
 import { WorkletLifecycleService } from '../services/workletLifecycleService'
 import { getWorkletStore } from '../store/workletStore'
-import type { NetworkConfigs } from '../types'
+import type { NetworkConfigs, BundleConfig, HRPC, WorkletStartResponse } from '../types'
 import type { WorkletStore } from '../store/workletStore'
 
 /**
@@ -61,6 +58,7 @@ export interface UseWorkletResult {
     encryptionKey: string
     encryptedSeed: string
     networkConfigs: NetworkConfigs
+    bundleConfig: BundleConfig
   }) => Promise<void>
   reset: () => void
   clearError: () => void

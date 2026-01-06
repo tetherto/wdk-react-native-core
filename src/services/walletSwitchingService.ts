@@ -26,28 +26,23 @@ import { log, logError } from '../utils/logger'
 export class WalletSwitchingService {
   /**
    * Switch to a wallet by identifier
-   * 
+   *
    * This method:
    * 1. Checks if the wallet exists (fail fast)
-   * 2. Ensures worklet is started
+   * 2. Ensures worklet is started (WdkAppProvider must be mounted)
    * 3. Loads credentials for the wallet
    * 4. Initializes WDK with the credentials
    * 5. Updates activeWalletId in the store
-   * 
+   *
    * @param walletId - Wallet identifier to switch to
-   * @param options - Optional configuration
-   * @param options.autoStartWorklet - If true, start worklet if not started (default: false)
    * @throws Error if wallet doesn't exist or switching fails
-   * 
+   *
    * @example
    * ```typescript
    * await WalletSwitchingService.switchToWallet('user@example.com')
    * ```
    */
-  static async switchToWallet(
-    walletId: string,
-    options?: { autoStartWorklet?: boolean }
-  ): Promise<void> {
+  static async switchToWallet(walletId: string): Promise<void> {
     return withOperationMutex(`switchToWallet:${walletId}`, async () => {
       const walletStore = getWalletStore()
       const activeWalletId = walletStore.getState().activeWalletId
@@ -72,10 +67,8 @@ export class WalletSwitchingService {
           throw new Error(`Wallet with identifier "${walletId}" does not exist`)
         }
 
-        // Ensure worklet is started
-        await WorkletLifecycleService.ensureWorkletStarted(undefined, {
-          autoStart: options?.autoStartWorklet ?? false,
-        })
+        // Ensure worklet is started (WdkAppProvider must be mounted)
+        WorkletLifecycleService.ensureWorkletStarted()
 
         // Note: We don't clear previous wallet's credentials cache when switching
         // The LRU eviction policy in workletStore will handle cache management

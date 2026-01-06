@@ -43,12 +43,12 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { Worklet } from 'react-native-bare-kit'
-import { HRPC } from 'pear-wrk-wdk'
-import type { WorkletStartResponse } from 'pear-wrk-wdk/types/rpc'
 
 // Local imports
 import type {
   NetworkConfigs,
+  HRPC,
+  WorkletStartResponse,
 } from '../types'
 import { log } from '../utils/logger'
 
