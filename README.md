@@ -155,7 +155,7 @@ import { bundle, HRPC } from './.wdk'
 </WdkAppProvider>
 ```
 
-For full bundler documentation, see [docs/bundler-specs.md](docs/bundler-specs.md).
+For full bundler documentation, see [wdk-worklet-bundler](https://github.com/tetherto/wdk-worklet-bundler).
 
 ### Option B: Use Pre-built Bundle (pear-wrk-wdk)
 
