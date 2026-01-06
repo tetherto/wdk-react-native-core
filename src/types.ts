@@ -171,7 +171,7 @@ export interface TokenHelpers {
 
 /**
  * Wallet Store Interface
- * 
+ *
  * Interface for wallet store implementations that provide account methods
  * and wallet initialization status.
  */
@@ -186,3 +186,23 @@ export interface WalletStore {
   /** Check if the wallet is initialized */
   isWalletInitialized: () => boolean
 }
+
+// ============================================================================
+// HRPC Types (re-exported from ./types/hrpc)
+// ============================================================================
+
+export {
+  LogType,
+  type LogRequest,
+  type WorkletStartRequest,
+  type WorkletStartResponse,
+  type DisposeRequest,
+  type CallMethodRequest,
+  type CallMethodResponse,
+  type HRPC,
+  type HRPCConstructor,
+  type BundleConfig,
+  type ExtendedHRPC,
+  isExtendedHRPC,
+  asExtendedHRPC,
+} from './types/hrpc'

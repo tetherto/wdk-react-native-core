@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "Node16",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "lib": ["ES2020"],
     "declaration": true,
     "outDir": "./dist",
@@ -12,7 +13,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node16",
     "jsx": "react",
     "baseUrl": ".",
     "paths": {
@@ -25,4 +25,3 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-

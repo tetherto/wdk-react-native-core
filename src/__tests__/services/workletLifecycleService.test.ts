@@ -6,7 +6,7 @@
 
 import { WorkletLifecycleService } from '../../services/workletLifecycleService'
 import { getWorkletStore } from '../../store/workletStore'
-import type { NetworkConfigs } from '../../types'
+import type { NetworkConfigs, BundleConfig } from '../../types'
 
 // Mock dependencies
 const mockWorkletInstance = {
@@ -21,27 +21,22 @@ jest.mock('react-native-bare-kit', () => ({
   Worklet: jest.fn().mockImplementation(() => mockWorkletInstance),
 }))
 
+// Shared mock workletStart function to track calls across all HRPC instances
+const mockWorkletStart = jest.fn(() => Promise.resolve({ status: 'success' }))
+
 const mockHRPCInstance = {
-  workletStart: jest.fn(() => Promise.resolve({ status: 'success' })),
+  workletStart: mockWorkletStart,
   ipc: mockWorkletInstance.IPC,
 }
 
-// Mock pear-wrk-wdk with proper module structure
-// Note: We create the mock HRPC inside the factory to avoid hoisting issues
-jest.mock('pear-wrk-wdk', () => {
-  const mockHRPC = jest.fn().mockImplementation(() => ({
-    workletStart: jest.fn(() => Promise.resolve({ status: 'success' })),
-    ipc: mockWorkletInstance.IPC,
-  }))
-  return {
-    __esModule: true,
-    default: {
-      bundle: 'mock-bundle',
-    },
-    HRPC: mockHRPC,
-    bundle: 'mock-bundle',
-  }
-})
+// Create mock HRPC class for bundleConfig - returns the shared mockHRPCInstance
+const MockHRPC = jest.fn().mockImplementation(() => mockHRPCInstance)
+
+// Mock bundleConfig that will be passed to startWorklet
+const mockBundleConfig: BundleConfig = {
+  bundle: 'mock-bundle',
+  HRPC: MockHRPC as any,
+}
 
 // Create a shared mock store that will be returned by getWorkletStore
 let sharedMockStore: any
@@ -155,16 +150,15 @@ describe('WorkletLifecycleService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     // Reset mock implementations
     mockWorkletInstance.start.mockClear()
-    mockHRPCInstance.workletStart.mockResolvedValue({ status: 'success' })
-    
-    // Reset HRPC constructor mock
-    const { HRPC } = require('pear-wrk-wdk')
-    if (HRPC && typeof HRPC.mockImplementation === 'function') {
-      HRPC.mockImplementation(() => mockHRPCInstance)
-    }
+    mockWorkletStart.mockClear()
+    mockWorkletStart.mockResolvedValue({ status: 'success' })
+
+    // Reset MockHRPC constructor mock
+    MockHRPC.mockClear()
+    MockHRPC.mockImplementation(() => mockHRPCInstance)
 
     // Setup mock store - get the shared instance
     mockStore = getWorkletStore() as any
@@ -189,7 +183,7 @@ describe('WorkletLifecycleService', () => {
 
   describe('startWorklet', () => {
     it('should start worklet with default network configuration', async () => {
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       // Verify worklet was created
       const { Worklet } = require('react-native-bare-kit')
@@ -198,9 +192,8 @@ describe('WorkletLifecycleService', () => {
       // Verify worklet.start was called with bundle
       expect(mockWorkletInstance.start).toHaveBeenCalledWith('/wdk-worklet.bundle', 'mock-bundle')
 
-      // Verify HRPC was created
-      const { HRPC } = require('pear-wrk-wdk')
-      expect(HRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
+      // Verify HRPC was created from bundleConfig
+      expect(MockHRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
 
       // Verify workletStart was called with serialized config
       expect(mockHRPCInstance.workletStart).toHaveBeenCalledWith({
@@ -226,7 +219,7 @@ describe('WorkletLifecycleService', () => {
     })
 
     it('should serialize network configuration correctly', async () => {
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       // Verify the config was serialized to JSON
       const calls = mockHRPCInstance.workletStart.mock.calls
@@ -270,7 +263,7 @@ describe('WorkletLifecycleService', () => {
     })
 
     it('should handle all network types in the configuration', async () => {
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       const calls = mockHRPCInstance.workletStart.mock.calls
       expect(calls.length).toBeGreaterThan(0)
@@ -291,7 +284,7 @@ describe('WorkletLifecycleService', () => {
     })
 
     it('should preserve optional fields in network configuration', async () => {
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       const calls = mockHRPCInstance.workletStart.mock.calls
       expect(calls.length).toBeGreaterThan(0)
@@ -337,7 +330,7 @@ describe('WorkletLifecycleService', () => {
       }
       ;(mockStore as any).getState = jest.fn(() => alreadyStartedState)
 
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       // Should not call workletStart again (early return should happen)
       expect(mockHRPCInstance.workletStart).not.toHaveBeenCalled()
@@ -371,7 +364,7 @@ describe('WorkletLifecycleService', () => {
       }
       ;(mockStore as any).getState = jest.fn(() => alreadyLoadingState)
 
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       // Should not call workletStart (early return should happen)
       expect(mockHRPCInstance.workletStart).not.toHaveBeenCalled()
@@ -386,7 +379,7 @@ describe('WorkletLifecycleService', () => {
       mockHRPCInstance.workletStart.mockRejectedValueOnce(new Error('Failed to start worklet'))
 
       await expect(
-        WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+        WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
       ).rejects.toThrow()
 
       // Verify setState was called (at least for loading state and error state)
@@ -443,7 +436,7 @@ describe('WorkletLifecycleService', () => {
         wdkInitResult: null,
       })
 
-      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs)
+      await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
 
       // Verify new worklet was created (old one should be cleaned up)
       const { Worklet } = require('react-native-bare-kit')
@@ -458,7 +451,7 @@ describe('WorkletLifecycleService', () => {
         },
       }
 
-      await WorkletLifecycleService.startWorklet(minimalConfig)
+      await WorkletLifecycleService.startWorklet(minimalConfig, mockBundleConfig)
 
       expect(mockHRPCInstance.workletStart).toHaveBeenCalled()
       const calls = mockHRPCInstance.workletStart.mock.calls
@@ -488,7 +481,7 @@ describe('WorkletLifecycleService', () => {
         },
       }
 
-      await WorkletLifecycleService.startWorklet(fullConfig)
+      await WorkletLifecycleService.startWorklet(fullConfig, mockBundleConfig)
 
       expect(mockHRPCInstance.workletStart).toHaveBeenCalled()
       const calls = mockHRPCInstance.workletStart.mock.calls

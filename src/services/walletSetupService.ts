@@ -222,27 +222,23 @@ export class WalletSetupService {
   /**
    * Validate that encrypted data can be decrypted with the encryption key
    * Attempts to initialize WDK with the provided credentials to verify compatibility
-   * 
-   * @param networkConfigs - Network configurations for worklet
+   *
    * @param encryptionKey - Encryption key to test
    * @param encryptedSeed - Encrypted seed to test
    * @param encryptedEntropy - Optional encrypted entropy to test
    * @throws Error if validation fails (decryption fails)
    */
   private static async validateEncryptionCompatibility(
-    networkConfigs: NetworkConfigs,
     encryptionKey: string,
     encryptedSeed: string,
     encryptedEntropy?: string
   ): Promise<void> {
     const store = getWorkletStore()
-    
-    // Ensure worklet is started
-    if (!store.getState().isWorkletStarted) {
-      await WorkletLifecycleService.startWorklet(networkConfigs)
-    }
 
-      const wasInitialized = store.getState().isInitialized
+    // Ensure worklet is started (WdkAppProvider must be mounted)
+    WorkletLifecycleService.ensureWorkletStarted()
+
+    const wasInitialized = store.getState().isInitialized
     const previousEncryptionKey = store.getState().encryptionKey
     const previousEncryptedSeed = store.getState().encryptedSeed
 
@@ -321,10 +317,8 @@ export class WalletSetupService {
       throw error
     }
 
-    // Step 2: Start worklet
-    if (!store.getState().isWorkletStarted) {
-      await WorkletLifecycleService.startWorklet(networkConfigs)
-    }
+    // Step 2: Ensure worklet is started (WdkAppProvider must be mounted)
+    WorkletLifecycleService.ensureWorkletStarted()
 
     // Step 3: Generate entropy and encrypt
     const result = await WorkletLifecycleService.generateEntropyAndEncrypt(DEFAULT_MNEMONIC_WORD_COUNT)
@@ -333,7 +327,6 @@ export class WalletSetupService {
     log('🔍 Validating encryption compatibility before saving to keychain...')
     try {
       await this.validateEncryptionCompatibility(
-        networkConfigs,
         result.encryptionKey,
         result.encryptedSeedBuffer,
         result.encryptedEntropyBuffer
@@ -478,10 +471,8 @@ export class WalletSetupService {
       throw error
     }
 
-    // Step 2: Start worklet
-    if (!store.getState().isWorkletStarted) {
-      await WorkletLifecycleService.startWorklet(networkConfigs)
-    }
+    // Step 2: Ensure worklet is started (WdkAppProvider must be mounted)
+    WorkletLifecycleService.ensureWorkletStarted()
 
     // Step 3: Get seed and entropy from mnemonic
     const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
@@ -490,7 +481,6 @@ export class WalletSetupService {
     log('🔍 Validating encryption compatibility before saving to keychain...')
     try {
       await this.validateEncryptionCompatibility(
-        networkConfigs,
         result.encryptionKey,
         result.encryptedSeedBuffer,
         result.encryptedEntropyBuffer
@@ -543,21 +533,12 @@ export class WalletSetupService {
   /**
    * Initialize WDK with wallet credentials
    */
-  static async initializeWDK(
-    networkConfigs: NetworkConfigs,
-    credentials: {
-      encryptionKey: string
-      encryptedSeed: string
-    }
-  ): Promise<void> {
-    const store = getWorkletStore()
-
-    // Ensure worklet is started
-    if (!store.getState().isWorkletStarted) {
-      log('Starting worklet...')
-      await WorkletLifecycleService.startWorklet(networkConfigs)
-      log('Worklet started')
-    }
+  static async initializeWDK(credentials: {
+    encryptionKey: string
+    encryptedSeed: string
+  }): Promise<void> {
+    // Ensure worklet is started (WdkAppProvider must be mounted)
+    WorkletLifecycleService.ensureWorkletStarted()
 
     // Initialize WDK
     await WorkletLifecycleService.initializeWDK(credentials)
@@ -586,7 +567,7 @@ export class WalletSetupService {
     }
 
     // Initialize WDK with credentials
-    await this.initializeWDK(networkConfigs, credentials)
+    await this.initializeWDK(credentials)
   }
 
   /**

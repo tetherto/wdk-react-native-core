@@ -1,23 +1,22 @@
 /**
  * Store helper utilities
- * 
+ *
  * Provides common patterns for accessing and validating store state
  * to reduce code duplication across services.
  */
 
-import type { HRPC } from 'pear-wrk-wdk'
-
 import { getWorkletStore } from '../store/workletStore'
 import { getWalletStore } from '../store/walletStore'
 import { asExtendedHRPC } from '../types/hrpc'
+import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 
 /**
  * Require that worklet is initialized and return HRPC instance
- * 
+ *
  * @throws Error if worklet is not initialized
  * @returns HRPC instance
- * 
+ *
  * @example
  * ```typescript
  * const hrpc = requireInitialized()

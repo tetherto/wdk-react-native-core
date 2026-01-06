@@ -14,6 +14,7 @@ import type { NetworkConfigs } from '../../types'
 jest.mock('../../services/workletLifecycleService', () => ({
   WorkletLifecycleService: {
     startWorklet: jest.fn(() => Promise.resolve()),
+    ensureWorkletStarted: jest.fn(),
     generateEntropyAndEncrypt: jest.fn(() => Promise.resolve({
       encryptionKey: 'test-encryption-key',
       encryptedSeedBuffer: 'test-encrypted-seed',

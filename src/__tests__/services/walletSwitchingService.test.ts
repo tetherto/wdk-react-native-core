@@ -192,15 +192,13 @@ describe('WalletSwitchingService', () => {
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
-      ;(WorkletLifecycleService.ensureWorkletStarted as jest.Mock).mockResolvedValue(undefined)
+      ;(WorkletLifecycleService.ensureWorkletStarted as jest.Mock).mockReturnValue(undefined)
       ;(WalletSetupService.loadExistingWallet as jest.Mock).mockResolvedValue(credentials)
       ;(WorkletLifecycleService.initializeWDK as jest.Mock).mockResolvedValue(undefined)
 
-      await WalletSwitchingService.switchToWallet(walletId, { autoStartWorklet: true })
+      await WalletSwitchingService.switchToWallet(walletId)
 
-      expect(WorkletLifecycleService.ensureWorkletStarted).toHaveBeenCalledWith(undefined, {
-        autoStart: true,
-      })
+      expect(WorkletLifecycleService.ensureWorkletStarted).toHaveBeenCalled()
     })
 
     it('should handle errors during wallet switching', async () => {
