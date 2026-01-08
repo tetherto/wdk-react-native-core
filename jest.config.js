@@ -37,7 +37,7 @@ module.exports = {
   modulePathIgnorePatterns: ['<rootDir>/node_modules/'],
   // Allow tests to run without all dependencies
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-native-mmkv|react-native-bare-kit|pear-wrk-wdk)/)',
+    'node_modules/(?!(react-native|@react-native|react-native-mmkv|react-native-bare-kit|@tetherto/pear-wrk-wdk)/)',
   ],
 };
 

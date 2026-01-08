@@ -67,7 +67,7 @@ describe('useWalletManager', () => {
     it('should call WalletSetupService.initializeWallet', async () => {
       ;(WalletSetupService.initializeWallet as jest.Mock).mockResolvedValue(undefined)
 
-      const { useWalletManager } = await import('../../hooks/useWalletManager')
+      const { useWalletManager } = await import('../../hooks/useWalletManager.js')
       
       // Since we can't easily test React hooks in Node, we verify the service calls
       expect(WalletSetupService.initializeWallet).toBeDefined()

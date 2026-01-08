@@ -1,11 +1,11 @@
 /**
  * HRPC Type Extensions
  * 
- * Type definitions for HRPC methods that may not be in the pear-wrk-wdk types yet.
+ * Type definitions for HRPC methods that may not be in the @tetherto/pear-wrk-wdk types yet.
  * These types extend the HRPC interface to provide proper type safety.
  */
 
-import type { HRPC } from 'pear-wrk-wdk'
+import type { HRPC } from '@tetherto/pear-wrk-wdk'
 
 /**
  * Extended HRPC interface with additional methods

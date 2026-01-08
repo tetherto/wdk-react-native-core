@@ -108,7 +108,7 @@ describe('useBalance', () => {
       mockWorkletStore.getState.mockReturnValue({ isInitialized: false })
 
       // Import after mocks are set up
-      const { useBalance } = await import('../../hooks/useBalance')
+      const { useBalance } = await import('../../hooks/useBalance.js')
       const { useQuery } = await import('@tanstack/react-query')
 
       const mockUseQuery = useQuery as jest.Mock
@@ -219,7 +219,7 @@ describe('useBalance', () => {
     it('should invalidate queries correctly', async () => {
       // Since we can't actually call React hooks in Node environment,
       // we verify that the hook exports exist and the query key functions work
-      const { useRefreshBalance, balanceQueryKeys } = await import('../../hooks/useBalance')
+      const { useRefreshBalance, balanceQueryKeys } = await import('../../hooks/useBalance.js')
 
       // Verify the hook is exported
       expect(typeof useRefreshBalance).toBe('function')
