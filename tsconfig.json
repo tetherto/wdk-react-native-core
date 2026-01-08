@@ -15,9 +15,6 @@
     "moduleResolution": "bundler",
     "jsx": "react",
     "baseUrl": ".",
-    "paths": {
-      "@tetherto/wdk-react-native-secure-storage": ["../wdk-react-native-secure-storage/src"]
-    },
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "sourceMap": true
@@ -25,4 +22,3 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-

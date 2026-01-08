@@ -1,6 +1,6 @@
 /**
  * Tests for useWalletManager hook
- * 
+ *
  * Tests wallet lifecycle management hook
  */
 
@@ -59,16 +59,17 @@ describe('useWalletManager', () => {
       })),
       setState: jest.fn(),
     }
-
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
   })
 
   describe('initializeWallet', () => {
     it('should call WalletSetupService.initializeWallet', async () => {
-      ;(WalletSetupService.initializeWallet as jest.Mock).mockResolvedValue(undefined)
+      ;(WalletSetupService.initializeWallet as jest.Mock).mockResolvedValue(
+        undefined,
+      )
 
-      const { useWalletManager } = await import('../../hooks/useWalletManager.js')
-      
+      const { useWalletManager } = await import('../../hooks/useWalletManager')
+
       // Since we can't easily test React hooks in Node, we verify the service calls
       expect(WalletSetupService.initializeWallet).toBeDefined()
       expect(typeof WalletSetupService.initializeWallet).toBe('function')
@@ -76,29 +77,50 @@ describe('useWalletManager', () => {
 
     it('should handle initialization errors', async () => {
       const error = new Error('Initialization failed')
-      ;(WalletSetupService.initializeWallet as jest.Mock).mockRejectedValue(error)
+      ;(WalletSetupService.initializeWallet as jest.Mock).mockRejectedValue(
+        error,
+      )
 
       expect(WalletSetupService.initializeWallet).toBeDefined()
-      await expect(WalletSetupService.initializeWallet(mockNetworkConfigs, {})).rejects.toThrow('Initialization failed')
+      await expect(
+        WalletSetupService.initializeWallet(mockNetworkConfigs, {}),
+      ).rejects.toThrow('Initialization failed')
     })
   })
 
   describe('initializeFromMnemonic', () => {
     it('should call WalletSetupService.initializeFromMnemonic', async () => {
-      const mnemonic = 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12'
-      ;(WalletSetupService.initializeFromMnemonic as jest.Mock).mockResolvedValue(undefined)
+      const mnemonic =
+        'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12'
+      ;(
+        WalletSetupService.initializeFromMnemonic as jest.Mock
+      ).mockResolvedValue(undefined)
 
       expect(WalletSetupService.initializeFromMnemonic).toBeDefined()
-      await WalletSetupService.initializeFromMnemonic(mockNetworkConfigs, mnemonic, 'test-wallet')
-      expect(WalletSetupService.initializeFromMnemonic).toHaveBeenCalledWith(mockNetworkConfigs, mnemonic, 'test-wallet')
+      await WalletSetupService.initializeFromMnemonic(
+        mockNetworkConfigs,
+        mnemonic,
+        'test-wallet',
+      )
+      expect(WalletSetupService.initializeFromMnemonic).toHaveBeenCalledWith(
+        mockNetworkConfigs,
+        mnemonic,
+        'test-wallet',
+      )
     })
 
     it('should handle mnemonic import errors', async () => {
       const error = new Error('Invalid mnemonic')
-      ;(WalletSetupService.initializeFromMnemonic as jest.Mock).mockRejectedValue(error)
+      ;(
+        WalletSetupService.initializeFromMnemonic as jest.Mock
+      ).mockRejectedValue(error)
 
       await expect(
-        WalletSetupService.initializeFromMnemonic(mockNetworkConfigs, 'invalid', 'test-wallet')
+        WalletSetupService.initializeFromMnemonic(
+          mockNetworkConfigs,
+          'invalid',
+          'test-wallet',
+        ),
       ).rejects.toThrow('Invalid mnemonic')
     })
   })
@@ -122,27 +144,36 @@ describe('useWalletManager', () => {
 
   describe('deleteWallet', () => {
     it('should delete wallet and update store', async () => {
-      ;(WalletSetupService.deleteWallet as jest.Mock).mockResolvedValue(undefined)
+      ;(WalletSetupService.deleteWallet as jest.Mock).mockResolvedValue(
+        undefined,
+      )
       mockWalletStore.getState.mockReturnValue({
-        walletList: [{ identifier: 'test-wallet', exists: true, isActive: true }],
+        walletList: [
+          { identifier: 'test-wallet', exists: true, isActive: true },
+        ],
         activeWalletId: 'test-wallet',
       })
 
       await WalletSetupService.deleteWallet('test-wallet')
-      expect(WalletSetupService.deleteWallet).toHaveBeenCalledWith('test-wallet')
+      expect(WalletSetupService.deleteWallet).toHaveBeenCalledWith(
+        'test-wallet',
+      )
     })
 
     it('should handle delete errors', async () => {
       const error = new Error('Delete failed')
       ;(WalletSetupService.deleteWallet as jest.Mock).mockRejectedValue(error)
 
-      await expect(WalletSetupService.deleteWallet('test-wallet')).rejects.toThrow('Delete failed')
+      await expect(
+        WalletSetupService.deleteWallet('test-wallet'),
+      ).rejects.toThrow('Delete failed')
     })
   })
 
   describe('getMnemonic', () => {
     it('should retrieve mnemonic phrase', async () => {
-      const mnemonic = 'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12'
+      const mnemonic =
+        'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12'
       ;(WalletSetupService.getMnemonic as jest.Mock).mockResolvedValue(mnemonic)
 
       const result = await WalletSetupService.getMnemonic('test-wallet')
@@ -161,17 +192,24 @@ describe('useWalletManager', () => {
       const error = new Error('Failed to get mnemonic')
       ;(WalletSetupService.getMnemonic as jest.Mock).mockRejectedValue(error)
 
-      await expect(WalletSetupService.getMnemonic('test-wallet')).rejects.toThrow('Failed to get mnemonic')
+      await expect(
+        WalletSetupService.getMnemonic('test-wallet'),
+      ).rejects.toThrow('Failed to get mnemonic')
     })
   })
 
   describe('createWallet', () => {
     it('should create new wallet', async () => {
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(false)
-      ;(WalletSetupService.createNewWallet as jest.Mock).mockResolvedValue(undefined)
+      ;(WalletSetupService.createNewWallet as jest.Mock).mockResolvedValue(
+        undefined,
+      )
 
       await WalletSetupService.createNewWallet(mockNetworkConfigs, 'new-wallet')
-      expect(WalletSetupService.createNewWallet).toHaveBeenCalledWith(mockNetworkConfigs, 'new-wallet')
+      expect(WalletSetupService.createNewWallet).toHaveBeenCalledWith(
+        mockNetworkConfigs,
+        'new-wallet',
+      )
     })
 
     it('should throw error if wallet already exists', async () => {
@@ -207,7 +245,9 @@ describe('useWalletManager', () => {
       const error = new Error('Refresh failed')
       ;(WalletSetupService.hasWallet as jest.Mock).mockRejectedValue(error)
 
-      await expect(WalletSetupService.hasWallet('test-wallet')).rejects.toThrow('Refresh failed')
+      await expect(WalletSetupService.hasWallet('test-wallet')).rejects.toThrow(
+        'Refresh failed',
+      )
     })
   })
 
@@ -229,4 +269,3 @@ describe('useWalletManager', () => {
     })
   })
 })
-

@@ -1,6 +1,6 @@
 /**
  * Tests for useBalance hook
- * 
+ *
  * Tests balance hook logic with TanStack Query integration
  */
 
@@ -77,7 +77,6 @@ describe('useBalance', () => {
         activeWalletId: 'test-wallet-1',
       })),
     }
-
     ;(getWorkletStore as jest.Mock).mockReturnValue(mockWorkletStore)
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
   })
@@ -92,14 +91,53 @@ describe('useBalance', () => {
       const networkKey = balanceQueryKeys.byNetwork('ethereum')
       expect(networkKey).toEqual(['balances', 'network', 'ethereum'])
 
-      const walletNetworkKey = balanceQueryKeys.byWalletAndNetwork('wallet-1', 0, 'ethereum')
-      expect(walletNetworkKey).toEqual(['balances', 'wallet', 'wallet-1', 0, 'network', 'ethereum'])
+      const walletNetworkKey = balanceQueryKeys.byWalletAndNetwork(
+        'wallet-1',
+        0,
+        'ethereum',
+      )
+      expect(walletNetworkKey).toEqual([
+        'balances',
+        'wallet',
+        'wallet-1',
+        0,
+        'network',
+        'ethereum',
+      ])
 
-      const nativeTokenKey = balanceQueryKeys.byToken('wallet-1', 0, 'ethereum', null)
-      expect(nativeTokenKey).toEqual(['balances', 'wallet', 'wallet-1', 0, 'network', 'ethereum', 'token', NATIVE_TOKEN_KEY])
+      const nativeTokenKey = balanceQueryKeys.byToken(
+        'wallet-1',
+        0,
+        'ethereum',
+        null,
+      )
+      expect(nativeTokenKey).toEqual([
+        'balances',
+        'wallet',
+        'wallet-1',
+        0,
+        'network',
+        'ethereum',
+        'token',
+        NATIVE_TOKEN_KEY,
+      ])
 
-      const tokenKey = balanceQueryKeys.byToken('wallet-1', 0, 'ethereum', '0x123')
-      expect(tokenKey).toEqual(['balances', 'wallet', 'wallet-1', 0, 'network', 'ethereum', 'token', '0x123'])
+      const tokenKey = balanceQueryKeys.byToken(
+        'wallet-1',
+        0,
+        'ethereum',
+        '0x123',
+      )
+      expect(tokenKey).toEqual([
+        'balances',
+        'wallet',
+        'wallet-1',
+        0,
+        'network',
+        'ethereum',
+        'token',
+        '0x123',
+      ])
     })
   })
 
@@ -108,7 +146,7 @@ describe('useBalance', () => {
       mockWorkletStore.getState.mockReturnValue({ isInitialized: false })
 
       // Import after mocks are set up
-      const { useBalance } = await import('../../hooks/useBalance.js')
+      const { useBalance } = await import('../../hooks/useBalance')
       const { useQuery } = await import('@tanstack/react-query')
 
       const mockUseQuery = useQuery as jest.Mock
@@ -131,7 +169,9 @@ describe('useBalance', () => {
 
     it('should fetch native balance successfully', async () => {
       const mockBalance = '1000000000000000000'
-      ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(mockBalance)
+      ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(
+        mockBalance,
+      )
       ;(convertBalanceToString as jest.Mock).mockReturnValue(mockBalance)
 
       const { useQuery } = await import('@tanstack/react-query')
@@ -151,7 +191,9 @@ describe('useBalance', () => {
     it('should fetch token balance successfully', async () => {
       const mockBalance = '2000000000000000000'
       const tokenAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-      ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(mockBalance)
+      ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(
+        mockBalance,
+      )
       ;(convertBalanceToString as jest.Mock).mockReturnValue(mockBalance)
 
       const { useQuery } = await import('@tanstack/react-query')
@@ -167,7 +209,7 @@ describe('useBalance', () => {
           'ethereum',
           0,
           'getTokenBalance',
-          tokenAddress
+          tokenAddress,
         )
       }
     })
@@ -195,9 +237,7 @@ describe('useBalance', () => {
       const tokenConfigs = {
         ethereum: {
           native: { address: null, symbol: 'ETH', decimals: 18 },
-          tokens: [
-            { address: '0x123', symbol: 'USDC', decimals: 6 },
-          ],
+          tokens: [{ address: '0x123', symbol: 'USDC', decimals: 6 }],
         },
       }
 
@@ -219,7 +259,9 @@ describe('useBalance', () => {
     it('should invalidate queries correctly', async () => {
       // Since we can't actually call React hooks in Node environment,
       // we verify that the hook exports exist and the query key functions work
-      const { useRefreshBalance, balanceQueryKeys } = await import('../../hooks/useBalance.js')
+      const { useRefreshBalance, balanceQueryKeys } = await import(
+        '../../hooks/useBalance'
+      )
 
       // Verify the hook is exported
       expect(typeof useRefreshBalance).toBe('function')
@@ -228,7 +270,12 @@ describe('useBalance', () => {
       const allKeys = balanceQueryKeys.all
       const walletKeys = balanceQueryKeys.byWallet('wallet-1', 0)
       const networkKeys = balanceQueryKeys.byNetwork('ethereum')
-      const tokenKeys = balanceQueryKeys.byToken('wallet-1', 0, 'ethereum', null)
+      const tokenKeys = balanceQueryKeys.byToken(
+        'wallet-1',
+        0,
+        'ethereum',
+        null,
+      )
 
       expect(allKeys).toEqual(['balances'])
       expect(walletKeys).toEqual(['balances', 'wallet', 'wallet-1', 0])
@@ -237,4 +284,3 @@ describe('useBalance', () => {
     })
   })
 })
-
