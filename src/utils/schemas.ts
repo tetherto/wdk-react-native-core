@@ -15,10 +15,10 @@ export const ethereumAddressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
 })
 
 /**
- * Spark address schema (Bech32 format: spark1 followed by base32 characters)
+ * Spark address schema (Bech32 format: spark1/sparkt1/sparkrt1 followed by base32 characters)
  */
-export const sparkAddressSchema = z.string().regex(/^spark1[a-z0-9]+$/, {
-  message: 'Must be a valid Spark address (spark1 followed by base32 characters)',
+export const sparkAddressSchema = z.string().regex(/^spark(1|t1|rt1|test1)[a-z0-9]+$/, {
+  message: 'Must be a valid Spark address (spark1/sparkt1/sparkrt1 followed by base32 characters)',
 }).min(14).max(90)
 
 /**
