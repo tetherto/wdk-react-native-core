@@ -216,8 +216,9 @@ export function useWallet(options?: {
   }, [options?.walletId, activeWalletId, isSwitchingWallet, switchingToWalletId])
 
   // Auto-load addresses for specified account indices
-  // Use ref to track previous account indices to avoid unnecessary re-loads
+  // Use refs to track previous account indices and load triggers to avoid unnecessary re-loads
   const prevAccountIndicesRef = useRef<string>('')
+  const loadTriggeredRef = useRef<string>('')
   useEffect(() => {
     const accountIndices = options?.autoLoadAccountIndices
     if (!accountIndices || accountIndices.length === 0) {
@@ -226,6 +227,11 @@ export function useWallet(options?: {
 
     // Create stable string key for account indices to compare
     const accountIndicesKey = accountIndices.sort().join(',')
+    
+    // Reset load trigger if account indices have changed
+    if (prevAccountIndicesRef.current !== accountIndicesKey) {
+      loadTriggeredRef.current = ''
+    }
     
     // Don't load if wallet is not initialized or is switching
     if (!isInitialized || isSwitchingWallet) {
@@ -244,39 +250,70 @@ export function useWallet(options?: {
     }
     
     const networks = Object.keys(networkConfigs)
+    // Access walletState.addresses inside the effect without depending on walletState
+    const currentAddresses = walletState.addresses
     const allLoaded = accountIndices.every((accountIndex) => {
       return networks.every((network) => {
-        const address = walletState.addresses[network]?.[accountIndex]
+        const address = currentAddresses[network]?.[accountIndex]
         return !!address
       })
     })
 
     // If all addresses are already loaded and account indices haven't changed, skip
     if (allLoaded && prevAccountIndicesRef.current === accountIndicesKey) {
+      // Mark that we've completed loading for these account indices
+      loadTriggeredRef.current = accountIndicesKey
       return
     }
 
-    // Update ref to track current account indices
+    // If we've already triggered a load for these account indices, skip
+    if (loadTriggeredRef.current === accountIndicesKey) {
+      return
+    }
+
+    // Update refs to track current account indices and that we've triggered a load
     prevAccountIndicesRef.current = accountIndicesKey
+    loadTriggeredRef.current = accountIndicesKey
 
     // Load addresses in the background
-    let cancelled = false
-    AddressService.loadAllAddresses(accountIndices, targetWalletId)
-      .catch((error) => {
-        if (!cancelled) {
-          logError('[useWallet] Failed to auto-load addresses:', error)
-        }
+    // Use ref to track cancellation so cleanup function can properly cancel
+    const cancelledRef = { current: false }
+    
+    // Load addresses for all account indices and networks in parallel
+    // Reuse networkConfigs from earlier in the effect
+    if (networkConfigs) {
+      const networks = Object.keys(networkConfigs)
+      const loadPromises = accountIndices.flatMap((accountIndex) =>
+        networks.map((network) =>
+          AddressService.getAddress(network, accountIndex, targetWalletId)
+            .catch((error: unknown) => {
+              if (!cancelledRef.current) {
+                logError(`[useWallet] Failed to load address for ${network}:${accountIndex}:`, error)
+              }
+            })
+        )
+      )
+      
+      // Fire and forget - don't await, just trigger the loads
+      Promise.all(loadPromises).catch(() => {
+        // Errors already logged individually
       })
+    }
 
     return () => {
-      cancelled = true
+      cancelledRef.current = true
     }
+    // Note: walletState is intentionally NOT in the dependency array to prevent infinite re-renders.
+    // When AddressService.loadAllAddresses updates addresses in the store, walletState changes,
+    // which would trigger this effect again, creating an infinite loop. Instead, we access
+    // walletState.addresses inside the effect body (line 254) and use loadTriggeredRef to
+    // prevent duplicate loads. The effect should only re-run when account indices, initialization
+    // state, switching state, or wallet ID change - not when addresses are updated.
   }, [
     options?.autoLoadAccountIndices,
     isInitialized,
     isSwitchingWallet,
-    targetWalletId,
-    walletState
+    targetWalletId
   ])
 
   // useShallow already provides stable references when content doesn't change
@@ -306,7 +343,31 @@ export function useWallet(options?: {
   // Load all addresses for specified account indices across all networks
   const loadAllAddresses = useCallback(async (accountIndices: number[] = [0]) => {
     const walletId = targetWalletId || '__temporary__'
-    return AddressService.loadAllAddresses(accountIndices, walletId)
+    const networkConfigs = workletStore.getState().networkConfigs
+    if (!networkConfigs) {
+      return {} as Record<string, Record<number, string>>
+    }
+    
+    const networks = Object.keys(networkConfigs)
+    const result: Record<string, Record<number, string>> = {}
+    
+    // Load addresses for all account indices and networks in parallel
+    const loadPromises = accountIndices.flatMap((accountIndex) =>
+      networks.map(async (network) => {
+        try {
+          const address = await AddressService.getAddress(network, accountIndex, walletId)
+          if (!result[network]) {
+            result[network] = {}
+          }
+          result[network][accountIndex] = address
+        } catch (error) {
+          logError(`[useWallet] Failed to load address for ${network}:${accountIndex}:`, error)
+        }
+      })
+    )
+    
+    await Promise.all(loadPromises)
+    return result
   }, [targetWalletId])
 
   // Call a method on a wallet account
