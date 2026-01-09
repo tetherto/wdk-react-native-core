@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { AccountService } from '../services/accountService'
@@ -80,6 +80,10 @@ function normalizeErrorToError(error: unknown): Error {
  * // Use specific wallet (automatically switches if needed)
  * const { addresses, getAddress } = useWallet({ walletId: 'user@example.com' })
  * 
+ * // Auto-load addresses for specific account indices
+ * const { addresses } = useWallet({ autoLoadAccountIndices: [0, 1, 2] })
+ * // Addresses will be automatically loaded when wallet is initialized
+ * 
  * // Note: For creating temporary wallets, use useWalletManager().createTemporaryWallet()
  * ```
  */
@@ -98,6 +102,7 @@ export interface UseWalletResult {
   isLoadingAddress: (network: string, accountIndex?: number) => boolean
   // Actions
   getAddress: (network: string, accountIndex?: number) => Promise<string>
+  loadAllAddresses: (accountIndices?: number[]) => Promise<Record<string, Record<number, string>>>
   callAccountMethod: <T = unknown>(
     network: string,
     accountIndex: number,
@@ -108,6 +113,8 @@ export interface UseWalletResult {
 
 export function useWallet(options?: {
   walletId?: string
+  /** Account indices to automatically load addresses for */
+  autoLoadAccountIndices?: number[]
 }): UseWalletResult {
   const workletStore = getWorkletStore()
   const walletStore = getWalletStore()
@@ -208,6 +215,70 @@ export function useWallet(options?: {
     }
   }, [options?.walletId, activeWalletId, isSwitchingWallet, switchingToWalletId])
 
+  // Auto-load addresses for specified account indices
+  // Use ref to track previous account indices to avoid unnecessary re-loads
+  const prevAccountIndicesRef = useRef<string>('')
+  useEffect(() => {
+    const accountIndices = options?.autoLoadAccountIndices
+    if (!accountIndices || accountIndices.length === 0) {
+      return
+    }
+
+    // Create stable string key for account indices to compare
+    const accountIndicesKey = accountIndices.sort().join(',')
+    
+    // Don't load if wallet is not initialized or is switching
+    if (!isInitialized || isSwitchingWallet) {
+      return
+    }
+
+    // Don't load if there's no target wallet
+    if (!targetWalletId || isTemporaryWalletId(targetWalletId)) {
+      return
+    }
+
+    // Check if all addresses are already loaded
+    const networkConfigs = workletStore.getState().networkConfigs
+    if (!networkConfigs) {
+      return
+    }
+    
+    const networks = Object.keys(networkConfigs)
+    const allLoaded = accountIndices.every((accountIndex) => {
+      return networks.every((network) => {
+        const address = walletState.addresses[network]?.[accountIndex]
+        return !!address
+      })
+    })
+
+    // If all addresses are already loaded and account indices haven't changed, skip
+    if (allLoaded && prevAccountIndicesRef.current === accountIndicesKey) {
+      return
+    }
+
+    // Update ref to track current account indices
+    prevAccountIndicesRef.current = accountIndicesKey
+
+    // Load addresses in the background
+    let cancelled = false
+    AddressService.loadAllAddresses(accountIndices, targetWalletId)
+      .catch((error) => {
+        if (!cancelled) {
+          logError('[useWallet] Failed to auto-load addresses:', error)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    options?.autoLoadAccountIndices,
+    isInitialized,
+    isSwitchingWallet,
+    targetWalletId,
+    walletState
+  ])
+
   // useShallow already provides stable references when content doesn't change
   // We can use walletState.addresses and walletState.walletLoading directly
   // No need to create new objects - useShallow handles reference stability
@@ -230,6 +301,12 @@ export function useWallet(options?: {
   const getAddress = useCallback(async (network: string, accountIndex: number = 0) => {
     const walletId = targetWalletId || '__temporary__'
     return AddressService.getAddress(network, accountIndex, walletId)
+  }, [targetWalletId])
+
+  // Load all addresses for specified account indices across all networks
+  const loadAllAddresses = useCallback(async (accountIndices: number[] = [0]) => {
+    const walletId = targetWalletId || '__temporary__'
+    return AddressService.loadAllAddresses(accountIndices, walletId)
   }, [targetWalletId])
 
   // Call a method on a wallet account
@@ -261,6 +338,7 @@ export function useWallet(options?: {
     isLoadingAddress,
     // Actions
     getAddress,
+    loadAllAddresses,
     callAccountMethod,
   }), [
     addresses,
@@ -273,6 +351,7 @@ export function useWallet(options?: {
     getNetworkAddresses,
     isLoadingAddress,
     getAddress,
+    loadAllAddresses,
     callAccountMethod,
   ]);
 
