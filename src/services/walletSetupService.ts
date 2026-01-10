@@ -11,6 +11,7 @@ import { WorkletLifecycleService } from './workletLifecycleService'
 import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
 import { log, logError } from '../utils/logger'
 import type { NetworkConfigs } from '../types'
+import { withOperationMutex } from '../utils/operationMutex'
 
 /**
  * Wallet setup service
@@ -386,56 +387,58 @@ export class WalletSetupService {
     encryptionKey: string
     encryptedSeed: string
   }> {
-    const secureStorage = this.getSecureStorage()
-    const cacheKey = this.getCacheKey(walletId)
-    const cached = getCachedCredentials(cacheKey)
+    return withOperationMutex(`loadExistingWallet:${walletId || 'default'}`, async () => {
+      const secureStorage = this.getSecureStorage()
+      const cacheKey = this.getCacheKey(walletId)
+      const cached = getCachedCredentials(cacheKey)
 
-    // Check if all required credentials are cached
-    if (cached?.encryptionKey && cached?.encryptedSeed) {
-      log('✅ Wallet loaded from cache (no biometrics needed)')
+      // Check if all required credentials are cached
+      if (cached?.encryptionKey && cached?.encryptedSeed) {
+        log('✅ Wallet loaded from cache (no biometrics needed)')
+        return {
+          encryptionKey: cached.encryptionKey,
+          encryptedSeed: cached.encryptedSeed,
+        }
+      }
+
+      log('🔓 Loading existing wallet - biometric authentication required...')
+
+      // Get encrypted seed first (doesn't require biometrics)
+      const encryptedSeed = await secureStorage.getEncryptedSeed(walletId)
+
+      // Try to get encryption key from cache first
+      let encryptionKey = cached?.encryptionKey
+
+      // If not in cache, get from secureStorage (will trigger biometrics)
+      if (!encryptionKey) {
+        log('Encryption key not in cache, fetching from secureStorage...')
+        try {
+          const allEncrypted = await secureStorage.getAllEncrypted(walletId)
+          encryptionKey = allEncrypted.encryptionKey || undefined
+        } catch (error) {
+          throw error
+        }
+      } else {
+        log('Using cached encryption key (no biometrics needed)')
+      }
+
+      if (!encryptionKey) {
+        throw new Error('Encryption key not found. Authentication may have failed or wallet does not exist.')
+      }
+
+      if (!encryptedSeed) {
+        throw new Error('Encrypted seed not found. Authentication may have failed or wallet does not exist.')
+      }
+
+      // Cache credentials for future use
+      this.cacheCredentials(walletId, encryptionKey, encryptedSeed)
+
+      log('✅ Wallet loaded successfully from secure storage')
       return {
-        encryptionKey: cached.encryptionKey,
-        encryptedSeed: cached.encryptedSeed,
+        encryptionKey,
+        encryptedSeed,
       }
-    }
-
-    log('🔓 Loading existing wallet - biometric authentication required...')
-    
-    // Get encrypted seed first (doesn't require biometrics)
-    const encryptedSeed = await secureStorage.getEncryptedSeed(walletId)
-    
-    // Try to get encryption key from cache first
-    let encryptionKey = cached?.encryptionKey
-    
-    // If not in cache, get from secureStorage (will trigger biometrics)
-    if (!encryptionKey) {
-      log('Encryption key not in cache, fetching from secureStorage...')
-      try {
-        const allEncrypted = await secureStorage.getAllEncrypted(walletId)
-        encryptionKey = allEncrypted.encryptionKey || undefined
-      } catch (error) {
-        throw error
-      }
-    } else {
-      log('Using cached encryption key (no biometrics needed)')
-    }
-
-    if (!encryptionKey) {
-      throw new Error('Encryption key not found. Authentication may have failed or wallet does not exist.')
-    }
-
-    if (!encryptedSeed) {
-      throw new Error('Encrypted seed not found. Authentication may have failed or wallet does not exist.')
-    }
-
-    // Cache credentials for future use
-    this.cacheCredentials(walletId, encryptionKey, encryptedSeed)
-
-    log('✅ Wallet loaded successfully from secure storage')
-    return {
-      encryptionKey,
-      encryptedSeed,
-    }
+    })
   }
 
   /**
