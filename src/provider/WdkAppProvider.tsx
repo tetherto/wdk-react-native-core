@@ -145,6 +145,12 @@ export interface WdkAppProviderProps {
    * This prevents initializing with wrong user's wallet during account switches
    */
   currentUserId?: string | null
+  /**
+   * Clear sensitive data on mount and when app goes to background (default: false)
+   * When enabled, this ensures biometrics are always required on app restart or foreground.
+   * Set to true if you want to enforce biometric authentication on every app foreground.
+   */
+  clearSensitiveDataOnBackground?: boolean
   /** Child components (app content) */
   children: React.ReactNode
 }
@@ -192,6 +198,7 @@ export function WdkAppProvider({
   tokenConfigs,
   enableAutoInitialization = true,
   currentUserId,
+  clearSensitiveDataOnBackground = false,
   children,
 }: WdkAppProviderProps) {
   // Create secureStorage singleton
@@ -204,7 +211,13 @@ export function WdkAppProvider({
 
   // Clear sensitive data on mount AND when app goes to background
   // This ensures biometrics are always required on app restart or foreground
+  // Only enabled if clearSensitiveDataOnBackground is explicitly set to true
   useEffect(() => {
+    // Skip if not explicitly enabled
+    if (!clearSensitiveDataOnBackground) {
+      return
+    }
+
     // CRITICAL: Clear cache on mount to handle true app restarts (not hot reloads)
     // When app is killed and reopened:
     // - walletStore rehydrates with 'not_loaded' state
@@ -228,6 +241,7 @@ export function WdkAppProvider({
         // This ensures biometrics are required when app comes back
         // CRITICAL: Only reset if wallet is 'ready' - don't interrupt 'loading' or 'checking' states
         // Interrupting these states would cancel biometric authentication in progress
+        const walletStore = getWalletStore()
         const currentState = walletStore.getState()
         const currentStateType = currentState.walletLoadingState.type
         
@@ -252,7 +266,7 @@ export function WdkAppProvider({
     })
     
     return () => subscription.remove()
-  }, [])
+  }, [clearSensitiveDataOnBackground])
 
   // Validate props on mount and when props change
   useEffect(() => {
