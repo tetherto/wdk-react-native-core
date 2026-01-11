@@ -87,6 +87,29 @@ export interface UseWalletManagerResult {
   getMnemonic: (walletId?: string) => Promise<string | null>
   /** Create a temporary wallet for previewing addresses (no biometrics, not saved) */
   createTemporaryWallet: () => Promise<void>
+  /** 
+   * Get encryption key from cache or secure storage
+   * Requires biometric authentication if not cached
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   */
+  getEncryptionKey: (walletId?: string) => Promise<string | null>
+  /**
+   * Get encrypted seed from cache or secure storage (no biometrics required)
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   */
+  getEncryptedSeed: (walletId?: string) => Promise<string | null>
+  /**
+   * Get encrypted entropy from cache or secure storage (no biometrics required)
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   */
+  getEncryptedEntropy: (walletId?: string) => Promise<string | null>
+  /**
+   * Load existing wallet credentials from secure storage
+   * Requires biometric authentication if not cached
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   * @returns Credentials object with encryptionKey and encryptedSeed
+   */
+  loadExistingWallet: (walletId?: string) => Promise<{ encryptionKey: string; encryptedSeed: string }>
   /** Whether initialization is in progress */
   isInitializing: boolean
   /** Error message if any */
@@ -468,6 +491,80 @@ export function useWalletManager(
   )
 
   /**
+   * Get encryption key from cache or secure storage
+   * Requires biometric authentication if not cached
+   * 
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   * @returns Promise resolving to encryption key or null if not found
+   */
+  const getEncryptionKey = useCallback(
+    async (walletIdParam?: string): Promise<string | null> => {
+      try {
+        return await WalletSetupService.getEncryptionKey(walletIdParam ?? walletId)
+      } catch (err) {
+        logError('Failed to get encryption key:', err)
+        throw err
+      }
+    },
+    [walletId]
+  )
+
+  /**
+   * Get encrypted seed from cache or secure storage (no biometrics required)
+   * 
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   * @returns Promise resolving to encrypted seed or null if not found
+   */
+  const getEncryptedSeed = useCallback(
+    async (walletIdParam?: string): Promise<string | null> => {
+      try {
+        return await WalletSetupService.getEncryptedSeed(walletIdParam ?? walletId)
+      } catch (err) {
+        logError('Failed to get encrypted seed:', err)
+        throw err
+      }
+    },
+    [walletId]
+  )
+
+  /**
+   * Get encrypted entropy from cache or secure storage (no biometrics required)
+   * 
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   * @returns Promise resolving to encrypted entropy or null if not found
+   */
+  const getEncryptedEntropy = useCallback(
+    async (walletIdParam?: string): Promise<string | null> => {
+      try {
+        return await WalletSetupService.getEncryptedEntropy(walletIdParam ?? walletId)
+      } catch (err) {
+        logError('Failed to get encrypted entropy:', err)
+        throw err
+      }
+    },
+    [walletId]
+  )
+
+  /**
+   * Load existing wallet credentials from secure storage
+   * Requires biometric authentication if not cached
+   * 
+   * @param walletId - Optional walletId override (defaults to hook's walletId)
+   * @returns Promise resolving to credentials object with encryptionKey and encryptedSeed
+   */
+  const loadExistingWallet = useCallback(
+    async (walletIdParam?: string): Promise<{ encryptionKey: string; encryptedSeed: string }> => {
+      try {
+        return await WalletSetupService.loadExistingWallet(walletIdParam ?? walletId)
+      } catch (err) {
+        logError('Failed to load existing wallet:', err)
+        throw err
+      }
+    },
+    [walletId]
+  )
+
+  /**
    * Clear error state
    */
   const clearError = useCallback(() => {
@@ -619,6 +716,10 @@ export function useWalletManager(
       deleteWallet,
       getMnemonic,
       createTemporaryWallet,
+      getEncryptionKey,
+      getEncryptedSeed,
+      getEncryptedEntropy,
+      loadExistingWallet,
       isInitializing, // Derived from walletLoadingState (single source of truth)
       error,
       clearError,
@@ -638,6 +739,10 @@ export function useWalletManager(
       deleteWallet,
       getMnemonic,
       createTemporaryWallet,
+      getEncryptionKey,
+      getEncryptedSeed,
+      getEncryptedEntropy,
+      loadExistingWallet,
       isInitializing,
       error,
       clearError,
