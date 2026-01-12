@@ -39,6 +39,8 @@ export { useWalletManager } from './hooks/useWalletManager'
 export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManager'
 export { useBalance, useBalancesForWallet, useBalancesForWallets, useRefreshBalance, balanceQueryKeys } from './hooks/useBalance'
 export type { AccountInfo } from './store/walletStore'
+export { getWalletStore } from './store/walletStore'
+export type { WalletStore as WalletStoreState } from './store/walletStore'
 
 // Validation Utilities (for validating configs before use)
 export { 

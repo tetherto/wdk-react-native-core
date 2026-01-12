@@ -139,7 +139,7 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptionKey', 'test-key')
       expect(result).toHaveProperty('encryptedSeed', 'test-seed')
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(undefined)
-      expect(mockSecureStorage.getAllEncrypted).toHaveBeenCalledWith(undefined)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(undefined)
     })
 
     it('should load existing wallet with identifier', async () => {
@@ -153,7 +153,7 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptionKey', 'test-key')
       expect(result).toHaveProperty('encryptedSeed', 'test-seed')
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(identifier)
-      expect(mockSecureStorage.getAllEncrypted).toHaveBeenCalledWith(identifier)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier)
     })
 
     it('should throw error if encryption key not found', async () => {
@@ -288,7 +288,7 @@ describe('WalletSetupService', () => {
       )
 
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalled()
-      expect(mockSecureStorage.getAllEncrypted).toHaveBeenCalled()
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalled()
       expect(WorkletLifecycleService.initializeWDK).toHaveBeenCalled()
     })
 
@@ -331,7 +331,7 @@ describe('WalletSetupService', () => {
       )
 
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(identifier)
-      expect(mockSecureStorage.getAllEncrypted).toHaveBeenCalledWith(identifier)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier)
     })
   })
 
