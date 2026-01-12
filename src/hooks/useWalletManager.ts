@@ -60,6 +60,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { produce } from 'immer'
 
 import { WalletSetupService } from '../services/walletSetupService'
 import { WorkletLifecycleService } from '../services/workletLifecycleService'
@@ -469,42 +470,25 @@ export function useWalletManager(
         await WalletSetupService.deleteWallet(targetWalletId)
 
         // Remove from wallet list and clear all wallet-specific data
-        walletStore.setState((state) => {
-          const wasActive = state.activeWalletId === targetWalletId
+        walletStore.setState((prev) =>
+          produce(prev, (state) => {
+            delete state.addresses[targetWalletId]
+            delete state.balances[targetWalletId]
+            delete state.accountList[targetWalletId]
+            delete state.lastBalanceUpdate[targetWalletId]
+            delete state.walletLoading[targetWalletId]
+            delete state.balanceLoading[targetWalletId]
 
-          // Clear all wallet-specific data (only if walletId exists)
-          const remainingAddresses = { ...state.addresses }
-          const remainingBalances = { ...state.balances }
-          const remainingAccountList = { ...state.accountList }
-          const remainingLastBalanceUpdate = { ...state.lastBalanceUpdate }
-          const remainingWalletLoading = { ...state.walletLoading }
-          const remainingBalanceLoading = { ...state.balanceLoading }
+            state.walletList = state.walletList.filter(
+              ({ identifier }) => identifier !== targetWalletId,
+            )
 
-          delete remainingAddresses[targetWalletId]
-          delete remainingBalances[targetWalletId]
-          delete remainingAccountList[targetWalletId]
-          delete remainingLastBalanceUpdate[targetWalletId]
-          delete remainingWalletLoading[targetWalletId]
-          delete remainingBalanceLoading[targetWalletId]
-
-          return {
-            walletList: state.walletList.filter(
-              (w: WalletInfo) => w.identifier !== targetWalletId,
-            ),
-            activeWalletId: wasActive ? null : state.activeWalletId,
-            // Reset loading state if this was the active wallet
-            walletLoadingState: wasActive
-              ? { type: 'not_loaded' }
-              : state.walletLoadingState,
-            // Clear all wallet-specific data
-            addresses: remainingAddresses,
-            balances: remainingBalances,
-            accountList: remainingAccountList,
-            lastBalanceUpdate: remainingLastBalanceUpdate,
-            walletLoading: remainingWalletLoading,
-            balanceLoading: remainingBalanceLoading,
-          }
-        })
+            if (state.activeWalletId === targetWalletId) {
+              state.activeWalletId = null
+              state.walletLoadingState = { type: 'not_loaded' }
+            }
+          }),
+        )
 
         log(
           `[useWalletManager] Deleted wallet and cleared all data: ${targetWalletId}`,
@@ -531,7 +515,6 @@ export function useWalletManager(
       try {
         return await WalletSetupService.getMnemonic(walletIdParam ?? walletId)
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err)
         logError('Failed to get mnemonic:', err)
         throw err
       }
