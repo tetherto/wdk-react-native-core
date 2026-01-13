@@ -220,13 +220,18 @@ export function WdkAppProvider({
   clearSensitiveDataOnBackground = false,
   children,
 }: WdkAppProviderProps) {
-  // Create secureStorage singleton
+  // Create secureStorage singleton and set it in WalletSetupService synchronously
+  // CRITICAL: This must be synchronous (not in useEffect) to prevent race conditions
+  // where child components' useEffect hooks run before this effect
+  const secureStorageInitialized = useRef(false)
   const secureStorage = useMemo(() => createSecureStorage(), [])
 
-  // Set secureStorage in WalletSetupService
-  useEffect(() => {
+  // Set SecureStorage synchronously during render (not in useEffect)
+  // This ensures it's available before any child component's useEffect runs
+  if (!secureStorageInitialized.current) {
     WalletSetupService.setSecureStorage(secureStorage)
-  }, [secureStorage])
+    secureStorageInitialized.current = true
+  }
 
   // Clear sensitive data on mount AND when app goes to background
   // This ensures biometrics are always required on app restart or foreground
