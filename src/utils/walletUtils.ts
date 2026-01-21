@@ -92,7 +92,7 @@ export function createBaseWalletStore(): Pick<WalletStore, 'callAccountMethod' |
       methodName: string,
       args?: unknown
     ): Promise<T> => {
-      return AccountService.callAccountMethod<T>(network, accountIndex, methodName, args)
+      return AccountService.callAccountMethod(network, accountIndex, methodName, args) as Promise<T>
     },
 
     isWalletInitialized: () => {

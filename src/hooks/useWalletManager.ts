@@ -120,6 +120,30 @@ export interface UseWalletManagerResult {
   loadExistingWallet: (
     walletId?: string,
   ) => Promise<{ encryptionKey: string; encryptedSeed: string }>
+  /**
+   * Generate entropy and encrypt (for creating new wallets)
+   * Use this for custom wallet creation flows (e.g. show mnemonic before saving)
+   */
+  generateEntropyAndEncrypt: (wordCount?: 12 | 24) => Promise<{
+    encryptionKey: string
+    encryptedSeedBuffer: string
+    encryptedEntropyBuffer: string
+  }>
+  /**
+   * Get mnemonic from encrypted entropy (for display purposes only - never stored)
+   */
+  getMnemonicFromEntropy: (
+    encryptedEntropy: string,
+    encryptionKey: string,
+  ) => Promise<{ mnemonic: string }>
+  /**
+   * Get seed and entropy from mnemonic phrase (for importing existing wallets)
+   */
+  getSeedAndEntropyFromMnemonic: (mnemonic: string) => Promise<{
+    encryptionKey: string
+    encryptedSeedBuffer: string
+    encryptedEntropyBuffer: string
+  }>
   /** Whether initialization is in progress */
   isInitializing: boolean
   /** Error message if any */
@@ -605,6 +629,78 @@ export function useWalletManager(
   )
 
   /**
+   * Generate entropy and encrypt (for creating new wallets)
+   */
+  const generateEntropyAndEncrypt = useCallback(
+    async (wordCount?: 12 | 24) => {
+      try {
+        const effectiveNetworkConfigs = getNetworkConfigs()
+        
+        // Ensure worklet is started
+        await WorkletLifecycleService.ensureWorkletStarted(
+          effectiveNetworkConfigs,
+          { autoStart: true }
+        )
+        
+        return await WorkletLifecycleService.generateEntropyAndEncrypt(wordCount)
+      } catch (err) {
+        logError('Failed to generate entropy:', err)
+        throw err
+      }
+    },
+    [getNetworkConfigs]
+  )
+
+  /**
+   * Get mnemonic from encrypted entropy
+   */
+  const getMnemonicFromEntropy = useCallback(
+    async (encryptedEntropy: string, encryptionKey: string) => {
+      try {
+        const effectiveNetworkConfigs = getNetworkConfigs()
+        
+        // Ensure worklet is started
+        await WorkletLifecycleService.ensureWorkletStarted(
+          effectiveNetworkConfigs,
+          { autoStart: true }
+        )
+        
+        return await WorkletLifecycleService.getMnemonicFromEntropy(
+          encryptedEntropy,
+          encryptionKey
+        )
+      } catch (err) {
+        logError('Failed to get mnemonic from entropy:', err)
+        throw err
+      }
+    },
+    [getNetworkConfigs]
+  )
+
+  /**
+   * Get seed and entropy from mnemonic phrase
+   */
+  const getSeedAndEntropyFromMnemonic = useCallback(
+    async (mnemonic: string) => {
+      try {
+        const effectiveNetworkConfigs = getNetworkConfigs()
+        
+        // Ensure worklet is started
+        await WorkletLifecycleService.ensureWorkletStarted(
+          effectiveNetworkConfigs,
+          { autoStart: true }
+        )
+        
+        return await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
+      } catch (err) {
+        logError('Failed to get seed from mnemonic:', err)
+        throw err
+      }
+    },
+    [getNetworkConfigs]
+  )
+
+  /**
    * Clear error state
    */
   const clearError = useCallback(() => {
@@ -635,7 +731,7 @@ export function useWalletManager(
         // Ensure worklet is started (auto-start if needed)
         await WorkletLifecycleService.ensureWorkletStarted(
           effectiveNetworkConfigs,
-          { autoStart: true },
+          { autoStart: true }
         )
 
         // Generate entropy and encrypt (no biometrics, no keychain save)
@@ -652,7 +748,6 @@ export function useWalletManager(
         log('[useWalletManager] Temporary wallet created successfully')
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err)
-        const errorObj = err instanceof Error ? err : new Error(String(err))
         logError('[useWalletManager] Failed to create temporary wallet:', err)
         setError(errorMessage)
         throw err
@@ -725,7 +820,7 @@ export function useWalletManager(
    * Create a new wallet and add it to the wallet list
    */
   const createWallet = useCallback(
-    async (walletId: string, walletNetworkConfigs?: NetworkConfigs) => {
+    async (walletId: string, walletNetworkConfigs?: WdkConfigs) => {
       setIsWalletListLoading(true)
       setWalletListError(null)
 
@@ -785,6 +880,9 @@ export function useWalletManager(
       getEncryptedSeed,
       getEncryptedEntropy,
       loadExistingWallet,
+      generateEntropyAndEncrypt,
+      getMnemonicFromEntropy,
+      getSeedAndEntropyFromMnemonic,
       isInitializing, // Derived from walletLoadingState (single source of truth)
       error,
       clearError,
@@ -808,6 +906,9 @@ export function useWalletManager(
       getEncryptedSeed,
       getEncryptedEntropy,
       loadExistingWallet,
+      generateEntropyAndEncrypt,
+      getMnemonicFromEntropy,
+      getSeedAndEntropyFromMnemonic,
       isInitializing,
       error,
       clearError,

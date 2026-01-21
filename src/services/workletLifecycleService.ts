@@ -189,8 +189,9 @@ export class WorkletLifecycleService {
    * @throws Error if worklet not started and autoStart=false or networkConfigs not provided
    */
   static async ensureWorkletStarted(
-    networkConfigs?: NetworkConfigs,
+    networkConfigs?: WdkConfigs,
     options?: { autoStart?: boolean },
+    bundleConfig?: BundleConfig
   ): Promise<void> {
     const store = getWorkletStore()
     const state = store.getState()
@@ -200,11 +201,11 @@ export class WorkletLifecycleService {
     }
 
     const autoStart = options?.autoStart ?? false
-    if (!autoStart || !networkConfigs) {
+    if (!autoStart || !networkConfigs || !bundleConfig) {
       throw new Error('Worklet must be started before this operation')
     }
 
-    await this.startWorklet(networkConfigs)
+    await this.startWorklet(networkConfigs, bundleConfig)
   }
 
   /**

@@ -6,6 +6,7 @@
  * like getBalance, getTokenBalance, signMessage, signTransaction, etc.
  */
 
+import type { LooseMethods, MethodMap } from '../types/accountMethods'
 import { convertBigIntToString } from '../utils/balanceUtils'
 import { handleServiceError } from '../utils/errorHandling'
 import { safeStringify } from '../utils/jsonUtils'
@@ -26,43 +27,38 @@ export class AccountService {
    * The worklet should already have the correct wallet loaded via `initializeWDK`.
    * Wallet switching is handled at the hook level before calling this service.
    * 
+   * @template TMethods - Map of method names to definitions (args/result)
+   * @template K - Method name (key of TMethods)
+   * 
    * @param network - Network name
    * @param accountIndex - Account index
    * @param methodName - Method name
-   * @param args - Optional arguments for the method
+   * @param args - Method arguments (typed based on methodName)
    * @param walletId - Optional wallet identifier (for consistency, worklet should already have correct wallet loaded)
    * @returns Promise with the method result
    * @throws Error if validation fails
    * 
    * @example
    * ```typescript
-   * // Get balance
-   * const balance = await AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+   * // Define types
+   * interface MyMethods {
+   *   getBalance: { args: undefined; result: string };
+   *   transfer: { args: { to: string }; result: string };
+   * }
    * 
-   * // Get token balance
-   * const tokenBalance = await AccountService.callAccountMethod(
-   *   'ethereum', 
-   *   0, 
-   *   'getTokenBalance', 
-   *   '0x...'
-   * )
-   * 
-   * // Sign a message
-   * const signature = await AccountService.callAccountMethod(
-   *   'ethereum',
-   *   0,
-   *   'signMessage',
-   *   { message: 'Hello World' }
-   * )
+   * // Strict usage
+   * await AccountService.callAccountMethod<MyMethods, 'transfer'>('eth', 0, 'transfer', { to: '0x...' })
    * ```
    */
-  static async callAccountMethod<T = unknown>(
+  static async callAccountMethod<
+    TMethods extends MethodMap = LooseMethods,
+    K extends keyof TMethods = keyof TMethods
+  >(
     network: string,
     accountIndex: number,
-    methodName: string,
-    args?: unknown,
-    walletId?: string
-  ): Promise<T> {
+    methodName: K,
+    args?: TMethods[K]['args']
+  ): Promise<TMethods[K]['result']> {
     // Validate methodName parameter
     if (typeof methodName !== 'string' || methodName.trim().length === 0) {
       throw new Error('methodName must be a non-empty string')
@@ -84,7 +80,7 @@ export class AccountService {
 
     try {
       const response = await hrpc.callMethod({
-        methodName,
+        methodName: String(methodName),
         network,
         accountIndex,
         args: argsString,
@@ -98,9 +94,9 @@ export class AccountService {
       }
 
       // Parse the result and handle BigInt values
-      let parsed: T
+      let parsed: TMethods[K]['result']
       try {
-        parsed = JSON.parse(validatedResponse.result) as T
+        parsed = JSON.parse(validatedResponse.result) as TMethods[K]['result']
         // Basic validation: ensure parsed is not null/undefined
         if (parsed === null || parsed === undefined) {
           throw new Error('Parsed result is null or undefined')
@@ -121,9 +117,9 @@ export class AccountService {
       }
       
       // Recursively convert BigInt values to strings to prevent serialization errors
-      return convertBigIntToString(parsed) as T
+      return convertBigIntToString(parsed) as TMethods[K]['result']
     } catch (error) {
-      handleServiceError(error, 'AccountService', `callAccountMethod:${methodName}`, {
+      handleServiceError(error, 'AccountService', `callAccountMethod:${String(methodName)}`, {
         network,
         accountIndex,
         methodName,

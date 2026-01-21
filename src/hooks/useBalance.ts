@@ -205,12 +205,12 @@ async function fetchBalance(
     const methodName = isNative ? ACCOUNT_METHOD_GET_BALANCE : ACCOUNT_METHOD_GET_TOKEN_BALANCE
     const methodArg = asset.getContractAddress() // null for native
 
-    const balanceResult = await AccountService.callAccountMethod<string>(
+    const balanceResult = await AccountService.callAccountMethod(
       network,
       accountIndex,
       methodName,
       methodArg
-    )
+    ) as string
 
     // Convert to string (handles BigInt values)
     const balance = convertBalanceToString(balanceResult)
