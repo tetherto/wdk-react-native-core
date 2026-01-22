@@ -110,11 +110,11 @@ export class WorkletLifecycleService {
    */
   static async startWorklet(
     networkConfigs: WdkConfigs,
-    bundleConfig: BundleConfig
+    bundleConfig: BundleConfig,
   ): Promise<void> {
     const store = getWorkletStore()
     const state = store.getState()
-    
+
     if (state.isLoading) {
       logWarn('Worklet initialization already in progress')
       return
@@ -124,7 +124,7 @@ export class WorkletLifecycleService {
       log('Worklet already started')
       return
     }
-    
+
     try {
       store.setState({ error: null, isLoading: true })
 
@@ -139,8 +139,10 @@ export class WorkletLifecycleService {
       // Get bundle and HRPC class from bundleConfig (passed from WdkAppProvider)
       const { bundle } = bundleConfig
 
-      worklet.start('wdk-worklet.bundle', bundle)
-
+      ;(worklet.start as (path: string, bundle: string) => void)(
+        '/wdk-worklet.bundle',
+        bundle,
+      )
       const { IPC } = worklet
 
       if (!IPC) {
@@ -190,7 +192,7 @@ export class WorkletLifecycleService {
   static async ensureWorkletStarted(
     networkConfigs?: WdkConfigs,
     options?: { autoStart?: boolean },
-    bundleConfig?: BundleConfig
+    bundleConfig?: BundleConfig,
   ): Promise<void> {
     const store = getWorkletStore()
     const state = store.getState()
@@ -411,14 +413,12 @@ export class WorkletLifecycleService {
    * @param options.networkConfigs - Network configurations
    * @param options.bundleConfig - Bundle configuration
    */
-  static async initializeWorklet(
-    options: {
-      encryptionKey: string
-      encryptedSeed: string
-      networkConfigs: WdkConfigs
-      bundleConfig: BundleConfig
-    }
-  ): Promise<void> {
+  static async initializeWorklet(options: {
+    encryptionKey: string
+    encryptedSeed: string
+    networkConfigs: WdkConfigs
+    bundleConfig: BundleConfig
+  }): Promise<void> {
     // Convenience method that does both steps - ONLY encrypted approach
     await this.startWorklet(options.networkConfigs, options.bundleConfig)
     await this.initializeWDK({
