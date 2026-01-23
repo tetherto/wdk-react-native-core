@@ -50,7 +50,7 @@ describe('workletStore', () => {
       expect(state.error).toBe(null)
       expect(state.encryptedSeed).toBe(null)
       expect(state.encryptionKey).toBe(null)
-      expect(state.networkConfigs).toBe(null)
+      expect(state.wdkConfigs).toBe(null)
       expect(state.workletStartResult).toBe(null)
       expect(state.wdkInitResult).toBe(null)
       expect(state.credentialsCache).toEqual({})

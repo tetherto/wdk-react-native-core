@@ -10,9 +10,13 @@ import { mockSecureStorage } from '../../__mocks__/secureStorage'
 
 describe('WdkAppProvider validation', () => {
   const mockNetworkConfigs: WdkConfigs = {
-    ethereum: {
-      chainId: 1,
-      blockchain: 'ethereum',
+    networks: {
+      ethereum: {
+        blockchain: 'ethereum',
+        config: {
+          chainId: 1,
+        },
+      },
     },
   }
 

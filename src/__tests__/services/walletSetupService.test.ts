@@ -47,10 +47,14 @@ jest.mock('../../store/workletStore', () => ({
 
 describe('WalletSetupService', () => {
   const mockNetworkConfigs: WdkConfigs = {
-    ethereum: {
-      chainId: 1,
-      blockchain: 'ethereum',
-    },
+    networks: {
+      ethereum: {
+        blockchain: 'ethereum',
+        config: {
+          chainId: 1
+        }
+      },
+    }
   }
 
   beforeEach(() => {
@@ -76,7 +80,6 @@ describe('WalletSetupService', () => {
   describe('createNewWallet', () => {
     it('should create a new wallet without identifier', async () => {
       const result = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs
       )
 
       expect(result).toHaveProperty('encryptionKey')
@@ -99,7 +102,6 @@ describe('WalletSetupService', () => {
     it('should create a new wallet with identifier', async () => {
       const identifier = 'user@example.com'
       const result = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier
       )
 
@@ -124,7 +126,7 @@ describe('WalletSetupService', () => {
       authMock.mockResolvedValueOnce(false)
 
       await expect(
-        WalletSetupService.createNewWallet(mockNetworkConfigs)
+        WalletSetupService.createNewWallet()
       ).rejects.toThrow('Biometric authentication required to create wallet')
     })
   })
@@ -206,7 +208,6 @@ describe('WalletSetupService', () => {
 
     it('should initialize wallet from mnemonic without identifier', async () => {
       const result = await WalletSetupService.initializeFromMnemonic(
-        mockNetworkConfigs,
         testMnemonic
       )
 
@@ -223,7 +224,6 @@ describe('WalletSetupService', () => {
     it('should initialize wallet from mnemonic with identifier', async () => {
       const identifier = 'user@example.com'
       const result = await WalletSetupService.initializeFromMnemonic(
-        mockNetworkConfigs,
         testMnemonic,
         identifier
       )
@@ -245,7 +245,6 @@ describe('WalletSetupService', () => {
 
       await expect(
         WalletSetupService.initializeFromMnemonic(
-          mockNetworkConfigs,
           testMnemonic
         )
       ).rejects.toThrow('Biometric authentication required to import wallet')
@@ -261,7 +260,6 @@ describe('WalletSetupService', () => {
       }))
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: true }
       )
 
@@ -284,7 +282,6 @@ describe('WalletSetupService', () => {
       await mockSecureStorage.setEncryptedSeed('test-seed', undefined)
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: false }
       )
 
@@ -302,7 +299,6 @@ describe('WalletSetupService', () => {
 
       const identifier = 'user@example.com'
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: true, walletId: identifier }
       )
 
@@ -327,7 +323,6 @@ describe('WalletSetupService', () => {
       await mockSecureStorage.setEncryptedSeed('test-seed', identifier)
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: false, walletId: identifier }
       )
 
@@ -355,13 +350,11 @@ describe('WalletSetupService', () => {
 
       // Create wallet for user1
       const result1 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       // Create wallet for user2
       const result2 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 
@@ -407,12 +400,10 @@ describe('WalletSetupService', () => {
       const identifier2 = 'bob@example.com'
 
       const wallet1 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       const wallet2 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 
@@ -442,13 +433,11 @@ describe('WalletSetupService', () => {
 
       // Create wallet for identifier1
       await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       // Create wallet for identifier2
       await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 

@@ -6,7 +6,6 @@
  */
 
 export type {
-  WdkConfig,
   WdkConfigs,
   AssetConfig,
   Wallet,

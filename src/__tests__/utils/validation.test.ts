@@ -17,10 +17,14 @@ describe('validation', () => {
   describe('validateNetworkConfigs', () => {
     it('should not throw for valid network configs', () => {
       const validConfigs: WdkConfigs = {
-        ethereum: {
-          chainId: 1,
-          blockchain: 'ethereum',
-        },
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1,
+            }
+          },
+        }
       }
       expect(() => validateWdkConfigs(validConfigs)).not.toThrow()
     })

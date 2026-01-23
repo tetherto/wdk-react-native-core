@@ -22,18 +22,18 @@ import {
 } from './schemas'
 
 import type {
-  WdkConfig,
   WdkConfigs,
   AssetConfig,
   WalletAddresses,
   WalletBalances,
+  WdkNetworkConfig,
 } from '../types'
 
 /**
  * Type guard to check if a value is a valid NetworkConfig
  * Uses Zod schema internally for validation
  */
-export function isWdkConfig(value: unknown): value is WdkConfig {
+export function isWdkConfig(value: unknown): value is WdkNetworkConfig {
   return wdkConfigSchema.safeParse(value).success
 }
 

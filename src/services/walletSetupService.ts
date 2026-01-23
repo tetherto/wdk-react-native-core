@@ -10,7 +10,6 @@ import {
 import { WorkletLifecycleService } from './workletLifecycleService'
 import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
 import { log, logError } from '../utils/logger'
-import type { WdkConfigs } from '../types'
 
 /**
  * Wallet setup service
@@ -179,13 +178,11 @@ export class WalletSetupService {
    * Requires biometric authentication
    */
   static async createNewWallet(
-    networkConfigs: WdkConfigs,
     walletId?: string
   ): Promise<{
     encryptionKey: string
     encryptedSeed: string
   }> {
-    const store = getWorkletStore()
     const secureStorage = this.getSecureStorage()
 
     // Require biometric authentication
@@ -298,7 +295,6 @@ export class WalletSetupService {
    * Requires biometric authentication
    */
   static async initializeFromMnemonic(
-    networkConfigs: WdkConfigs,
     mnemonic: string,
     walletId?: string
   ): Promise<{
@@ -306,7 +302,6 @@ export class WalletSetupService {
     encryptedSeed: string
     encryptedEntropy: string
   }> {
-    const store = getWorkletStore()
     const secureStorage = this.getSecureStorage()
 
     // Require biometric authentication
@@ -388,7 +383,6 @@ export class WalletSetupService {
    * Either creates a new wallet or loads an existing one
    */
   static async initializeWallet(
-    networkConfigs: WdkConfigs,
     options: {
       createNew?: boolean
       walletId?: string
@@ -397,7 +391,7 @@ export class WalletSetupService {
     let credentials: { encryptionKey: string; encryptedSeed: string }
 
     if (options.createNew) {
-      credentials = await this.createNewWallet(networkConfigs, options.walletId)
+      credentials = await this.createNewWallet(options.walletId)
     } else {
       credentials = await this.loadExistingWallet(options.walletId)
     }

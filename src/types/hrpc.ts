@@ -17,6 +17,9 @@ export {
   type DisposeRequest,
   type CallMethodRequest,
   type CallMethodResponse,
+  type WdkWorkletConfig,
+  type NetworkConfig,
+  type ProtocolConfig,
 } from '@tetherto/pear-wrk-wdk'
 
 // Re-export HRPC class/interface
@@ -37,8 +40,8 @@ export type HRPC = PearHRPC
  * import { bundle, HRPC } from './.wdk'
  *
  * <WdkAppProvider
- *   bundle={{ bundle, HRPC }}
- *   networkConfigs={...}
+ *   bundle={{ bundle }}
+ *   wdkConfigs={...}
  * >
  *   <App />
  * </WdkAppProvider>

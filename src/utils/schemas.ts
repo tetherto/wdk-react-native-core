@@ -31,27 +31,41 @@ export const assetIdSchema = z.string().min(1)
 
 /**
  * Network configuration schema (Generic)
- * Minimal requirements: blockchain string.
- * All other fields are optional/passthrough to support any chain.
+ * Matches { blockchain: string, config: object }
  */
 export const wdkConfigSchema = z.object({
   blockchain: z.string().min(1),
-  // Common fields are checked loosely if present
-  chainId: z.number().int().optional(),
-  provider: z.string().optional(),
-  // All other fields allowed
+  config: z.record(z.string(), z.unknown()).optional().default({}),
 }).passthrough()
 
 /**
  * Network configurations schema
  */
-export const wdkConfigsSchema = z.record(
+export const wdkNetworkConfigsSchema = z.record(
   z.string().regex(/^[a-zA-Z0-9_-]+$/, {
     message: 'Network name must contain only alphanumeric characters, hyphens, and underscores',
   }),
   wdkConfigSchema
 ).refine((configs) => Object.keys(configs).length > 0, {
   message: 'NetworkConfigs must contain at least one network',
+})
+
+/**
+ * Protocol configuration schema
+ * Matches { protocolName: string, blockchain: string, config: object }
+ */
+export const protocolConfigSchema = z.object({
+  protocolName: z.string().min(1),
+  blockchain: z.string().min(1),
+  config: z.record(z.string(), z.unknown()).optional().default({}),
+}).passthrough()
+
+/**
+ * WDK configuration schema
+ */
+export const wdkConfigsSchema = z.object({
+  networks: wdkNetworkConfigsSchema,
+  protocols: z.record(z.string(), protocolConfigSchema).optional(),
 })
 
 /**

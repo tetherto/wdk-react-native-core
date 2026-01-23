@@ -67,80 +67,94 @@ jest.mock('../../store/workletStore', () => ({
  * beyond the base NetworkConfig type but are valid in practice
  */
 const defaultNetworkConfigs = {
-  sepolia: {
-    chainId: 11155111,
-    blockchain: 'sepolia',
-    provider: 'https://sepolia.gateway.tenderly.co',
-    bundlerUrl: 'https://api.candide.dev/public/v3/sepolia',
-    paymasterUrl: 'https://api.candide.dev/public/v3/sepolia',
-    paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
-    entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    safeModulesVersion: '0.3.0',
-    paymasterToken: {
-      address: '0xd077A400968890Eacc75cdc901F0356c943e4fDb',
+  networks: {
+    sepolia: {
+      blockchain: 'sepolia',
+      config: {
+        chainId: 11155111,
+        provider: 'https://sepolia.gateway.tenderly.co',
+        bundlerUrl: 'https://api.candide.dev/public/v3/sepolia',
+        paymasterUrl: 'https://api.candide.dev/public/v3/sepolia',
+        paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
+        entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+        safeModulesVersion: '0.3.0',
+        paymasterToken: {
+          address: '0xd077A400968890Eacc75cdc901F0356c943e4fDb',
+        },
+        transferMaxFee: 100000,
+      },
     },
-    transferMaxFee: 100000,
-  },
-  ethereum: {
-    chainId: 1,
-    blockchain: 'ethereum',
-    provider: 'https://wallet-ap7ha02ezs.rumble.com/eth',
-    bundlerUrl: 'https://api.candide.dev/public/v3/ethereum',
-    paymasterUrl: 'https://api.candide.dev/public/v3/ethereum',
-    paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
-    entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    safeModulesVersion: '0.3.0',
-    paymasterToken: {
-      address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    ethereum: {
+      blockchain: 'ethereum',
+      config: {
+        chainId: 1,
+        provider: 'https://wallet-ap7ha02ezs.rumble.com/eth',
+        bundlerUrl: 'https://api.candide.dev/public/v3/ethereum',
+        paymasterUrl: 'https://api.candide.dev/public/v3/ethereum',
+        paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
+        entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+        safeModulesVersion: '0.3.0',
+        paymasterToken: {
+          address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+        },
+        transferMaxFee: 100000,
+      },
     },
-    transferMaxFee: 100000,
-  },
-  polygon: {
-    chainId: 137,
-    blockchain: 'polygon',
-    provider: 'https://wallet-ap7ha02ezs.rumble.com/pol',
-    bundlerUrl: 'https://api.candide.dev/public/v3/polygon',
-    paymasterUrl: 'https://api.candide.dev/public/v3/polygon',
-    paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
-    entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    safeModulesVersion: '0.3.0',
-    paymasterToken: {
-      address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+    polygon: {
+      blockchain: 'polygon',
+      config: {
+        chainId: 137,
+        provider: 'https://wallet-ap7ha02ezs.rumble.com/pol',
+        bundlerUrl: 'https://api.candide.dev/public/v3/polygon',
+        paymasterUrl: 'https://api.candide.dev/public/v3/polygon',
+        paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
+        entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+        safeModulesVersion: '0.3.0',
+        paymasterToken: {
+          address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+        },
+        transferMaxFee: 100000,
+      },
     },
-    transferMaxFee: 100000,
-  },
-  arbitrum: {
-    chainId: 42161,
-    blockchain: 'arbitrum',
-    provider: 'https://wallet-ap7ha02ezs.rumble.com/arb',
-    bundlerUrl: 'https://public.pimlico.io/v2/42161/rpc',
-    paymasterUrl: 'https://public.pimlico.io/v2/42161/rpc',
-    paymasterAddress: '0x777777777777AeC03fd955926DbF81597e66834C',
-    entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    safeModulesVersion: '0.3.0',
-    paymasterToken: {
-      address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+    arbitrum: {
+      blockchain: 'arbitrum',
+      config: {
+        chainId: 42161,
+        provider: 'https://wallet-ap7ha02ezs.rumble.com/arb',
+        bundlerUrl: 'https://public.pimlico.io/v2/42161/rpc',
+        paymasterUrl: 'https://public.pimlico.io/v2/42161/rpc',
+        paymasterAddress: '0x777777777777AeC03fd955926DbF81597e66834C',
+        entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+        safeModulesVersion: '0.3.0',
+        paymasterToken: {
+          address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+        },
+        transferMaxFee: 100000,
+      },
     },
-    transferMaxFee: 100000,
-  },
-  plasma: {
-    chainId: 9745,
-    blockchain: 'plasma',
-    provider: 'https://rpc.plasma.to',
-    bundlerUrl: 'https://api.candide.dev/public/v3/9745',
-    paymasterUrl: 'https://api.candide.dev/public/v3/9745',
-    paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
-    entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    safeModulesVersion: '0.3.0',
-    paymasterToken: {
-      address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb',
+    plasma: {
+      blockchain: 'plasma',
+      config: {
+        chainId: 9745,
+        provider: 'https://rpc.plasma.to',
+        bundlerUrl: 'https://api.candide.dev/public/v3/9745',
+        paymasterUrl: 'https://api.candide.dev/public/v3/9745',
+        paymasterAddress: '0x8b1f6cb5d062aa2ce8d581942bbb960420d875ba',
+        entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+        safeModulesVersion: '0.3.0',
+        paymasterToken: {
+          address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb',
+        },
+        transferMaxFee: 100000,
+      },
     },
-    transferMaxFee: 100000,
-  },
-  spark: {
-    chainId: 99999,
-    blockchain: 'spark',
-    network: 'MAINNET', // Spark network type (MAINNET, TESTNET)
+    spark: {
+      blockchain: 'spark',
+      config: {
+        chainId: 99999,
+        network: 'MAINNET',
+      },
+    },
   },
 } as WdkConfigs
 
@@ -444,9 +458,13 @@ describe('WorkletLifecycleService', () => {
 
     it('should handle minimal network configuration', async () => {
       const minimalConfig: WdkConfigs = {
-        ethereum: {
-          chainId: 1,
-          blockchain: 'ethereum',
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1,
+            },
+          },
         },
       }
 
@@ -468,15 +486,19 @@ describe('WorkletLifecycleService', () => {
 
     it('should handle network configuration with all optional fields', async () => {
       const fullConfig: WdkConfigs = {
-        testnet: {
-          chainId: 12345,
-          blockchain: 'testnet',
-          provider: 'https://testnet.example.com',
-          bundlerUrl: 'https://bundler.example.com',
-          paymasterUrl: 'https://paymaster.example.com',
-          paymasterAddress: '0x1234567890123456789012345678901234567890',
-          entryPointAddress: '0x0987654321098765432109876543210987654321',
-          transferMaxFee: 50000,
+        networks: {
+          testnet: {
+            blockchain: 'testnet',
+            config: {
+              chainId: 12345,
+              provider: 'https://testnet.example.com',
+              bundlerUrl: 'https://bundler.example.com',
+              paymasterUrl: 'https://paymaster.example.com',
+              paymasterAddress: '0x1234567890123456789012345678901234567890',
+              entryPointAddress: '0x0987654321098765432109876543210987654321',
+              transferMaxFee: 50000,
+            },
+          },
         },
       }
 

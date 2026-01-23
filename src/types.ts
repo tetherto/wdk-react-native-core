@@ -5,46 +5,40 @@
  */
 
 import type { AssetConfig, IAsset } from './entities/asset'
-
 export type { AssetConfig, IAsset }
 
-/**
- * Default configuration interface.
- * Users can augment this via declaration merging to provide strict global types.
- * 
- * Minimal requirement: 'blockchain' string as unique network identifier (e.g: 'bitcoin', 'bitcoinRegtest', 'ethereum',...)
- */
-export interface DefaultWdkConfig extends Record<string, unknown> {
-  blockchain: string
-}
-
-/**
- * Network Configuration (Generic)
- * 
- * Defines the configuration for a blockchain network.
- * Now extensible via Generics to support any blockchain (EVM, BTC, Solana, etc.)
- * 
- * @example
- * // Generic Usage
- * type EthConfig = { blockchain: 'ethereum'; rpcUrl: string; chainId: number };
- * type BtcConfig = { blockchain: 'bitcoin'; network: 'mainnet' | 'regtest' };
- * type Config = WdkConfig<EthConfig | BtcConfig>;
- */
-export type WdkConfig<T = DefaultWdkConfig> = T
+import type { NetworkConfig, ProtocolConfig, WdkWorkletConfig } from './types/hrpc'
 
 /**
  * Network Configurations (Generic)
- * 
- * Maps network names to their configurations.
- * 
- * @example
- * // Generic Usage
- * const configs: WdkConfigs<EthConfig | BtcConfig> = {
- *   ethereum: { blockchain: 'ethereum', rpcUrl: '...', chainId: 1 },
- *   bitcoin: { blockchain: 'bitcoin', network: 'mainnet' }
- * };
+ * Wrapper around NetworkConfigs to support typed config.
  */
-export type WdkConfigs<T = DefaultWdkConfig> = Record<string, WdkConfig<T>>
+export interface WdkNetworkConfig<T = Record<string, unknown>> extends NetworkConfig {
+  config: T
+}
+
+/**
+ * Protocol Configurations (Generic)
+ * Wrapper around ProtocolConfigs to support typed config.
+ */
+export interface WdkProtocolConfig<T = Record<string, unknown>> extends ProtocolConfig {
+  config: T
+}
+
+/**
+ * WDK Configuration (Generic)
+ * 
+ * The root configuration object passed to the WDK worklet.
+ * Matches WdkWorkletConfig structure but with generics.
+ */
+export interface WdkConfigs<TNetwork = Record<string, unknown>, TProtocol = Record<string, unknown>> extends WdkWorkletConfig {
+  networks: {
+    [blockchain: string]: WdkNetworkConfig<TNetwork>
+  }
+  protocols?: {
+    [protocolName: string]: WdkProtocolConfig<TProtocol>
+  }
+}
 
 /**
  * Wallet

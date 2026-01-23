@@ -169,7 +169,7 @@ export interface UseWalletManagerResult {
 
 export function useWalletManager(
   walletId?: string,
-  networkConfigs?: WdkConfigs
+  wdkConfigs?: WdkConfigs
 ): UseWalletManagerResult {
   const [error, setError] = useState<string | null>(null)
 
@@ -181,21 +181,21 @@ export function useWalletManager(
   const workletStore = getWorkletStore()
 
   /**
-   * Get networkConfigs from parameter or workletStore
+   * Get wdkConfigs from parameter or workletStore
    * Throws error if not available from either source
    */
-  const getNetworkConfigs = useCallback((): WdkConfigs => {
-    const networkConfigsFromStore = workletStore.getState().networkConfigs
-    const effectiveNetworkConfigs = networkConfigs ?? networkConfigsFromStore
+  const getWdkConfigs = useCallback((): WdkConfigs => {
+    const wdkConfigsFromStore = workletStore.getState().wdkConfigs
+    const effectiveWdkConfigs = wdkConfigs ?? wdkConfigsFromStore
 
-    if (!effectiveNetworkConfigs) {
+    if (!effectiveWdkConfigs) {
       throw new Error(
-        'networkConfigs is required. Either provide it as a parameter or ensure the worklet is started with networkConfigs.',
+        'wdkConfigs is required. Either provide it as a parameter or ensure the worklet is started with wdkConfigs.',
       )
     }
 
-    return effectiveNetworkConfigs
-  }, [networkConfigs])
+    return effectiveWdkConfigs
+  }, [wdkConfigs])
   // Note: workletStore removed from deps - it's a singleton that never changes
 
   // Subscribe to wallet list state and loading state from Zustand
@@ -241,7 +241,6 @@ export function useWalletManager(
       setError(null)
       const targetWalletId = options.walletId ?? walletId
       const walletStore = getWalletStore()
-      const effectiveNetworkConfigs = getNetworkConfigs()
 
       try {
         // Check if wallet is already ready before attempting to initialize
@@ -271,7 +270,7 @@ export function useWalletManager(
           )
         }
 
-        await WalletSetupService.initializeWallet(effectiveNetworkConfigs, {
+        await WalletSetupService.initializeWallet({
           ...options,
           walletId: targetWalletId,
         })
@@ -394,7 +393,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [getNetworkConfigs, walletId],
+    [walletId],
   )
 
   /**
@@ -421,7 +420,6 @@ export function useWalletManager(
       setError(null)
       const targetWalletId = walletIdParam ?? walletId
       const walletStore = getWalletStore()
-      const effectiveNetworkConfigs = getNetworkConfigs()
 
       try {
         // Update loading state in store (single source of truth)
@@ -436,7 +434,6 @@ export function useWalletManager(
         }
 
         await WalletSetupService.initializeFromMnemonic(
-          effectiveNetworkConfigs,
           mnemonic,
           targetWalletId,
         )
@@ -470,7 +467,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [getNetworkConfigs, walletId],
+    [walletId],
   )
 
   /**
@@ -634,11 +631,11 @@ export function useWalletManager(
   const generateEntropyAndEncrypt = useCallback(
     async (wordCount?: 12 | 24) => {
       try {
-        const effectiveNetworkConfigs = getNetworkConfigs()
+        const effectiveWdkConfigs = getWdkConfigs()
         
         // Ensure worklet is started
         await WorkletLifecycleService.ensureWorkletStarted(
-          effectiveNetworkConfigs,
+          effectiveWdkConfigs,
           { autoStart: true }
         )
         
@@ -648,7 +645,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [getNetworkConfigs]
+    [getWdkConfigs]
   )
 
   /**
@@ -657,11 +654,11 @@ export function useWalletManager(
   const getMnemonicFromEntropy = useCallback(
     async (encryptedEntropy: string, encryptionKey: string) => {
       try {
-        const effectiveNetworkConfigs = getNetworkConfigs()
+        const effectiveWdkConfigs = getWdkConfigs()
         
         // Ensure worklet is started
         await WorkletLifecycleService.ensureWorkletStarted(
-          effectiveNetworkConfigs,
+          effectiveWdkConfigs,
           { autoStart: true }
         )
         
@@ -674,7 +671,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [getNetworkConfigs]
+    [getWdkConfigs]
   )
 
   /**
@@ -683,11 +680,11 @@ export function useWalletManager(
   const getSeedAndEntropyFromMnemonic = useCallback(
     async (mnemonic: string) => {
       try {
-        const effectiveNetworkConfigs = getNetworkConfigs()
+        const effectiveWdkConfigs = getWdkConfigs()
         
         // Ensure worklet is started
         await WorkletLifecycleService.ensureWorkletStarted(
-          effectiveNetworkConfigs,
+          effectiveWdkConfigs,
           { autoStart: true }
         )
         
@@ -697,7 +694,7 @@ export function useWalletManager(
         throw err
       }
     },
-    [getNetworkConfigs]
+    [getWdkConfigs]
   )
 
   /**
@@ -726,11 +723,11 @@ export function useWalletManager(
       setError(null)
 
       try {
-        const effectiveNetworkConfigs = getNetworkConfigs()
+        const effectiveWdkConfigs = getWdkConfigs()
 
         // Ensure worklet is started (auto-start if needed)
         await WorkletLifecycleService.ensureWorkletStarted(
-          effectiveNetworkConfigs,
+          effectiveWdkConfigs,
           { autoStart: true }
         )
 
@@ -831,13 +828,8 @@ export function useWalletManager(
           throw new Error(`Wallet with walletId "${walletId}" already exists`)
         }
 
-        // Use provided networkConfigs or get from store
-        const effectiveNetworkConfigs =
-          walletNetworkConfigs ?? getNetworkConfigs()
-
         // Create wallet using WalletSetupService
         await WalletSetupService.createNewWallet(
-          effectiveNetworkConfigs,
           walletId,
         )
 

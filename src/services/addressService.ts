@@ -164,7 +164,7 @@ export class AddressService {
     const targetWalletId = resolveWalletId(walletId)
 
     // Get all network names from networkConfigs
-    const networkConfigs = workletStore.getState().networkConfigs
+    const networkConfigs = workletStore.getState().wdkConfigs
     if (!networkConfigs) {
       throw new Error(
         'Network configs are not available. Ensure the worklet is started with networkConfigs.',

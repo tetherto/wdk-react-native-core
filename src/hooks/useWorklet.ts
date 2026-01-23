@@ -79,7 +79,7 @@ export function useWorklet(): UseWorkletResult {
     wdkInitResult: state.wdkInitResult,
     encryptedSeed: state.encryptedSeed,
     encryptionKey: state.encryptionKey,
-    networkConfigs: state.networkConfigs,
+    networkConfigs: state.wdkConfigs,
   }))
   const workletState = store(selector)
 

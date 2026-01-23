@@ -243,7 +243,7 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
     }
 
     // Check if all addresses are already loaded
-    const networkConfigs = workletStore.getState().networkConfigs
+    const networkConfigs = workletStore.getState().wdkConfigs
     if (!networkConfigs) {
       return
     }
@@ -342,7 +342,7 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
   // Load all addresses for specified account indices across all networks
   const loadAllAddresses = useCallback(async (accountIndices: number[] = [0]) => {
     const walletId = targetWalletId || '__temporary__'
-    const networkConfigs = workletStore.getState().networkConfigs
+    const networkConfigs = workletStore.getState().wdkConfigs
     if (!networkConfigs) {
       return {} as Record<string, Record<number, string>>
     }

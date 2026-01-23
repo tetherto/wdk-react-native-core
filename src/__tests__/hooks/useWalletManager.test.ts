@@ -43,9 +43,13 @@ jest.mock('zustand/react/shallow', () => ({
 describe('useWalletManager', () => {
   let mockWalletStore: any
   const mockNetworkConfigs: WdkConfigs = {
-    ethereum: {
-      chainId: 1,
-      blockchain: 'ethereum',
+    networks: {
+      ethereum: {
+        blockchain: 'ethereum',
+        config: {
+          chainId: 1,
+        },
+      },
     },
   }
 
@@ -83,7 +87,7 @@ describe('useWalletManager', () => {
 
       expect(WalletSetupService.initializeWallet).toBeDefined()
       await expect(
-        WalletSetupService.initializeWallet(mockNetworkConfigs, {}),
+        WalletSetupService.initializeWallet({}),
       ).rejects.toThrow('Initialization failed')
     })
   })
@@ -98,7 +102,6 @@ describe('useWalletManager', () => {
 
       expect(WalletSetupService.initializeFromMnemonic).toBeDefined()
       await WalletSetupService.initializeFromMnemonic(
-        mockNetworkConfigs,
         mnemonic,
         'test-wallet',
       )
@@ -117,7 +120,6 @@ describe('useWalletManager', () => {
 
       await expect(
         WalletSetupService.initializeFromMnemonic(
-          mockNetworkConfigs,
           'invalid',
           'test-wallet',
         ),
@@ -205,7 +207,7 @@ describe('useWalletManager', () => {
         undefined,
       )
 
-      await WalletSetupService.createNewWallet(mockNetworkConfigs, 'new-wallet')
+      await WalletSetupService.createNewWallet('new-wallet')
       expect(WalletSetupService.createNewWallet).toHaveBeenCalledWith(
         mockNetworkConfigs,
         'new-wallet',

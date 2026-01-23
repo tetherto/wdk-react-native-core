@@ -105,11 +105,11 @@ export class WorkletLifecycleService {
   /**
    * Start the worklet with network configurations and bundle
    *
-   * @param networkConfigs - Network configurations
+   * @param wdkConfigs - Network configurations
    * @param bundleConfig - Bundle configuration containing the worklet bundle and HRPC class
    */
   static async startWorklet(
-    networkConfigs: WdkConfigs,
+    wdkConfigs: WdkConfigs,
     bundleConfig: BundleConfig
   ): Promise<void> {
     const store = getWorkletStore()
@@ -150,7 +150,7 @@ export class WorkletLifecycleService {
       const hrpcInstance = new HRPC(IPC)
 
       const result = await hrpcInstance.workletStart({
-        config: JSON.stringify(networkConfigs),
+        config: JSON.stringify(wdkConfigs),
       })
 
       store.setState({
@@ -159,7 +159,7 @@ export class WorkletLifecycleService {
         ipc: IPC,
         isWorkletStarted: true,
         isLoading: false,
-        networkConfigs,
+        wdkConfigs: wdkConfigs,
         workletStartResult: result,
         error: null,
       })
@@ -182,13 +182,13 @@ export class WorkletLifecycleService {
   /**
    * Ensure worklet is started, starting it if needed
    *
-   * @param networkConfigs - Network configs (required if autoStart=true)
+   * @param wdkConfigs - Network configs (required if autoStart=true)
    * @param options - Options
    * @param options.autoStart - If true, start worklet if not started (default: false)
    * @throws Error if worklet not started and autoStart=false or networkConfigs not provided
    */
   static async ensureWorkletStarted(
-    networkConfigs?: WdkConfigs,
+    wdkConfigs?: WdkConfigs,
     options?: { autoStart?: boolean },
     bundleConfig?: BundleConfig
   ): Promise<void> {
@@ -200,11 +200,11 @@ export class WorkletLifecycleService {
     }
 
     const autoStart = options?.autoStart ?? false
-    if (!autoStart || !networkConfigs || !bundleConfig) {
+    if (!autoStart || !wdkConfigs || !bundleConfig) {
       throw new Error('Worklet must be started before this operation')
     }
 
-    await this.startWorklet(networkConfigs, bundleConfig)
+    await this.startWorklet(wdkConfigs, bundleConfig)
   }
 
   /**
@@ -244,7 +244,7 @@ export class WorkletLifecycleService {
       const result = await currentState.hrpc.initializeWDK({
         encryptionKey: options.encryptionKey,
         encryptedSeed: options.encryptedSeed,
-        config: JSON.stringify({ networks: currentState.networkConfigs }),
+        config: JSON.stringify({ networks: currentState.wdkConfigs }),
       })
 
       // NEVER store seed phrase
@@ -500,7 +500,7 @@ export class WorkletLifecycleService {
       error: null,
       encryptedSeed: null,
       encryptionKey: null,
-      networkConfigs: null,
+      wdkConfigs: null,
       workletStartResult: null,
       wdkInitResult: null,
     })

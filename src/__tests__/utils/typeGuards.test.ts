@@ -13,14 +13,16 @@ import {
   isValidNetworkName,
   isValidBalanceString,
 } from '../../utils/typeGuards'
-import type { WdkConfig, WdkConfigs } from '../../types'
+import type { WdkConfigs, WdkNetworkConfig } from '../../types'
 
 describe('typeGuards', () => {
   describe('isNetworkConfig', () => {
     it('should return true for valid network config', () => {
-      const valid: WdkConfig = {
-        chainId: 1,
+      const valid: WdkNetworkConfig = {
         blockchain: 'ethereum',
+        config: {
+          chainId: 1,
+        },
       }
       expect(isWdkConfig(valid)).toBe(true)
     })
@@ -37,9 +39,13 @@ describe('typeGuards', () => {
   describe('isNetworkConfigs', () => {
     it('should return true for valid network configs', () => {
       const valid: WdkConfigs = {
-        ethereum: {
-          chainId: 1,
-          blockchain: 'ethereum',
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1,
+            },
+          },
         },
       }
       expect(isWdkConfigs(valid)).toBe(true)

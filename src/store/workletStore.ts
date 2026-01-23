@@ -102,7 +102,7 @@ export interface WorkletState {
   // seedPhrase is never stored - we only use encrypted approach
   // encryptedEntropy is stored in secure storage but not in runtime state
   // It's only needed when retrieving mnemonic, so it's loaded from secure storage on demand
-  networkConfigs: WdkConfigs | null
+  wdkConfigs: WdkConfigs | null
   workletStartResult: WorkletStartResponse | null
   wdkInitResult: { status?: string | null } | null
   // Multi-wallet credential cache (replaces static Map in WalletSetupService)
@@ -129,7 +129,7 @@ const initialState: WorkletState = {
   error: null,
   encryptedSeed: null,
   encryptionKey: null,
-  networkConfigs: null,
+  wdkConfigs: null,
   workletStartResult: null,
   wdkInitResult: null,
   credentialsCache: {},
