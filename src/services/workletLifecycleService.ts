@@ -244,7 +244,7 @@ export class WorkletLifecycleService {
       const result = await currentState.hrpc.initializeWDK({
         encryptionKey: options.encryptionKey,
         encryptedSeed: options.encryptedSeed,
-        config: JSON.stringify({ networks: currentState.networkConfigs } || {}),
+        config: JSON.stringify({ networks: currentState.networkConfigs }),
       })
 
       // NEVER store seed phrase
