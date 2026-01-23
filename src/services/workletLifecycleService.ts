@@ -16,7 +16,7 @@ import { log, logWarn } from '../utils/logger'
 import { isInitialized as isWorkletInitialized } from '../utils/storeHelpers'
 import type { WdkConfigs, BundleConfig } from '../types'
 import type { WorkletState } from '../store/workletStore'
-import { HRPC } from '@tetherto/pear-wrk-wdk/hrpc'
+import HRPC from '@tetherto/pear-wrk-wdk/hrpc'
 
 /**
  * Extended HRPC type that may have a cleanup method
