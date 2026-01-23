@@ -163,15 +163,14 @@ export class AddressService {
     // Resolve walletId from parameter or store
     const targetWalletId = resolveWalletId(walletId)
 
-    // Get all network names from networkConfigs
-    const networkConfigs = workletStore.getState().wdkConfigs
-    if (!networkConfigs) {
+    const wdkConfigs = workletStore.getState().wdkConfigs
+    if (!wdkConfigs) {
       throw new Error(
-        'Network configs are not available. Ensure the worklet is started with networkConfigs.',
+        'WDK configs are not available. Ensure the worklet is started with wdkConfigs.',
       )
     }
 
-    const networks = Object.keys(networkConfigs)
+    const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
     if (networks.length === 0) {
       log('[AddressService] No networks configured, returning empty addresses')
       return {}

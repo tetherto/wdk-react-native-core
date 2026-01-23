@@ -243,12 +243,12 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
     }
 
     // Check if all addresses are already loaded
-    const networkConfigs = workletStore.getState().wdkConfigs
-    if (!networkConfigs) {
+    const wdkConfigs = workletStore.getState().wdkConfigs
+    if (!wdkConfigs) {
       return
     }
     
-    const networks = Object.keys(networkConfigs)
+    const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
     // Access walletState.addresses inside the effect without depending on walletState
     const currentAddresses = walletState.addresses
     const allLoaded = accountIndices.every((accountIndex) => {
@@ -279,9 +279,8 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
     const cancelledRef = { current: false }
     
     // Load addresses for all account indices and networks in parallel
-    // Reuse networkConfigs from earlier in the effect
-    if (networkConfigs) {
-      const networks = Object.keys(networkConfigs)
+    if (wdkConfigs) {
+      const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
       const loadPromises = accountIndices.flatMap((accountIndex) =>
         networks.map((network) =>
           AddressService.getAddress(network, accountIndex, targetWalletId)
@@ -342,12 +341,12 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
   // Load all addresses for specified account indices across all networks
   const loadAllAddresses = useCallback(async (accountIndices: number[] = [0]) => {
     const walletId = targetWalletId || '__temporary__'
-    const networkConfigs = workletStore.getState().wdkConfigs
-    if (!networkConfigs) {
+    const wdkConfigs = workletStore.getState().wdkConfigs
+    if (!wdkConfigs) {
       return {} as Record<string, Record<number, string>>
     }
     
-    const networks = Object.keys(networkConfigs)
+    const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
     const result: Record<string, Record<number, string>> = {}
     
     // Load addresses for all account indices and networks in parallel
