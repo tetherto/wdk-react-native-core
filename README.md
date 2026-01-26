@@ -18,47 +18,62 @@ Core functionality for React Native wallets - wallet management, balance fetchin
 ## Quick Start
 
 ```typescript
-import { WdkAppProvider, useWdkApp, useWallet, useBalance } from '@tetherto/wdk-react-native-core'
+import { WdkAppProvider, useWdkApp, useWallet, useBalance, BaseAsset } from '@tetherto/wdk-react-native-core'
 // Import bundle from your generated .wdk folder (see Bundle Configuration)
-import { bundle, HRPC } from './.wdk'
+import { bundle } from './.wdk'
 
 function App() {
-  const networkConfigs = {
-    ethereum: { chainId: 1, blockchain: 'ethereum' }
-  }
-  const tokenConfigs = {
-    ethereum: {
-      native: { address: null, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-      tokens: []
+  const wdkConfigs = {
+    networks: {
+      ethereum: {
+        blockchain: 'ethereum',
+        // Network-specific configurations go inside config
+        config: {
+          chainId: 1,
+          provider: 'https://eth.drpc.org'
+        }
+      }
     }
   }
 
   return (
     <WdkAppProvider
-      bundle={{ bundle, HRPC }}
-      networkConfigs={networkConfigs}
-      tokenConfigs={tokenConfigs}
+      bundle={{ bundle }}
+      wdkConfigs={wdkConfigs}
     >
       <WalletScreen />
     </WdkAppProvider>
   )
 }
 
+// Define your assets
+const ethAsset = new BaseAsset({
+  id: 'eth',
+  network: 'ethereum',
+  symbol: 'ETH',
+  name: 'Ethereum',
+  decimals: 18,
+  isNative: true,
+  address: null
+})
+
 function WalletScreen() {
   const { status, isReady } = useWdkApp()
   const { addresses } = useWallet()
-  const { data: balance, isLoading } = useBalance({
-    network: 'ethereum',
-    accountIndex: 0,
-    tokenAddress: null
-  })
+  
+  // Use the asset object for balance fetching
+  const { data: balance, isLoading } = useBalance(
+    'ethereum', // network
+    0,          // accountIndex
+    ethAsset    // asset
+  )
 
   if (!isReady) return <Text>Loading...</Text>
 
   return (
     <View>
       <Text>Address: {addresses.ethereum?.[0]}</Text>
-      <Text>Balance: {balance || '0'}</Text>
+      <Text>Balance: {balance?.balance || '0'}</Text>
       {isLoading && <Text>Updating...</Text>}
     </View>
   )
@@ -94,7 +109,7 @@ Or add to your `package.json`:
 
 ## Bundle Configuration
 
-The `WdkAppProvider` requires a **bundle** prop containing the worklet bundle and HRPC class. You have two options for obtaining this bundle:
+The `WdkAppProvider` requires a **bundle** prop containing the worklet bundle. You have two options for obtaining this bundle:
 
 ### Option A: Generate a Custom Bundle (Recommended)
 
@@ -144,12 +159,31 @@ module.exports = {
 After running `wdk-worklet-bundler generate`, import and use the bundle:
 
 ```typescript
-import { bundle, HRPC } from './.wdk'
+import { bundle } from './.wdk'
+
+const wdkConfigs = {
+  // Your runtime configurations matching wdk.config.js networks
+  networks: {
+    ethereum: {
+      blockchain: 'ethereum',
+      config: {
+        chainId: 1,
+        provider: 'https://eth.drpc.org'
+      }
+    },
+    polygon: {
+      blockchain: 'polygon',
+      config: {
+        chainId: 137,
+        provider: 'https://polygon.drpc.org'
+      }
+    }
+  }
+}
 
 <WdkAppProvider
-  bundle={{ bundle, HRPC }}
-  networkConfigs={networkConfigs}
-  tokenConfigs={tokenConfigs}
+  bundle={{ bundle }}
+  wdkConfigs={wdkConfigs}
 >
   <App />
 </WdkAppProvider>
@@ -166,12 +200,11 @@ npm install pear-wrk-wdk
 ```
 
 ```typescript
-import { bundle, HRPC } from 'pear-wrk-wdk'
+import { bundle } from 'pear-wrk-wdk'
 
 <WdkAppProvider
-  bundle={{ bundle, HRPC }}
-  networkConfigs={networkConfigs}
-  tokenConfigs={tokenConfigs}
+  bundle={{ bundle }}
+  wdkConfigs={wdkConfigs}
 >
   <App />
 </WdkAppProvider>
@@ -196,12 +229,11 @@ If using a generated bundle, add the `.wdk` folder to your TypeScript includes:
 The root provider that manages wallet initialization and worklet lifecycle. Wrap your app with it:
 
 ```typescript
-import { bundle, HRPC } from './.wdk'
+import { bundle } from './.wdk'
 
 <WdkAppProvider
-  bundle={{ bundle, HRPC }}
-  networkConfigs={networkConfigs}
-  tokenConfigs={tokenConfigs}
+  bundle={{ bundle }}
+  wdkConfigs={wdkConfigs}
 >
   {children}
 </WdkAppProvider>
@@ -227,7 +259,7 @@ if (!isReady) return <LoadingScreen />
 ### Wallet Lifecycle (Create, Load, Import, Delete)
 Use `useWalletManager()` for wallet setup - this is the ONLY hook for wallet lifecycle:
 ```typescript
-const { createWallet, loadWallet, importWallet, hasWallet, deleteWallet } = useWalletManager(networkConfigs)
+const { createWallet, loadWallet, importWallet, hasWallet, deleteWallet } = useWalletManager()
 ```
 
 ### Wallet Operations (After Initialization)
@@ -239,11 +271,11 @@ const { addresses, getAddress, callAccountMethod } = useWallet()
 ### Balance Fetching
 Use `useBalance()` for balances:
 ```typescript
-const { data: balance, isLoading } = useBalance({ 
-  network: 'ethereum', 
-  accountIndex: 0, 
-  tokenAddress: null 
-})
+const { data: balance, isLoading } = useBalance(
+  'ethereum', // network
+  0,          // accountIndex
+  ethAsset    // asset object
+)
 ```
 
 ### State Management
@@ -258,14 +290,15 @@ const { data: balance, isLoading } = useBalance({
 
 ```typescript
 import { WdkAppProvider, useWdkApp, useWalletManager } from '@tetherto/wdk-react-native-core'
-import { bundle, HRPC } from './.wdk'
+import { bundle } from './.wdk'
 
 function App() {
+  const wdkConfigs = { /* ... */ }
+
   return (
     <WdkAppProvider
-      bundle={{ bundle, HRPC }}
-      networkConfigs={networkConfigs}
-      tokenConfigs={tokenConfigs}
+      bundle={{ bundle }}
+      wdkConfigs={wdkConfigs}
     >
       <WalletSetup />
     </WdkAppProvider>
@@ -297,25 +330,46 @@ function WalletSetup() {
 ### Fetching Balances
 
 ```typescript
-import { useBalance, useBalancesForWallet } from '@tetherto/wdk-react-native-core'
+import { useBalance, useBalancesForWallet, BaseAsset } from '@tetherto/wdk-react-native-core'
+
+// Define assets
+const eth = new BaseAsset({
+  id: 'eth',
+  network: 'ethereum',
+  symbol: 'ETH',
+  name: 'Ethereum',
+  decimals: 18,
+  isNative: true,
+  address: null
+})
+
+const usdt = new BaseAsset({
+  id: 'usdt',
+  network: 'ethereum',
+  symbol: 'USDT',
+  name: 'Tether',
+  decimals: 6,
+  isNative: false,
+  address: '0x...'
+})
 
 function BalanceDisplay() {
   // Single balance
-  const { data: balance, isLoading, error } = useBalance({
-    network: 'ethereum',
-    accountIndex: 0,
-    tokenAddress: null // null for native token
-  })
+  const { data: balance, isLoading, error } = useBalance(
+    'ethereum',
+    0,
+    eth
+  )
 
   // All balances for a wallet
-  const { data: allBalances } = useBalancesForWallet({
-    accountIndex: 0,
-    networks: ['ethereum', 'spark']
-  })
+  const { data: allBalances } = useBalancesForWallet(
+    0, // accountIndex
+    [eth, usdt] // array of assets to fetch
+  )
 
   return (
     <View>
-      <Text>ETH Balance: {balance || '0'}</Text>
+      <Text>ETH Balance: {balance?.balance || '0'}</Text>
       {isLoading && <Text>Loading...</Text>}
       {error && <Text>Error: {error.message}</Text>}
     </View>
@@ -400,8 +454,11 @@ function RefreshButton() {
     refreshBalance({
       network: 'ethereum',
       accountIndex: 0,
-      tokenAddress: null
+      assetId: 'eth' // refresh specific asset
     })
+    
+    // OR refresh all balances for account
+    // refreshBalance({ accountIndex: 0, type: 'wallet' })
   }
 
   return <Button onPress={handleRefresh}>Refresh Balance</Button>
@@ -414,19 +471,18 @@ function RefreshButton() {
 
 ```typescript
 interface WdkAppProviderProps {
-  /** Worklet bundle configuration (see Bundle Configuration section) */
+  /** Worklet bundle configuration */
   bundle: {
     bundle: string      // The worklet bundle code
-    HRPC: HRPCConstructor // The HRPC class constructor
   }
-  /** Network configurations */
-  networkConfigs: NetworkConfigs
-  /** Token configurations for balance fetching */
-  tokenConfigs: TokenConfigs
+  /** Network & protocol configurations */
+  wdkConfigs: WdkConfigs
   /** Enable automatic wallet initialization on app restart (default: true) */
   enableAutoInitialization?: boolean
   /** Current user's identifier for wallet association */
   currentUserId?: string | null
+  /** Clear sensitive data on app background (default: false) */
+  clearSensitiveDataOnBackground?: boolean
   children: React.ReactNode
 }
 ```
@@ -474,16 +530,13 @@ interface UseWalletResult {
 ### useBalance()
 
 ```typescript
-function useBalance(options: {
-  network: string
-  accountIndex: number
-  tokenAddress: string | null
-  walletId?: string
-  enabled?: boolean
-  refetchInterval?: number
-  staleTime?: number
-}): {
-  data: string | null
+function useBalance(
+  network: string,
+  accountIndex: number,
+  asset: IAsset,
+  options?: BalanceQueryOptions
+): {
+  data: BalanceFetchResult | undefined
   isLoading: boolean
   error: Error | null
   refetch: () => void
@@ -600,10 +653,9 @@ The `WdkAppProvider` uses a **consolidated effect** for wallet state synchroniza
 **Symptoms**: `status` is `ERROR`, `error` is set
 
 **Solutions**:
-1. Check that `networkConfigs` are valid (use `validateNetworkConfigs()`)
-2. Verify `tokenConfigs` are properly configured
-3. Check console logs for detailed error messages
-4. Try calling `retry()` method from context
+1. Check that `wdkConfigs` are valid (use `validateWdkConfigs()`)
+2. Check console logs for detailed error messages
+3. Try calling `retry()` method from context
 
 **Common Errors**:
 - "WDK not initialized" → Worklet failed to start, check network configs
@@ -615,7 +667,7 @@ The `WdkAppProvider` uses a **consolidated effect** for wallet state synchroniza
 **Symptoms**: Balances not updating, `isLoading` stuck true
 
 **Solutions**:
-1. Verify `tokenConfigs` are properly configured
+1. Verify `asset` properties are correct (especially address and network)
 2. Check network connectivity and RPC endpoint availability
 3. Ensure wallet is initialized (`status === 'READY'`)
 4. Check token addresses are valid Ethereum addresses
@@ -625,7 +677,7 @@ The `WdkAppProvider` uses a **consolidated effect** for wallet state synchroniza
 **Symptoms**: Runtime errors about invalid types
 
 **Solutions**:
-1. Use `validateNetworkConfigs()` and `validateTokenConfigs()` before passing to provider
+1. Use `validateWdkConfigs()` before passing to provider
 2. Ensure token addresses match Ethereum address format
 3. Verify account indices are non-negative integers
 4. Use type guards from exports for runtime validation
