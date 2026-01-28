@@ -102,13 +102,13 @@ export interface UseWalletResult<TMethods extends MethodMap = LooseMethods> {
    * @param network - Network name
    * @param accountIndex - Account index
    * @param methodName - Method name
-   * @param args - Method arguments
+   * @param args - Method arguments (single value or array for multi-param methods)
    */
   callAccountMethod: <K extends keyof TMethods>(
     network: string,
     accountIndex: number,
     methodName: K,
-    args?: TMethods[K]['args']
+    args?: TMethods[K]['args'] | unknown[]
   ) => Promise<TMethods[K]['result']>
 }
 
@@ -373,7 +373,7 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
     network: string,
     accountIndex: number,
     methodName: K,
-    args?: TMethods[K]['args']
+    args?: TMethods[K]['args'] | unknown[]
   ): Promise<TMethods[K]['result']> => {
     return AccountService.callAccountMethod<TMethods, K>(
       network, 
