@@ -46,8 +46,14 @@ export class AccountService {
    *   transfer: { args: { to: string }; result: string };
    * }
    * 
-   * // Strict usage
+   * // Strict usage - single argument
    * await AccountService.callAccountMethod<MyMethods, 'transfer'>('eth', 0, 'transfer', { to: '0x...' })
+   * 
+   * // Multiple arguments via array (spread as positional args)
+   * await AccountService.callAccountMethod('eth', 0, 'transfer', [
+   *   { to: '0x...', amount: '1000' },  // 1st arg: options
+   *   { paymasterToken: '...' }          // 2nd arg: config
+   * ])
    * ```
    */
   static async callAccountMethod<
@@ -57,7 +63,7 @@ export class AccountService {
     network: string,
     accountIndex: number,
     methodName: K,
-    args?: TMethods[K]['args']
+    args?: TMethods[K]['args'] | unknown[]
   ): Promise<TMethods[K]['result']> {
     // Validate methodName parameter
     if (typeof methodName !== 'string' || methodName.trim().length === 0) {

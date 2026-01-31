@@ -81,6 +81,33 @@ describe('AccountService', () => {
       })
     })
 
+    it('should handle array arguments for multi-param methods', async () => {
+      // Test array args for methods like transfer(options, config)
+      const mockArgs = [
+        { to: '0x123', amount: '1000' },  // options (1st arg)
+        { paymasterToken: '0xabc', transferMaxFee: '100' }  // config (2nd arg)
+      ]
+      const mockResult = { txHash: '0x456' }
+      mockHRPC.callMethod.mockResolvedValue({
+        result: JSON.stringify(mockResult),
+      })
+
+      const result = await AccountService.callAccountMethod(
+        'ethereum',
+        0,
+        'transfer',
+        mockArgs
+      )
+
+      expect(result).toEqual(mockResult)
+      expect(mockHRPC.callMethod).toHaveBeenCalledWith({
+        methodName: 'transfer',
+        network: 'ethereum',
+        accountIndex: 0,
+        args: JSON.stringify(mockArgs),
+      })
+    })
+
     it('should convert BigInt values to strings', async () => {
       // getBalance returns a string, not an object
       const mockResult = '1000000000000000000'

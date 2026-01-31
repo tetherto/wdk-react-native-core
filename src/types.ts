@@ -126,12 +126,14 @@ export interface BalanceFetchResult {
  * and wallet initialization status.
  */
 export interface WalletStore {
-  /** Call a method on a wallet account */
+  /** Call a method on a wallet account
+   * @param args - Single argument or array for multi-param methods (array gets spread)
+   */
   callAccountMethod: <T = unknown>(
     network: string,
     accountIndex: number,
     methodName: string,
-    args?: unknown
+    args?: unknown | unknown[]
   ) => Promise<T>
   /** Check if the wallet is initialized */
   isWalletInitialized: () => boolean

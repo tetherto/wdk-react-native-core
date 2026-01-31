@@ -413,6 +413,24 @@ function AccountOperations() {
     }
   }
 
+  // Multi-argument methods: pass array to spread as positional arguments
+  const handleTransfer = async (to: string, amount: string) => {
+    try {
+      const result = await callAccountMethod(
+        'ethereum',
+        0,
+        'transfer',
+        [
+          { to, amount },                    // 1st arg: options
+          { paymasterToken: '0x...', transferMaxFee: '100' }  // 2nd arg: config
+        ]
+      )
+      console.log('Transfer result:', result)
+    } catch (error) {
+      console.error('Failed:', error)
+    }
+  }
+
   if (!isInitialized) return <Text>Not initialized</Text>
 
   return (
