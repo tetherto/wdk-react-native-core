@@ -26,7 +26,7 @@ export { useWdkApp } from './hooks/useWdkApp'
 
 // export { useWalletManager } from './hooks/useWalletManager'
 export { useWalletManager } from './hooks/useWalletManagerV2'
-export type { UseWalletManagerReturn, WalletInfo } from './hooks/useWalletManagerV2'
+export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManagerV2'
 export {
   useBalance,
   useBalancesForWallet,
