@@ -256,10 +256,10 @@ const { status, isReady, error } = useWdkApp()
 if (!isReady) return <LoadingScreen />
 ```
 
-### Wallet Lifecycle (Create, Load, Import, Delete)
+### Wallet Lifecycle (Create, Unlock, Restore, Delete)
 Use `useWalletManager()` for wallet setup - this is the ONLY hook for wallet lifecycle:
 ```typescript
-const { createWallet, loadWallet, importWallet, hasWallet, deleteWallet } = useWalletManager()
+const { createWallet, unlock, restoreWallet, wallets, deleteWallet } = useWalletManager()
 ```
 
 ### Wallet Operations (After Initialization)
@@ -307,19 +307,21 @@ function App() {
 
 function WalletSetup() {
   const { status, isReady } = useWdkApp()
-  const { createWallet, loadWallet, hasWallet } = useWalletManager()
+  const { createWallet, unlock, wallets } = useWalletManager()
 
   useEffect(() => {
     const init = async () => {
-      const exists = await hasWallet()
-      if (exists) {
-        await loadWallet()
+      // Check if default wallet exists in the loaded list
+      const defaultWallet = wallets.find(w => w.identifier === 'default')
+      
+      if (defaultWallet?.exists) {
+        await unlock('default')
       } else {
-        await createWallet()
+        await createWallet('default')
       }
     }
     if (isReady) init()
-  }, [isReady])
+  }, [isReady, wallets])
 
   if (!isReady) return <LoadingScreen />
 
@@ -565,13 +567,38 @@ function useBalance(
 
 ```typescript
 interface UseWalletManagerResult {
-  createWallet: (identifier?: string) => Promise<void>
-  loadWallet: (identifier?: string) => Promise<void>
-  importWallet: (mnemonic: string, identifier?: string) => Promise<void>
-  deleteWallet: (identifier: string) => Promise<void>
-  hasWallet: (identifier?: string) => Promise<boolean>
-  getWalletList: () => Wallet[]
+  /** The currently "Active" Wallet ID (Seed) loaded in the engine. */
   activeWalletId: string | null
+
+  /** The current state of the active wallet. */
+  status: 'LOCKED' | 'UNLOCKED' | 'NO_WALLET' | 'LOADING' | 'ERROR'
+
+  /** List of backing Wallets (Seeds) managed by the device. */
+  wallets: WalletInfo[]
+
+  /** Create a new Wallet (Seed). */
+  createWallet: (walletId: string) => Promise<void>
+
+  /** Restore a Wallet from Seed Phrase. Returns the new walletId. */
+  restoreWallet: (mnemonic: string, walletId: string) => Promise<string>
+
+  /** Delete/Remove a wallet and all associated data. */
+  deleteWallet: (walletId: string) => Promise<void>
+
+  /**
+   * Unlocks the currently active wallet.
+   * This typically triggers a biometric prompt to decrypt and load the wallet.
+   */
+  unlock: (walletId?: string) => Promise<void>
+
+  /** Locks the wallet. Clears sensitive data from memory. */
+  lock: () => void
+  
+  /** Generate a mnemonic phrase. */
+  generateMnemonic: (wordCount?: 12 | 24) => Promise<string>
+
+  /** Create a temporary wallet for previewing addresses */
+  createTemporaryWallet: (mnemonic?: string) => Promise<void>
 }
 ```
 
