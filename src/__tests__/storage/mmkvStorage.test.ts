@@ -9,15 +9,15 @@ import { getMMKVKey } from '../../utils/mmkvKeyManager'
 
 // Mock dependencies
 jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(),
+  createMMKV: jest.fn()
 }))
 
 jest.mock('../../utils/mmkvKeyManager', () => ({
-  getMMKVKey: jest.fn(),
+  getMMKVKey: jest.fn()
 }))
 
 jest.mock('../../utils/logger', () => ({
-  logWarn: jest.fn(),
+  logWarn: jest.fn()
 }))
 
 describe('mmkvStorage', () => {
@@ -29,7 +29,7 @@ describe('mmkvStorage', () => {
     mockMMKVInstance = {
       set: jest.fn(),
       getString: jest.fn(),
-      delete: jest.fn(),
+      delete: jest.fn()
     }
     ;(createMMKV as jest.Mock).mockReturnValue(mockMMKVInstance)
     ;(getMMKVKey as jest.Mock).mockResolvedValue('test-encryption-key')
@@ -44,7 +44,7 @@ describe('mmkvStorage', () => {
       expect(getMMKVKey).toHaveBeenCalledWith('test-identifier')
       expect(createMMKV).toHaveBeenCalledWith({
         id: 'wallet-storage',
-        encryptionKey: 'test-encryption-key',
+        encryptionKey: 'test-encryption-key'
       })
       expect(storage).toBe(mockMMKVInstance)
     })
@@ -155,10 +155,10 @@ describe('mmkvStorage', () => {
 
         // Delay key resolution to simulate async initialization
         ;(getMMKVKey as jest.Mock).mockImplementation(
-          () =>
-            new Promise((resolve) =>
-              setTimeout(() => resolve('test-key'), 100),
-            ),
+          async () =>
+            await new Promise((resolve) =>
+              setTimeout(() => resolve('test-key'), 100)
+            )
         )
 
         const adapter = createMMKVStorageAdapter('test-identifier')
@@ -208,7 +208,7 @@ describe('mmkvStorage', () => {
         // setItem should eventually be called (either immediately if ready, or after queued)
         expect(mockMMKVInstance.set).toHaveBeenCalledWith(
           'test-key',
-          'test-value',
+          'test-value'
         )
       })
 
@@ -241,7 +241,7 @@ describe('mmkvStorage', () => {
         // The operation should have been queued and then processed
         expect(mockMMKVInstance.set).toHaveBeenCalledWith(
           'test-key',
-          'test-value',
+          'test-value'
         )
       })
     })

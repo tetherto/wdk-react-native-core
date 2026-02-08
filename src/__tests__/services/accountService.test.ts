@@ -1,6 +1,6 @@
 /**
  * Tests for AccountService
- * 
+ *
  * Tests account method calls through the worklet
  */
 
@@ -9,7 +9,7 @@ import { getWorkletStore } from '../../store/workletStore'
 
 // Mock stores
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn(),
+  getWorkletStore: jest.fn()
 }))
 
 describe('AccountService', () => {
@@ -21,15 +21,15 @@ describe('AccountService', () => {
 
     // Setup mock HRPC
     mockHRPC = {
-      callMethod: jest.fn(),
+      callMethod: jest.fn()
     }
 
     // Setup mock worklet store
     mockWorkletStore = {
       getState: jest.fn(() => ({
         isInitialized: true,
-        hrpc: mockHRPC,
-      })),
+        hrpc: mockHRPC
+      }))
     }
 
     // Setup store mocks
@@ -40,7 +40,7 @@ describe('AccountService', () => {
     it('should call method and return result', async () => {
       const mockResult = '1000000000000000000'
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(mockResult),
+        result: JSON.stringify(mockResult)
       })
 
       const result = await AccountService.callAccountMethod(
@@ -54,7 +54,7 @@ describe('AccountService', () => {
         methodName: 'getBalance',
         network: 'ethereum',
         accountIndex: 0,
-        args: null,
+        args: undefined
       })
     })
 
@@ -62,7 +62,7 @@ describe('AccountService', () => {
       const mockArgs = { message: 'Hello World' }
       const mockResult = { signature: '0x123' }
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(mockResult),
+        result: JSON.stringify(mockResult)
       })
 
       const result = await AccountService.callAccountMethod(
@@ -77,7 +77,34 @@ describe('AccountService', () => {
         methodName: 'signMessage',
         network: 'ethereum',
         accountIndex: 0,
-        args: JSON.stringify(mockArgs),
+        args: JSON.stringify(mockArgs)
+      })
+    })
+
+    it('should handle array arguments for multi-param methods', async () => {
+      // Test array args for methods like transfer(options, config)
+      const mockArgs = [
+        { to: '0x123', amount: '1000' }, // options (1st arg)
+        { paymasterToken: '0xabc', transferMaxFee: '100' } // config (2nd arg)
+      ]
+      const mockResult = { txHash: '0x456' }
+      mockHRPC.callMethod.mockResolvedValue({
+        result: JSON.stringify(mockResult)
+      })
+
+      const result = await AccountService.callAccountMethod(
+        'ethereum',
+        0,
+        'transfer',
+        mockArgs
+      )
+
+      expect(result).toEqual(mockResult)
+      expect(mockHRPC.callMethod).toHaveBeenCalledWith({
+        methodName: 'transfer',
+        network: 'ethereum',
+        accountIndex: 0,
+        args: JSON.stringify(mockArgs)
       })
     })
 
@@ -85,7 +112,7 @@ describe('AccountService', () => {
       // getBalance returns a string, not an object
       const mockResult = '1000000000000000000'
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(mockResult),
+        result: JSON.stringify(mockResult)
       })
 
       const result = await AccountService.callAccountMethod(
@@ -103,16 +130,16 @@ describe('AccountService', () => {
         data: {
           balance: BigInt('1000000000000000000'),
           nested: {
-            amount: BigInt('2000000000000000000'),
-          },
-        },
+            amount: BigInt('2000000000000000000')
+          }
+        }
       }
       const jsonString = JSON.stringify(
         mockResult,
         (_, value) => (typeof value === 'bigint' ? value.toString() : value)
       )
       mockHRPC.callMethod.mockResolvedValue({
-        result: jsonString,
+        result: jsonString
       })
 
       const result = await AccountService.callAccountMethod(
@@ -126,26 +153,26 @@ describe('AccountService', () => {
         data: {
           balance: '1000000000000000000',
           nested: {
-            amount: '2000000000000000000',
-          },
-        },
+            amount: '2000000000000000000'
+          }
+        }
       })
     })
 
     it('should convert BigInt in arrays', async () => {
       // Test with signTransaction which can return an object with arrays
       const mockResult = {
-        balances: ['1000000000000000000', '2000000000000000000'],
+        balances: ['1000000000000000000', '2000000000000000000']
       }
       // Simulate BigInt in response by using a custom replacer
       const jsonString = JSON.stringify(
         {
-          balances: [BigInt('1000000000000000000'), BigInt('2000000000000000000')],
+          balances: [BigInt('1000000000000000000'), BigInt('2000000000000000000')]
         },
         (_, value) => (typeof value === 'bigint' ? value.toString() : value)
       )
       mockHRPC.callMethod.mockResolvedValue({
-        result: jsonString,
+        result: jsonString
       })
 
       const result = await AccountService.callAccountMethod(
@@ -156,7 +183,7 @@ describe('AccountService', () => {
       )
 
       expect(result).toEqual({
-        balances: ['1000000000000000000', '2000000000000000000'],
+        balances: ['1000000000000000000', '2000000000000000000']
       })
     })
 
@@ -177,7 +204,7 @@ describe('AccountService', () => {
         'getTokenBalance',
         'signMessage',
         'signTransaction',
-        'sendTransaction',
+        'sendTransaction'
       ]
 
       for (const method of methods) {
@@ -186,7 +213,7 @@ describe('AccountService', () => {
           ? '1000000000000000000'
           : { success: true }
         mockHRPC.callMethod.mockResolvedValue({
-          result: JSON.stringify(mockResult),
+          result: JSON.stringify(mockResult)
         })
 
         await expect(
@@ -198,7 +225,7 @@ describe('AccountService', () => {
     it('should use safeStringify for args', async () => {
       const mockArgs = { test: 'value' }
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify({ success: true }),
+        result: JSON.stringify({ success: true })
       })
 
       await AccountService.callAccountMethod(
@@ -212,7 +239,7 @@ describe('AccountService', () => {
         methodName: 'signMessage',
         network: 'ethereum',
         accountIndex: 0,
-        args: JSON.stringify(mockArgs),
+        args: JSON.stringify(mockArgs)
       })
     })
 
@@ -227,7 +254,7 @@ describe('AccountService', () => {
 
     it('should validate balance response format', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify('invalid-balance-format'),
+        result: JSON.stringify('invalid-balance-format')
       })
 
       await expect(
@@ -237,7 +264,7 @@ describe('AccountService', () => {
 
     it('should accept valid balance response format', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify('1000000000000000000'),
+        result: JSON.stringify('1000000000000000000')
       })
 
       const result = await AccountService.callAccountMethod(
@@ -265,7 +292,7 @@ describe('AccountService', () => {
     it('should throw error if WDK not initialized', async () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: false,
-        hrpc: null,
+        hrpc: null
       }))
 
       await expect(
@@ -276,7 +303,7 @@ describe('AccountService', () => {
     it('should throw error if HRPC not available', async () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: true,
-        hrpc: null,
+        hrpc: null
       }))
 
       await expect(
@@ -287,7 +314,7 @@ describe('AccountService', () => {
     it('should throw error if method returns no result', async () => {
       // workletResponseSchema requires result to be a string, so we need to mock a response that fails schema validation
       mockHRPC.callMethod.mockResolvedValue({
-        result: null,
+        result: null
       })
 
       await expect(
@@ -297,7 +324,7 @@ describe('AccountService', () => {
 
     it('should throw error if result is null', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(null),
+        result: JSON.stringify(null)
       })
 
       await expect(
@@ -307,7 +334,7 @@ describe('AccountService', () => {
 
     it('should throw error if result is null', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(null),
+        result: JSON.stringify(null)
       })
 
       await expect(
@@ -317,7 +344,7 @@ describe('AccountService', () => {
 
     it('should throw error if JSON parsing fails', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: 'invalid json',
+        result: 'invalid json'
       })
 
       await expect(
@@ -334,4 +361,3 @@ describe('AccountService', () => {
     })
   })
 })
-

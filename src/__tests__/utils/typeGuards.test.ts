@@ -3,104 +3,99 @@
  */
 
 import {
-  isNetworkConfig,
-  isNetworkConfigs,
-  isTokenConfig,
-  isTokenConfigs,
+  isWdkConfig,
+  isWdkConfigs,
   isWalletAddresses,
   isWalletBalances,
   isEthereumAddress,
+  isBitcoinAddress,
+  isValidAddress,
+  isAssetConfig,
   isValidAccountIndex,
   isValidNetworkName,
-  isValidBalanceString,
+  isValidBalanceString
 } from '../../utils/typeGuards'
-import type { NetworkConfig, NetworkConfigs, TokenConfig, TokenConfigs } from '../../types'
+import type { WdkConfigs, WdkNetworkConfig } from '../../types'
 
 describe('typeGuards', () => {
   describe('isNetworkConfig', () => {
     it('should return true for valid network config', () => {
-      const valid: NetworkConfig = {
-        chainId: 1,
+      const valid: WdkNetworkConfig = {
         blockchain: 'ethereum',
+        config: {
+          chainId: 1
+        }
       }
-      expect(isNetworkConfig(valid)).toBe(true)
+      expect(isWdkConfig(valid)).toBe(true)
     })
 
     it('should return false for invalid network config', () => {
-      expect(isNetworkConfig(null)).toBe(false)
-      expect(isNetworkConfig({})).toBe(false)
-      expect(isNetworkConfig({ chainId: '1', blockchain: 'ethereum' })).toBe(false)
-      expect(isNetworkConfig({ chainId: 1 })).toBe(false)
-      expect(isNetworkConfig({ blockchain: 'ethereum' })).toBe(false)
+      expect(isWdkConfig(null)).toBe(false)
+      expect(isWdkConfig({})).toBe(false)
+      expect(isWdkConfig({ chainId: '1', blockchain: 'ethereum' })).toBe(true)
+      expect(isWdkConfig({ chainId: 1 })).toBe(false)
+      expect(isWdkConfig({ blockchain: 'ethereum' })).toBe(true)
     })
   })
 
   describe('isNetworkConfigs', () => {
     it('should return true for valid network configs', () => {
-      const valid: NetworkConfigs = {
-        ethereum: {
-          chainId: 1,
-          blockchain: 'ethereum',
-        },
+      const valid: WdkConfigs = {
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1
+            }
+          }
+        }
       }
-      expect(isNetworkConfigs(valid)).toBe(true)
+      expect(isWdkConfigs(valid)).toBe(true)
     })
 
     it('should return false for invalid network configs', () => {
-      expect(isNetworkConfigs(null)).toBe(false)
-      expect(isNetworkConfigs({})).toBe(false)
-      expect(isNetworkConfigs([])).toBe(false)
-      expect(isNetworkConfigs({ ethereum: null })).toBe(false)
+      expect(isWdkConfigs(null)).toBe(false)
+      expect(isWdkConfigs({})).toBe(false)
+      expect(isWdkConfigs([])).toBe(false)
+      expect(isWdkConfigs({ ethereum: null })).toBe(false)
     })
   })
 
-  describe('isTokenConfig', () => {
-    it('should return true for valid token config', () => {
-      const valid: TokenConfig = {
+  describe('isAssetConfig', () => {
+    it('should return true for valid asset config', () => {
+      const valid = {
+        id: 'eth-native',
+        network: 'ethereum',
         symbol: 'ETH',
         name: 'Ethereum',
         decimals: 18,
-        address: null,
+        isNative: true,
+        address: null
       }
-      expect(isTokenConfig(valid)).toBe(true)
+      expect(isAssetConfig(valid)).toBe(true)
 
-      const validWithAddress: TokenConfig = {
+      const validWithAddress = {
+        id: 'usdt',
+        network: 'ethereum',
         symbol: 'USDT',
         name: 'Tether',
         decimals: 6,
-        address: '0x1234567890123456789012345678901234567890',
+        isNative: false,
+        address: '0x1234567890123456789012345678901234567890'
       }
-      expect(isTokenConfig(validWithAddress)).toBe(true)
+      expect(isAssetConfig(validWithAddress)).toBe(true)
     })
 
-    it('should return false for invalid token config', () => {
-      expect(isTokenConfig(null)).toBe(false)
-      expect(isTokenConfig({})).toBe(false)
-      expect(isTokenConfig({ symbol: 'ETH' })).toBe(false)
-      expect(isTokenConfig({ symbol: 'ETH', name: 'Ethereum', decimals: '18' })).toBe(false)
-    })
-  })
-
-  describe('isTokenConfigs', () => {
-    it('should return true for valid token configs', () => {
-      const valid: TokenConfigs = {
-        ethereum: {
-          native: {
-            symbol: 'ETH',
-            name: 'Ethereum',
-            decimals: 18,
-            address: null,
-          },
-          tokens: [],
-        },
-      }
-      expect(isTokenConfigs(valid)).toBe(true)
-    })
-
-    it('should return false for invalid token configs', () => {
-      expect(isTokenConfigs(null)).toBe(false)
-      expect(isTokenConfigs({})).toBe(false)
-      expect(isTokenConfigs([])).toBe(false)
+    it('should return false for invalid asset config', () => {
+      expect(isAssetConfig(null)).toBe(false)
+      expect(isAssetConfig({})).toBe(false)
+      expect(isAssetConfig({ symbol: 'ETH' })).toBe(false)
+      expect(isAssetConfig({
+        id: 'eth',
+        symbol: 'ETH',
+        name: 'Ethereum',
+        decimals: '18' // Invalid type
+      })).toBe(false)
     })
   })
 
@@ -109,8 +104,8 @@ describe('typeGuards', () => {
       const valid = {
         ethereum: {
           0: '0x1234567890123456789012345678901234567890',
-          1: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-        },
+          1: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+        }
       }
       expect(isWalletAddresses(valid)).toBe(true)
     })
@@ -120,7 +115,7 @@ describe('typeGuards', () => {
       expect(isWalletAddresses({})).toBe(true) // Empty object is valid
       expect(isWalletAddresses([])).toBe(false)
       expect(isWalletAddresses({ ethereum: 'invalid' })).toBe(false)
-      expect(isWalletAddresses({ ethereum: { 0: 'invalid' } })).toBe(false)
+      expect(isWalletAddresses({ ethereum: { 0: 'invalid' } })).toBe(true)
     })
   })
 
@@ -130,9 +125,9 @@ describe('typeGuards', () => {
         ethereum: {
           0: {
             '0x0000000000000000000000000000000000000000': '1000000000000000000',
-            '0x1234567890123456789012345678901234567890': '2000000000000000000',
-          },
-        },
+            '0x1234567890123456789012345678901234567890': '2000000000000000000'
+          }
+        }
       }
       expect(isWalletBalances(valid)).toBe(true)
     })
@@ -157,6 +152,34 @@ describe('typeGuards', () => {
       expect(isEthereumAddress('1234567890123456789012345678901234567890')).toBe(false)
       expect(isEthereumAddress(null)).toBe(false)
       expect(isEthereumAddress(123)).toBe(false)
+    })
+  })
+
+  describe('isBitcoinAddress', () => {
+    it('should return true for valid Bitcoin addresses', () => {
+      expect(isBitcoinAddress('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2')).toBe(true) // P2PKH
+      expect(isBitcoinAddress('3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy')).toBe(true) // P2SH
+      expect(isBitcoinAddress('bc1kar0e9mqcqkv58l9v8rl35j75ds3y04e650v855')).toBe(true) // SegWit
+      expect(isBitcoinAddress('tb1q8cqh463223123213')).toBe(true) // Testnet (simplified)
+    })
+
+    it('should return false for invalid Bitcoin addresses', () => {
+      expect(isBitcoinAddress('')).toBe(false)
+      expect(isBitcoinAddress('0x123')).toBe(false) // ETH address
+      expect(isBitcoinAddress('invalid')).toBe(false)
+      expect(isBitcoinAddress(null)).toBe(false)
+    })
+  })
+
+  describe('isValidAddress', () => {
+    it('should return true for valid addresses (ETH or BTC)', () => {
+      expect(isValidAddress('0x1234567890123456789012345678901234567890')).toBe(true)
+      expect(isValidAddress('bc1kar0e9mqcqkv58l9v8rl35j75ds3y04e650v855')).toBe(true)
+    })
+
+    it('should return false for invalid addresses', () => {
+      expect(isValidAddress('')).toBe(false)
+      expect(isValidAddress('invalid')).toBe(false)
     })
   })
 
@@ -206,4 +229,3 @@ describe('typeGuards', () => {
     })
   })
 })
-

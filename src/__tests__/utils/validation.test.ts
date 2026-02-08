@@ -3,56 +3,36 @@
  */
 
 import {
-  validateNetworkConfigs,
-  validateTokenConfigs,
+  validateWdkConfigs,
   validateBalanceRefreshInterval,
   validateRequiredMethods,
   validateAccountIndex,
   validateNetworkName,
   validateTokenAddress,
-  validateBalance,
+  validateBalance
 } from '../../utils/validation'
-import type { NetworkConfigs, TokenConfigs } from '../../types'
+import type { WdkConfigs } from '../../types'
 
 describe('validation', () => {
   describe('validateNetworkConfigs', () => {
     it('should not throw for valid network configs', () => {
-      const validConfigs: NetworkConfigs = {
-        ethereum: {
-          chainId: 1,
-          blockchain: 'ethereum',
-        },
+      const validConfigs: WdkConfigs = {
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1
+            }
+          }
+        }
       }
-      expect(() => validateNetworkConfigs(validConfigs)).not.toThrow()
+      expect(() => validateWdkConfigs(validConfigs)).not.toThrow()
     })
 
     it('should throw for invalid network configs', () => {
-      expect(() => validateNetworkConfigs({} as NetworkConfigs)).toThrow()
-      expect(() => validateNetworkConfigs(null as unknown as NetworkConfigs)).toThrow()
-      expect(() => validateNetworkConfigs([] as unknown as NetworkConfigs)).toThrow()
-    })
-  })
-
-  describe('validateTokenConfigs', () => {
-    it('should not throw for valid token configs', () => {
-      const validConfigs: TokenConfigs = {
-        ethereum: {
-          native: {
-            symbol: 'ETH',
-            name: 'Ethereum',
-            decimals: 18,
-            address: null,
-          },
-          tokens: [],
-        },
-      }
-      expect(() => validateTokenConfigs(validConfigs)).not.toThrow()
-    })
-
-    it('should throw for invalid token configs', () => {
-      expect(() => validateTokenConfigs({} as TokenConfigs)).toThrow()
-      expect(() => validateTokenConfigs(null as unknown as TokenConfigs)).toThrow()
-      expect(() => validateTokenConfigs([] as unknown as TokenConfigs)).toThrow()
+      expect(() => validateWdkConfigs({} as WdkConfigs)).toThrow()
+      expect(() => validateWdkConfigs(null as unknown as WdkConfigs)).toThrow()
+      expect(() => validateWdkConfigs([] as unknown as WdkConfigs)).toThrow()
     })
   })
 
@@ -75,14 +55,14 @@ describe('validation', () => {
     it('should not throw for object with required methods', () => {
       const obj = {
         method1: jest.fn(),
-        method2: jest.fn(),
+        method2: jest.fn()
       }
       expect(() => validateRequiredMethods(obj, ['method1', 'method2'], 'TestObject')).not.toThrow()
     })
 
     it('should throw for object without required methods', () => {
       const obj = {
-        method1: jest.fn(),
+        method1: jest.fn()
       }
       expect(() => validateRequiredMethods(obj, ['method1', 'method2'], 'TestObject')).toThrow()
       expect(() => validateRequiredMethods(null, ['method1'], 'TestObject')).toThrow()

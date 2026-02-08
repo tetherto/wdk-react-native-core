@@ -1,6 +1,6 @@
 /**
  * Tests for AddressService
- * 
+ *
  * Tests address retrieval functionality
  */
 
@@ -10,11 +10,11 @@ import { getWalletStore } from '../../store/walletStore'
 
 // Mock stores
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn(),
+  getWorkletStore: jest.fn()
 }))
 
 jest.mock('../../store/walletStore', () => ({
-  getWalletStore: jest.fn(),
+  getWalletStore: jest.fn()
 }))
 
 describe('AddressService', () => {
@@ -27,7 +27,7 @@ describe('AddressService', () => {
 
     // Setup mock HRPC
     mockHRPC = {
-      callMethod: jest.fn(),
+      callMethod: jest.fn()
     }
 
     // Setup mock worklet store
@@ -35,8 +35,8 @@ describe('AddressService', () => {
       getState: jest.fn(() => ({
         isInitialized: true,
         hrpc: mockHRPC,
-        isWorkletStarted: true,
-      })),
+        isWorkletStarted: true
+      }))
     }
 
     // Setup mock wallet store
@@ -44,9 +44,9 @@ describe('AddressService', () => {
       getState: jest.fn(() => ({
         addresses: {},
         walletLoading: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       })),
-      setState: jest.fn(),
+      setState: jest.fn()
     }
 
     // Setup store mocks
@@ -58,7 +58,7 @@ describe('AddressService', () => {
     it('should get address from worklet and cache it', async () => {
       const mockAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(mockAddress),
+        result: JSON.stringify(mockAddress)
       })
 
       const address = await AddressService.getAddress('ethereum', 0)
@@ -68,7 +68,7 @@ describe('AddressService', () => {
         methodName: 'getAddress',
         network: 'ethereum',
         accountIndex: 0,
-        args: null,
+        args: undefined
       })
 
       // Verify address was cached
@@ -84,7 +84,7 @@ describe('AddressService', () => {
             const prevState = {
               addresses: {},
               walletLoading: {},
-              activeWalletId: 'test-wallet-1',
+              activeWalletId: 'test-wallet-1'
             }
             const newState = stateUpdater(prevState)
             return newState.addresses?.['test-wallet-1']?.ethereum?.[0] === mockAddress
@@ -101,12 +101,12 @@ describe('AddressService', () => {
         addresses: {
           'test-wallet-1': {
             ethereum: {
-              0: cachedAddress,
-            },
-          },
+              0: cachedAddress
+            }
+          }
         },
         walletLoading: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const address = await AddressService.getAddress('ethereum', 0)
@@ -122,10 +122,10 @@ describe('AddressService', () => {
 
       mockHRPC.callMethod
         .mockResolvedValueOnce({
-          result: JSON.stringify(ethereumAddress),
+          result: JSON.stringify(ethereumAddress)
         })
         .mockResolvedValueOnce({
-          result: JSON.stringify(polygonAddress),
+          result: JSON.stringify(polygonAddress)
         })
 
       const ethAddr = await AddressService.getAddress('ethereum', 0)
@@ -142,10 +142,10 @@ describe('AddressService', () => {
 
       mockHRPC.callMethod
         .mockResolvedValueOnce({
-          result: JSON.stringify(address0),
+          result: JSON.stringify(address0)
         })
         .mockResolvedValueOnce({
-          result: JSON.stringify(address1),
+          result: JSON.stringify(address1)
         })
 
       const addr0 = await AddressService.getAddress('ethereum', 0)
@@ -156,13 +156,13 @@ describe('AddressService', () => {
       expect(mockHRPC.callMethod).toHaveBeenCalledWith(
         expect.objectContaining({
           network: 'ethereum',
-          accountIndex: 0,
+          accountIndex: 0
         })
       )
       expect(mockHRPC.callMethod).toHaveBeenCalledWith(
         expect.objectContaining({
           network: 'ethereum',
-          accountIndex: 1,
+          accountIndex: 1
         })
       )
     })
@@ -170,12 +170,12 @@ describe('AddressService', () => {
     it('should throw error if WDK not initialized', async () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: false,
-        hrpc: null,
+        hrpc: null
       }))
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {},
         walletLoading: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
@@ -186,12 +186,12 @@ describe('AddressService', () => {
     it('should throw error if HRPC not available', async () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: true,
-        hrpc: null,
+        hrpc: null
       }))
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {},
         walletLoading: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
@@ -207,12 +207,12 @@ describe('AddressService', () => {
 
     it('should throw error if worklet returns no result', async () => {
       mockHRPC.callMethod.mockResolvedValue({
-        result: null,
+        result: null
       })
       mockWalletStore.getState = jest.fn(() => ({
         addresses: {},
         walletLoading: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       await expect(AddressService.getAddress('ethereum', 0)).rejects.toThrow(
@@ -241,15 +241,15 @@ describe('AddressService', () => {
       for (const network of networks) {
         const mockAddress = network === 'spark' ? mockSparkAddress : mockEthereumAddress
         mockHRPC.callMethod.mockResolvedValueOnce({
-          result: JSON.stringify(mockAddress),
+          result: JSON.stringify(mockAddress)
         })
-        
+
         const address = await AddressService.getAddress(network, 0)
         expect(address).toBe(mockAddress)
         expect(mockHRPC.callMethod).toHaveBeenCalledWith(
           expect.objectContaining({
             network,
-            accountIndex: 0,
+            accountIndex: 0
           })
         )
       }
@@ -260,7 +260,7 @@ describe('AddressService', () => {
     it('should set loading state during address fetch', async () => {
       const mockAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       mockHRPC.callMethod.mockResolvedValue({
-        result: JSON.stringify(mockAddress),
+        result: JSON.stringify(mockAddress)
       })
 
       await AddressService.getAddress('ethereum', 0)
@@ -270,13 +270,13 @@ describe('AddressService', () => {
       expect(setStateCalls.length).toBeGreaterThan(0)
 
       // Track state changes - start with initial state
-      let currentState: any = { 
-        walletLoading: {}, 
+      let currentState: any = {
+        walletLoading: {},
         addresses: {},
         balanceLoading: {},
         lastBalanceUpdate: {},
         balances: {},
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }
       let loadingWasSetToTrue = false
       let loadingWasSetToFalse = false
@@ -291,7 +291,7 @@ describe('AddressService', () => {
             balanceLoading: currentState.balanceLoading || {},
             lastBalanceUpdate: currentState.lastBalanceUpdate || {},
             balances: currentState.balances || {},
-            activeWalletId: currentState.activeWalletId || 'test-wallet-1',
+            activeWalletId: currentState.activeWalletId || 'test-wallet-1'
           }
           currentState = { ...prevState, ...stateUpdater(prevState) }
           // Loading state is now per-wallet: walletLoading[walletId][loadingKey]
@@ -309,4 +309,3 @@ describe('AddressService', () => {
     })
   })
 })
-

@@ -33,12 +33,7 @@
 import { produce } from 'immer'
 
 import { getWalletStore } from '../store/walletStore'
-import {
-  resolveWalletId,
-  updateBalanceInState,
-  getNestedState,
-} from '../utils/storeHelpers'
-import { NATIVE_TOKEN_KEY } from '../utils/constants'
+import { resolveWalletId, updateBalanceInState, getNestedState } from '../utils/storeHelpers'
 import { validateBalance, validateWalletParams } from '../utils/validation'
 
 /**
@@ -51,56 +46,42 @@ export class BalanceService {
    * Validate wallet parameters and balance (if provided)
    * Helper to reduce repetitive validation calls
    */
-  private static validateBalanceParams(
+  private static validateBalanceParams (
     network: string,
     accountIndex: number,
-    tokenAddress?: string | null,
-    balance?: string,
+    assetId: string,
+    balance?: string
   ): void {
-    validateWalletParams(network, accountIndex, tokenAddress)
+    validateWalletParams(network, accountIndex, assetId)
     if (balance !== undefined) {
       validateBalance(balance)
     }
   }
 
   /**
-   * Get token key from token address (native or token address)
-   */
-  private static getTokenKey(tokenAddress: string | null): string {
-    return tokenAddress || NATIVE_TOKEN_KEY
-  }
-  /**
    * Update balance for a specific wallet, network, and token
    *
    * @param accountIndex - Account index
    * @param network - Network name
-   * @param tokenAddress - Token address (null for native)
+   * @param assetId - Asset ID
    * @param balance - Balance value
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static updateBalance(
+  static updateBalance (
     accountIndex: number,
     network: string,
-    tokenAddress: string | null,
+    assetId: string,
     balance: string,
-    walletId?: string,
+    walletId?: string
   ): void {
-    this.validateBalanceParams(network, accountIndex, tokenAddress, balance)
+    this.validateBalanceParams(network, accountIndex, assetId, balance)
 
     const walletStore = getWalletStore()
     const targetWalletId = resolveWalletId(walletId)
-    const tokenKey = this.getTokenKey(tokenAddress)
 
-    walletStore.setState((prev) =>
-      updateBalanceInState(
-        prev,
-        targetWalletId,
-        network,
-        accountIndex,
-        tokenKey,
-        balance,
-      ),
-    )
+    walletStore.setState((prev) => ({
+      ...updateBalanceInState(prev, targetWalletId, network, accountIndex, assetId, balance)
+    }))
   }
 
   /**
@@ -108,26 +89,25 @@ export class BalanceService {
    *
    * @param accountIndex - Account index
    * @param network - Network name
-   * @param tokenAddress - Token address (null for native)
+   * @param assetId - Asset ID
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static getBalance(
+  static getBalance (
     accountIndex: number,
     network: string,
-    tokenAddress: string | null,
-    walletId?: string,
+    assetId: string,
+    walletId?: string
   ): string | null {
-    this.validateBalanceParams(network, accountIndex, tokenAddress)
+    this.validateBalanceParams(network, accountIndex, assetId)
 
     const walletStore = getWalletStore()
     const walletState = walletStore.getState()
     const targetWalletId = resolveWalletId(walletId)
-    const tokenKey = this.getTokenKey(tokenAddress)
 
     return getNestedState(
       walletState.balances,
-      [targetWalletId, network, accountIndex, tokenKey],
-      null,
+      [targetWalletId, network, accountIndex, assetId],
+      null
     )
   }
 
@@ -138,10 +118,10 @@ export class BalanceService {
    * @param network - Network name
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static getBalancesForWallet(
+  static getBalancesForWallet (
     accountIndex: number,
     network: string,
-    walletId?: string,
+    walletId?: string
   ): Record<string, string> | null {
     // Validate inputs
     validateWalletParams(network, accountIndex)
@@ -153,7 +133,7 @@ export class BalanceService {
     return getNestedState(
       walletState.balances,
       [targetWalletId, network, accountIndex],
-      null,
+      null
     )
   }
 
@@ -162,34 +142,33 @@ export class BalanceService {
    *
    * @param network - Network name
    * @param accountIndex - Account index
-   * @param tokenAddress - Token address (null for native)
+   * @param assetId - Asset ID
    * @param loading - Loading state
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static setBalanceLoading(
+  static setBalanceLoading (
     network: string,
     accountIndex: number,
-    tokenAddress: string | null,
+    assetId: string,
     loading: boolean,
-    walletId?: string,
+    walletId?: string
   ): void {
-    this.validateBalanceParams(network, accountIndex, tokenAddress)
+    this.validateBalanceParams(network, accountIndex, assetId)
 
     const walletStore = getWalletStore()
     const targetWalletId = resolveWalletId(walletId)
-    const tokenKey = this.getTokenKey(tokenAddress)
-    const loadingKey = `${network}-${accountIndex}-${tokenKey}`
+    const loadingKey = `${network}-${accountIndex}-${assetId}`
 
-    walletStore.setState((prev) =>
-      produce(prev, (state) => {
-        state.balanceLoading[targetWalletId] ??= {}
-        if (loading) {
-          state.balanceLoading[targetWalletId][loadingKey] = true
-        } else {
-          delete state.balanceLoading[targetWalletId][loadingKey]
-        }
-      }),
-    )
+    walletStore.setState((prev) => ({
+      balanceLoading: {
+        ...prev.balanceLoading,
+        [targetWalletId]: loading
+          ? { ...((prev.balanceLoading[targetWalletId] != null) || {}), [loadingKey]: true }
+          : Object.fromEntries(
+            Object.entries((prev.balanceLoading[targetWalletId] != null) || {}).filter(([key]) => key !== loadingKey)
+          )
+      }
+    }))
   }
 
   /**
@@ -197,30 +176,26 @@ export class BalanceService {
    *
    * @param network - Network name
    * @param accountIndex - Account index
-   * @param tokenAddress - Token address (null for native)
+   * @param assetId - Asset ID
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static isBalanceLoading(
+  static isBalanceLoading (
     network: string,
     accountIndex: number,
-    tokenAddress: string | null,
-    walletId?: string,
+    assetId: string,
+    walletId?: string
   ): boolean {
-    this.validateBalanceParams(network, accountIndex, tokenAddress)
+    this.validateBalanceParams(network, accountIndex, assetId)
 
     const walletStore = getWalletStore()
     const walletState = walletStore.getState()
-    const targetWalletId = walletId || walletState.activeWalletId
-    if (!targetWalletId) {
-      return false
-    }
-    const tokenKey = this.getTokenKey(tokenAddress)
-    const loadingKey = `${network}-${accountIndex}-${tokenKey}`
+    const targetWalletId = resolveWalletId(walletId)
+    const loadingKey = `${network}-${accountIndex}-${assetId}`
 
     return getNestedState(
       walletState.balanceLoading,
       [targetWalletId, loadingKey],
-      false,
+      false
     )
   }
 
@@ -231,10 +206,10 @@ export class BalanceService {
    * @param accountIndex - Account index
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static updateLastBalanceUpdate(
+  static updateLastBalanceUpdate (
     network: string,
     accountIndex: number,
-    walletId?: string,
+    walletId?: string
   ): void {
     // Validate inputs
     validateWalletParams(network, accountIndex)
@@ -248,7 +223,7 @@ export class BalanceService {
         state.lastBalanceUpdate[targetWalletId] ??= {}
         state.lastBalanceUpdate[targetWalletId][network] ??= {}
         state.lastBalanceUpdate[targetWalletId][network][accountIndex] = now
-      }),
+      })
     )
   }
 
@@ -259,10 +234,10 @@ export class BalanceService {
    * @param accountIndex - Account index
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static getLastBalanceUpdate(
+  static getLastBalanceUpdate (
     network: string,
     accountIndex: number,
-    walletId?: string,
+    walletId?: string
   ): number | null {
     // Validate inputs
     validateWalletParams(network, accountIndex)
@@ -274,20 +249,20 @@ export class BalanceService {
     return getNestedState(
       walletState.lastBalanceUpdate,
       [targetWalletId, network, accountIndex],
-      null,
+      null
     )
   }
 
   /**
    * Clear all balances (useful for wallet reset)
    */
-  static clearBalances(): void {
+  static clearBalances (): void {
     const walletStore = getWalletStore()
 
     walletStore.setState({
       balances: {},
       balanceLoading: {},
-      lastBalanceUpdate: {},
+      lastBalanceUpdate: {}
     })
   }
 }

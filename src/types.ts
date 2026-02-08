@@ -1,78 +1,48 @@
 /**
  * Core Type Definitions
- * 
+ *
  * All network, token, and wallet type definitions for the WDK React Native Core library.
  */
 
+import type { AssetConfig, IAsset } from './entities/asset'
+
+import type { NetworkConfig, ProtocolConfig, WdkWorkletConfig } from './types/hrpc'
+export type { AssetConfig, IAsset }
+
 /**
- * Network Configuration
- * 
- * Defines the configuration for a blockchain network.
+ * Network Configurations (Generic)
+ * Wrapper around NetworkConfigs to support typed config.
  */
-export interface NetworkConfig {
-  /** Chain ID for the network */
-  chainId: number
-  /** Blockchain name (e.g., "ethereum", "polygon") */
-  blockchain: string
-  /** Optional RPC provider URL */
-  provider?: string
-  /** Optional bundler URL for account abstraction */
-  bundlerUrl?: string
-  /** Optional paymaster URL for account abstraction */
-  paymasterUrl?: string
-  /** Optional paymaster contract address */
-  paymasterAddress?: string
-  /** Optional entry point contract address */
-  entryPointAddress?: string
-  /** Optional maximum fee for transfers */
-  transferMaxFee?: number
+export interface WdkNetworkConfig<T = Record<string, unknown>> extends NetworkConfig {
+  config: T
 }
 
 /**
- * Network Configurations
- * 
- * Maps network names to their configurations.
+ * Protocol Configurations (Generic)
+ * Wrapper around ProtocolConfigs to support typed config.
  */
-export type NetworkConfigs = Record<string, NetworkConfig>
-
-/**
- * Token Configuration
- * 
- * Defines the configuration for a token (native or ERC20).
- */
-export interface TokenConfig {
-  /** Token symbol (e.g., "ETH", "USDT") */
-  symbol: string
-  /** Token name (e.g., "Ethereum", "Tether") */
-  name: string
-  /** Number of decimals (0-18) */
-  decimals: number
-  /** Token contract address (null for native tokens) */
-  address: string | null
+export interface WdkProtocolConfig<T = Record<string, unknown>> extends ProtocolConfig {
+  config: T
 }
 
 /**
- * Network Tokens
- * 
- * Defines the tokens available for a network (native + ERC20 tokens).
+ * WDK Configuration (Generic)
+ *
+ * The root configuration object passed to the WDK worklet.
+ * Matches WdkWorkletConfig structure but with generics.
  */
-export interface NetworkTokens {
-  /** Native token configuration */
-  native: TokenConfig
-  /** Array of ERC20 token configurations */
-  tokens: TokenConfig[]
+export interface WdkConfigs<TNetwork = Record<string, unknown>, TProtocol = Record<string, unknown>> extends WdkWorkletConfig {
+  networks: {
+    [blockchain: string]: WdkNetworkConfig<TNetwork>
+  }
+  protocols?: {
+    [protocolName: string]: WdkProtocolConfig<TProtocol>
+  }
 }
-
-/**
- * Token Configurations
- * 
- * Maps network names to their token configurations.
- */
-export type TokenConfigs = Record<string, NetworkTokens>
 
 /**
  * Wallet
- * 
+ *
  * Represents a wallet instance with metadata.
  */
 export interface Wallet {
@@ -90,7 +60,7 @@ export interface Wallet {
 
 /**
  * Wallet Addresses
- * 
+ *
  * Maps network -> accountIndex -> address
  * Structure: { [network]: { [accountIndex]: address } }
  */
@@ -98,7 +68,7 @@ export type WalletAddresses = Record<string, Record<number, string>>
 
 /**
  * Wallet Addresses by Wallet Identifier
- * 
+ *
  * Maps walletId -> network -> accountIndex -> address
  * Structure: { [walletId]: { [network]: { [accountIndex]: address } } }
  */
@@ -106,32 +76,32 @@ export type WalletAddressesByWallet = Record<string, WalletAddresses>
 
 /**
  * Wallet Balances
- * 
- * Maps network -> accountIndex -> tokenAddress -> balance
- * Structure: { [network]: { [accountIndex]: { [tokenAddress]: balance } } }
+ *
+ * Maps network -> accountIndex -> assetId -> balance
+ * Structure: { [network]: { [accountIndex]: { [assetId]: balance } } }
  * Note: balance is stored as a string to handle BigInt values
  */
 export type WalletBalances = Record<string, Record<number, Record<string, string>>>
 
 /**
  * Wallet Balances by Wallet Identifier
- * 
- * Maps walletId -> network -> accountIndex -> tokenAddress -> balance
- * Structure: { [walletId]: { [network]: { [accountIndex]: { [tokenAddress]: balance } } } }
+ *
+ * Maps walletId -> network -> accountIndex -> assetId -> balance
+ * Structure: { [walletId]: { [network]: { [accountIndex]: { [assetId]: balance } } } }
  */
 export type WalletBalancesByWallet = Record<string, WalletBalances>
 
 /**
  * Balance Loading States
- * 
- * Maps "network-accountIndex-tokenAddress" -> boolean
+ *
+ * Maps "network-accountIndex-assetId" -> boolean
  * Used to track which balances are currently being fetched.
  */
 export type BalanceLoadingStates = Record<string, boolean>
 
 /**
  * Balance Fetch Result
- * 
+ *
  * Result of a balance fetch operation.
  */
 export interface BalanceFetchResult {
@@ -141,8 +111,8 @@ export interface BalanceFetchResult {
   network: string
   /** Account index */
   accountIndex: number
-  /** Token address (null for native tokens) */
-  tokenAddress: string | null
+  /** Asset identifier */
+  assetId: string
   /** Balance as a string (null if fetch failed) */
   balance: string | null
   /** Error message (only present if success is false) */
@@ -150,39 +120,33 @@ export interface BalanceFetchResult {
 }
 
 /**
- * Token Config Provider
- * 
- * Either a TokenConfigs object or a function that returns TokenConfigs.
- * Allows for dynamic token configuration.
- */
-export type TokenConfigProvider = TokenConfigs | (() => TokenConfigs)
-
-/**
- * Token Helpers
- * 
- * Helper functions for working with token configurations.
- */
-export interface TokenHelpers {
-  /** Get all tokens (native + ERC20) for a network */
-  getTokensForNetwork: (network: string) => TokenConfig[]
-  /** Get all supported network names */
-  getSupportedNetworks: () => string[]
-}
-
-/**
  * Wallet Store Interface
- * 
+ *
  * Interface for wallet store implementations that provide account methods
  * and wallet initialization status.
  */
 export interface WalletStore {
-  /** Call a method on a wallet account */
+  /** Call a method on a wallet account
+   * @param args - Single argument or array for multi-param methods (array gets spread)
+   */
   callAccountMethod: <T = unknown>(
     network: string,
     accountIndex: number,
     methodName: string,
-    args?: unknown
+    args?: unknown | unknown[]
   ) => Promise<T>
   /** Check if the wallet is initialized */
   isWalletInitialized: () => boolean
 }
+
+export {
+  LogType,
+  type LogRequest,
+  type WorkletStartRequest,
+  type WorkletStartResponse,
+  type DisposeRequest,
+  type CallMethodRequest,
+  type CallMethodResponse,
+  type HRPC,
+  type BundleConfig
+} from './types/hrpc'

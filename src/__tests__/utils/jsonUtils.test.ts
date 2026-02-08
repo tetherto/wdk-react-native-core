@@ -113,7 +113,7 @@ describe('jsonUtils', () => {
     it('should handle special JSON values', () => {
       const obj = {
         null: null,
-        undefined: undefined,
+        undefined,
         number: 42,
         string: 'test',
         boolean: true,
@@ -128,4 +128,3 @@ describe('jsonUtils', () => {
     })
   })
 })
-

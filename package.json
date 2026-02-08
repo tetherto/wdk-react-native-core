@@ -1,6 +1,6 @@
 {
   "name": "@tetherto/wdk-react-native-core",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "Core functionality for React Native wallets - wallet management, balance fetching, and worklet operations",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,6 +12,10 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,6 +34,8 @@
   "scripts": {
     "build": "tsc || true",
     "build:strict": "tsc",
+    "lint": "ts-standard",
+    "lint:fix": "ts-standard --fix",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -48,17 +54,18 @@
   "author": "Tetherto",
   "license": "Apache-2.0",
   "dependencies": {
-    "@tanstack/react-query": "^5.0.0",
-    "@tetherto/pear-wrk-wdk": "github:tetherto/pear-wrk-wdk#v2",
     "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage",
+    "@tetherto/pear-wrk-wdk": "github:nampc1/pear-wrk-wdk-v2-fork#2.0.0-beta.1",
+    "@tanstack/react-query": "^5.0.0",
     "expo-crypto": "^15.0.8",
     "immer": "^11.1.3",
-    "react-native-bare-kit": "^0.11.0",
+    "react-native-bare-kit": "^0.12.0",
     "react-native-mmkv": "^4.1.0",
     "zod": "^3.22.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "ts-standard": "12.0.2",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.4.0",
     "@types/jest": "^29.5.0",

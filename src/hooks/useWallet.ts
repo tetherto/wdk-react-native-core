@@ -10,6 +10,7 @@ import { isOperationInProgress } from '../utils/operationMutex'
 import { log, logError } from '../utils/logger'
 import type { WalletStore } from '../store/walletStore'
 import type { WorkletStore } from '../store/workletStore'
+import type { MethodMap, LooseMethods } from '../types/accountMethods'
 
 // Stable empty objects to prevent creating new objects on every render
 const EMPTY_ADDRESSES = {} as Record<string, Record<number, string>>
@@ -18,7 +19,7 @@ const EMPTY_WALLET_LOADING = {} as Record<string, boolean>
 /**
  * Check if wallet switching should be skipped
  */
-function shouldSkipWalletSwitch(
+function shouldSkipWalletSwitch (
   requestedWalletId: string | undefined,
   activeWalletId: string | null,
   isSwitchingWallet: boolean,
@@ -45,52 +46,42 @@ function shouldSkipWalletSwitch(
 /**
  * Check if the requested wallet is a temporary wallet
  */
-function isTemporaryWalletId(walletId: string | undefined): boolean {
+function isTemporaryWalletId (walletId: string | undefined): boolean {
   return walletId === '__temporary__'
 }
 
 /**
  * Normalize error to Error instance
  */
-function normalizeErrorToError(error: unknown): Error {
+function normalizeErrorToError (error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
 
 /**
  * Hook to interact with wallet data (addresses and account methods)
- * 
+ *
  * PURPOSE: Use this hook for wallet operations AFTER the wallet has been initialized.
  * This hook provides access to wallet addresses and account methods.
- * 
- * When to use which hook:
- * - **App initialization state**: Use `useWdkApp()` to check if app is ready
- * - **Wallet lifecycle** (create, load, import, delete): Use `useWalletManager()`
- * - **Wallet operations** (addresses, account methods): Use this hook (`useWallet()`)
- * - **Balance fetching**: Use `useBalance()` hook with TanStack Query
- * 
+ *
+ * @template TMethods - Optional map of method names to definitions (args/result) for strict typing.
+ *                     Defaults to LooseMethods (any string, any args).
+ *
  * @example
  * ```tsx
- * // First, check if app is ready
- * const { isReady } = useWdkApp()
- * if (!isReady) return <LoadingScreen />
- * 
- * // Then use wallet operations
- * const { addresses, getAddress, callAccountMethod } = useWallet()
- * 
- * // Use specific wallet (automatically switches if needed)
- * const { addresses, getAddress } = useWallet({ walletId: 'user@example.com' })
- * 
- * // Auto-load addresses for specific account indices
- * const { addresses } = useWallet({ autoLoadAccountIndices: [0, 1, 2] })
- * // Addresses will be automatically loaded when wallet is initialized
- * 
- * // Note: For creating temporary wallets, use useWalletManager().createTemporaryWallet()
+ * // Loose typing (default)
+ * const { callAccountMethod } = useWallet()
+ * await callAccountMethod('eth', 0, 'someMethod', { ... })
+ *
+ * // Strict typing (with generated types)
+ * import type { AppMethods } from './.wdk-bundle/types'
+ * const { callAccountMethod } = useWallet<AppMethods>()
+ * await callAccountMethod('eth', 0, 'signTransaction', { ... }) // Strictly typed!
  * ```
  */
-export interface UseWalletResult {
+export interface UseWalletResult<TMethods extends MethodMap = LooseMethods> {
   // State (reactive)
-  addresses: Record<string, Record<number, string>>  // network -> accountIndex -> address (for current wallet)
-  walletLoading: Record<string, boolean>  // loading states for current wallet
+  addresses: Record<string, Record<number, string>> // network -> accountIndex -> address (for current wallet)
+  walletLoading: Record<string, boolean> // loading states for current wallet
   isInitialized: boolean
   // Switching state
   isSwitchingWallet: boolean
@@ -103,19 +94,29 @@ export interface UseWalletResult {
   // Actions
   getAddress: (network: string, accountIndex?: number) => Promise<string>
   loadAllAddresses: (accountIndices?: number[]) => Promise<Record<string, Record<number, string>>>
-  callAccountMethod: <T = unknown>(
+
+  /**
+   * Call a method on a wallet account
+   *
+   * @template K - Method name (key of TMethods)
+   * @param network - Network name
+   * @param accountIndex - Account index
+   * @param methodName - Method name
+   * @param args - Method arguments (single value or array for multi-param methods)
+   */
+  callAccountMethod: <K extends keyof TMethods>(
     network: string,
     accountIndex: number,
-    methodName: string,
-    args?: unknown
-  ) => Promise<T>
+    methodName: K,
+    args?: TMethods[K]['args'] | unknown[]
+  ) => Promise<TMethods[K]['result']>
 }
 
-export function useWallet(options?: {
+export function useWallet<TMethods extends MethodMap = LooseMethods> (options?: {
   walletId?: string
   /** Account indices to automatically load addresses for */
   autoLoadAccountIndices?: number[]
-}): UseWalletResult {
+}): UseWalletResult<TMethods> {
   const workletStore = getWorkletStore()
   const walletStore = getWalletStore()
 
@@ -141,14 +142,14 @@ export function useWallet(options?: {
       if (!walletId) {
         return {
           addresses: EMPTY_ADDRESSES,
-          walletLoading: EMPTY_WALLET_LOADING,
+          walletLoading: EMPTY_WALLET_LOADING
         }
       }
       const addresses = state.addresses[walletId]
       const walletLoading = state.walletLoading[walletId]
       return {
-        addresses: addresses || EMPTY_ADDRESSES,
-        walletLoading: walletLoading || EMPTY_WALLET_LOADING,
+        addresses: (addresses != null) || EMPTY_ADDRESSES,
+        walletLoading: (walletLoading != null) || EMPTY_WALLET_LOADING
       }
     })
   )
@@ -185,9 +186,7 @@ export function useWallet(options?: {
 
       try {
         // Use WalletSwitchingService for wallet switching logic (has mutex protection)
-        await WalletSwitchingService.switchToWallet(requestedWalletId!, {
-          autoStartWorklet: false,
-        })
+        await WalletSwitchingService.switchToWallet(requestedWalletId!)
 
         if (!cancelled) {
           setIsTemporaryWallet(false)
@@ -221,18 +220,18 @@ export function useWallet(options?: {
   const loadTriggeredRef = useRef<string>('')
   useEffect(() => {
     const accountIndices = options?.autoLoadAccountIndices
-    if (!accountIndices || accountIndices.length === 0) {
+    if ((accountIndices == null) || accountIndices.length === 0) {
       return
     }
 
     // Create stable string key for account indices to compare
     const accountIndicesKey = accountIndices.sort().join(',')
-    
+
     // Reset load trigger if account indices have changed
     if (prevAccountIndicesRef.current !== accountIndicesKey) {
       loadTriggeredRef.current = ''
     }
-    
+
     // Don't load if wallet is not initialized or is switching
     if (!isInitialized || isSwitchingWallet) {
       return
@@ -244,12 +243,12 @@ export function useWallet(options?: {
     }
 
     // Check if all addresses are already loaded
-    const networkConfigs = workletStore.getState().networkConfigs
-    if (!networkConfigs) {
+    const wdkConfigs = workletStore.getState().wdkConfigs
+    if (wdkConfigs == null) {
       return
     }
-    
-    const networks = Object.keys(networkConfigs)
+
+    const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
     // Access walletState.addresses inside the effect without depending on walletState
     const currentAddresses = walletState.addresses
     const allLoaded = accountIndices.every((accountIndex) => {
@@ -278,14 +277,13 @@ export function useWallet(options?: {
     // Load addresses in the background
     // Use ref to track cancellation so cleanup function can properly cancel
     const cancelledRef = { current: false }
-    
+
     // Load addresses for all account indices and networks in parallel
-    // Reuse networkConfigs from earlier in the effect
-    if (networkConfigs) {
-      const networks = Object.keys(networkConfigs)
+    if (wdkConfigs) {
+      const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
       const loadPromises = accountIndices.flatMap((accountIndex) =>
-        networks.map((network) =>
-          AddressService.getAddress(network, accountIndex, targetWalletId)
+        networks.map(async (network) =>
+          await AddressService.getAddress(network, accountIndex, targetWalletId)
             .catch((error: unknown) => {
               if (!cancelledRef.current) {
                 logError(`[useWallet] Failed to load address for ${network}:${accountIndex}:`, error)
@@ -293,7 +291,7 @@ export function useWallet(options?: {
             })
         )
       )
-      
+
       // Fire and forget - don't await, just trigger the loads
       Promise.all(loadPromises).catch(() => {
         // Errors already logged individually
@@ -325,7 +323,7 @@ export function useWallet(options?: {
   // Get all addresses for a specific network
   // Use addresses directly from walletState (stable reference from useShallow)
   const getNetworkAddresses = useCallback((network: string) => {
-    return addresses[network] || {}
+    return (addresses[network] != null) || {}
   }, [addresses])
 
   // Check if an address is loading
@@ -337,26 +335,26 @@ export function useWallet(options?: {
   // Get a specific address (from cache or fetch)
   const getAddress = useCallback(async (network: string, accountIndex: number = 0) => {
     const walletId = targetWalletId || '__temporary__'
-    return AddressService.getAddress(network, accountIndex, walletId)
+    return await AddressService.getAddress(network, accountIndex, walletId)
   }, [targetWalletId])
 
   // Load all addresses for specified account indices across all networks
   const loadAllAddresses = useCallback(async (accountIndices: number[] = [0]) => {
     const walletId = targetWalletId || '__temporary__'
-    const networkConfigs = workletStore.getState().networkConfigs
-    if (!networkConfigs) {
+    const wdkConfigs = workletStore.getState().wdkConfigs
+    if (wdkConfigs == null) {
       return {} as Record<string, Record<number, string>>
     }
-    
-    const networks = Object.keys(networkConfigs)
+
+    const networks = Object.values(wdkConfigs.networks).map(n => n.blockchain)
     const result: Record<string, Record<number, string>> = {}
-    
+
     // Load addresses for all account indices and networks in parallel
     const loadPromises = accountIndices.flatMap((accountIndex) =>
       networks.map(async (network) => {
         try {
           const address = await AddressService.getAddress(network, accountIndex, walletId)
-          if (!result[network]) {
+          if (result[network] == null) {
             result[network] = {}
           }
           result[network][accountIndex] = address
@@ -365,20 +363,24 @@ export function useWallet(options?: {
         }
       })
     )
-    
+
     await Promise.all(loadPromises)
     return result
   }, [targetWalletId])
 
   // Call a method on a wallet account
-  const callAccountMethod = useCallback(async <T = unknown>(
+  const callAccountMethod = useCallback(async <K extends keyof TMethods>(
     network: string,
     accountIndex: number,
-    methodName: string,
-    args?: unknown
-  ): Promise<T> => {
-    const walletId = targetWalletId || '__temporary__'
-    return AccountService.callAccountMethod<T>(network, accountIndex, methodName, args, walletId)
+    methodName: K,
+    args?: TMethods[K]['args'] | unknown[]
+  ): Promise<TMethods[K]['result']> => {
+    return await AccountService.callAccountMethod<TMethods, K>(
+      network,
+      accountIndex,
+      methodName,
+      args
+    )
   }, [targetWalletId])
 
   // Memoize the entire result object to ensure stable reference
@@ -400,7 +402,7 @@ export function useWallet(options?: {
     // Actions
     getAddress,
     loadAllAddresses,
-    callAccountMethod,
+    callAccountMethod
   }), [
     addresses,
     walletLoading,
@@ -413,9 +415,8 @@ export function useWallet(options?: {
     isLoadingAddress,
     getAddress,
     loadAllAddresses,
-    callAccountMethod,
-  ]);
+    callAccountMethod
+  ])
 
-  return result;
+  return result
 }
-

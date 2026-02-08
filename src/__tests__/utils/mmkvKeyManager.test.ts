@@ -1,6 +1,6 @@
 /**
  * Tests for mmkvKeyManager
- * 
+ *
  * Tests MMKV encryption key derivation and caching
  */
 
@@ -11,8 +11,8 @@ import { getMMKVKey, clearKeyCache } from '../../utils/mmkvKeyManager'
 jest.mock('expo-crypto', () => ({
   digestStringAsync: jest.fn(),
   CryptoDigestAlgorithm: {
-    SHA256: 'SHA256',
-  },
+    SHA256: 'SHA256'
+  }
 }))
 
 describe('mmkvKeyManager', () => {
@@ -183,8 +183,8 @@ describe('mmkvKeyManager', () => {
       if (typeof Buffer === 'undefined') {
         ;(global as any).Buffer = {
           from: jest.fn((bytes: Uint8Array) => ({
-            toString: jest.fn(() => 'base64string'),
-          })),
+            toString: jest.fn(() => 'base64string')
+          }))
         }
       }
 
@@ -202,4 +202,3 @@ describe('mmkvKeyManager', () => {
     })
   })
 })
-

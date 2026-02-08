@@ -1,6 +1,6 @@
 /**
  * Tests for race conditions in wallet operations
- * 
+ *
  * Tests concurrent operations, state synchronization, and mutex behavior
  */
 
@@ -13,29 +13,29 @@ jest.mock('../../services/walletSetupService', () => ({
   WalletSetupService: {
     hasWallet: jest.fn(),
     loadExistingWallet: jest.fn(),
-    clearCredentialsCache: jest.fn(),
-  },
+    clearCredentialsCache: jest.fn()
+  }
 }))
 
 jest.mock('../../services/workletLifecycleService', () => ({
   WorkletLifecycleService: {
     ensureWorkletStarted: jest.fn(),
-    initializeWDK: jest.fn(),
-  },
+    initializeWDK: jest.fn()
+  }
 }))
 
 jest.mock('../../store/walletStore', () => {
   const actual = jest.requireActual('../../store/walletStore')
   return {
     ...actual,
-    getWalletStore: jest.fn(),
+    getWalletStore: jest.fn()
   }
 })
 
 jest.mock('../../utils/logger', () => ({
   log: jest.fn(),
   logError: jest.fn(),
-  logWarn: jest.fn(),
+  logWarn: jest.fn()
 }))
 
 describe('Race Conditions', () => {
@@ -49,14 +49,14 @@ describe('Race Conditions', () => {
         activeWalletId: null,
         walletLoadingState: { type: 'not_loaded' },
         isOperationInProgress: false,
-        currentOperation: null,
+        currentOperation: null
       })),
       setState: jest.fn((updater) => {
         const currentState = mockWalletStore.getState()
         const newState = typeof updater === 'function' ? updater(currentState) : updater
         const updatedState = { ...currentState, ...newState }
         mockWalletStore.getState.mockReturnValue(updatedState)
-      }),
+      })
     }
 
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
@@ -157,14 +157,14 @@ describe('Race Conditions', () => {
       const walletId2 = 'wallet-2'
       const credentials = {
         encryptionKey: 'test-key',
-        encryptedSeed: 'test-seed',
+        encryptedSeed: 'test-seed'
       }
 
       mockWalletStore.getState.mockReturnValue({
         activeWalletId: null,
         walletLoadingState: { type: 'not_loaded' },
         isOperationInProgress: false,
-        currentOperation: null,
+        currentOperation: null
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -198,7 +198,7 @@ describe('Race Conditions', () => {
       const walletId2 = 'wallet-2'
       const credentials = {
         encryptionKey: 'test-key',
-        encryptedSeed: 'test-seed',
+        encryptedSeed: 'test-seed'
       }
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -211,7 +211,7 @@ describe('Race Conditions', () => {
         activeWalletId: null,
         walletLoadingState: { type: 'not_loaded' },
         isOperationInProgress: false,
-        currentOperation: null,
+        currentOperation: null
       })
       await WalletSwitchingService.switchToWallet(walletId1)
 
@@ -220,7 +220,7 @@ describe('Race Conditions', () => {
         activeWalletId: walletId1,
         walletLoadingState: { type: 'ready', identifier: walletId1 },
         isOperationInProgress: false,
-        currentOperation: null,
+        currentOperation: null
       })
       await WalletSwitchingService.switchToWallet(walletId2)
 
@@ -289,4 +289,3 @@ describe('Race Conditions', () => {
     })
   })
 })
-

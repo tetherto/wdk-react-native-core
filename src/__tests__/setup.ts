@@ -12,25 +12,19 @@ jest.mock('react-native-mmkv', () => ({
     delete: jest.fn(),
     clearAll: jest.fn(),
     getAllKeys: jest.fn(() => []),
-    contains: jest.fn(),
-  })),
+    contains: jest.fn()
+  }))
 }))
 
 // Mock expo-crypto
 jest.mock('expo-crypto', () => ({
   digestStringAsync: jest.fn(),
-  getRandomBytesAsync: jest.fn(() => Promise.resolve(new Uint8Array(32))),
-}))
-
-// Mock @tetherto/pear-wrk-wdk
-jest.mock('@tetherto/pear-wrk-wdk', () => ({
-  Worklet: jest.fn(),
-  createWorklet: jest.fn(),
+  getRandomBytesAsync: jest.fn(async () => await Promise.resolve(new Uint8Array(32)))
 }))
 
 // Mock react-native-bare-kit
 jest.mock('react-native-bare-kit', () => ({
-  createBareKit: jest.fn(),
+  createBareKit: jest.fn()
 }))
 
 // Suppress console.error in tests (we test error cases, but don't need the noise)

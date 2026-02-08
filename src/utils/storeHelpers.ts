@@ -5,11 +5,9 @@
  * to reduce code duplication across services.
  */
 
-import type { HRPC } from '@tetherto/pear-wrk-wdk'
-
 import { getWorkletStore } from '../store/workletStore'
 import { getWalletStore } from '../store/walletStore'
-import { asExtendedHRPC } from '../types/hrpc'
+import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 import { produce } from 'immer'
 
@@ -25,29 +23,12 @@ import { produce } from 'immer'
  * await hrpc.callMethod(...)
  * ```
  */
-export function requireInitialized(): HRPC {
+export function requireInitialized (): HRPC {
   const state = getWorkletStore().getState()
-  if (!state.isInitialized || !state.hrpc) {
+  if (!state.isInitialized || (state.hrpc == null)) {
     throw new Error('WDK not initialized')
   }
   return state.hrpc
-}
-
-/**
- * Require that worklet is initialized and return extended HRPC instance
- *
- * @throws Error if worklet is not initialized
- * @returns Extended HRPC instance
- *
- * @example
- * ```typescript
- * const hrpc = requireExtendedHRPC()
- * await hrpc.initializeWDK(...)
- * ```
- */
-export function requireExtendedHRPC(): ReturnType<typeof asExtendedHRPC> {
-  const hrpc = requireInitialized()
-  return asExtendedHRPC(hrpc)
 }
 
 /**
@@ -55,7 +36,7 @@ export function requireExtendedHRPC(): ReturnType<typeof asExtendedHRPC> {
  *
  * @returns true if worklet is initialized, false otherwise
  */
-export function isInitialized(): boolean {
+export function isInitialized (): boolean {
   const state = getWorkletStore().getState()
   return state.isInitialized && state.hrpc !== null
 }
@@ -75,13 +56,13 @@ export function isInitialized(): boolean {
  * @param balance - Balance value
  * @returns The updated state
  */
-export function updateBalanceInState(
+export function updateBalanceInState (
   prev: WalletState,
   walletId: string,
   network: string,
   accountIndex: number,
   tokenKey: string,
-  balance: string,
+  balance: string
 ) {
   return produce(prev, (state) => {
     state.balances[walletId] ??= {}
@@ -105,12 +86,12 @@ export function updateBalanceInState(
  * @param address - Address value
  * @returns The updated state
  */
-export function updateAddressInState(
+export function updateAddressInState (
   prev: WalletState,
   walletId: string,
   network: string,
   accountIndex: number,
-  address: string,
+  address: string
 ) {
   return produce(prev, (state) => {
     state.addresses[walletId] ??= {}
@@ -135,7 +116,7 @@ export function updateAddressInState(
  * // Use targetWalletId for operations
  * ```
  */
-export function resolveWalletId(walletId?: string): string {
+export function resolveWalletId (walletId?: string): string {
   if (walletId) {
     return walletId
   }
@@ -159,10 +140,10 @@ export function resolveWalletId(walletId?: string): string {
  * const balance = getNestedState(state.balances, [walletId, network, accountIndex, tokenKey], null)
  * ```
  */
-export function getNestedState<T>(
+export function getNestedState<T> (
   obj: Record<string, unknown>,
-  path: (string | number)[],
-  defaultValue: T,
+  path: Array<string | number>,
+  defaultValue: T
 ): T {
   let current: unknown = obj
   for (const key of path) {
@@ -193,10 +174,10 @@ export function getNestedState<T>(
  * const newState = updateNestedState(prev, ['balances', walletId, network, accountIndex, tokenKey], balance)
  * ```
  */
-export function updateNestedState<T extends Record<string, unknown>>(
+export function updateNestedState<T extends Record<string, unknown>> (
   prev: T,
-  path: (string | number)[],
-  value: unknown,
+  path: Array<string | number>,
+  value: unknown
 ): Partial<T> {
   if (path.length === 0) {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -221,6 +202,6 @@ export function updateNestedState<T extends Record<string, unknown>>(
 
   return {
     ...prev,
-    [keyString]: updatedValue,
+    [keyString]: updatedValue
   } as Partial<T>
 }

@@ -1,6 +1,6 @@
 /**
  * Tests for WalletSetupService
- * 
+ *
  * Tests wallet creation, loading, and identifier-based multi-wallet support
  */
 
@@ -8,25 +8,26 @@ import { WalletSetupService } from '../../services/walletSetupService'
 import { mockSecureStorage } from '../../__mocks__/secureStorage'
 import { WorkletLifecycleService } from '../../services/workletLifecycleService'
 import { getWorkletStore } from '../../store/workletStore'
-import type { NetworkConfigs } from '../../types'
+import type { WdkConfigs } from '../../types'
 
 // Mock WorkletLifecycleService
 jest.mock('../../services/workletLifecycleService', () => ({
   WorkletLifecycleService: {
-    startWorklet: jest.fn(() => Promise.resolve()),
-    generateEntropyAndEncrypt: jest.fn(() => Promise.resolve({
+    startWorklet: jest.fn(async () => await Promise.resolve()),
+    ensureWorkletStarted: jest.fn(),
+    generateEntropyAndEncrypt: jest.fn(async () => await Promise.resolve({
       encryptionKey: 'test-encryption-key',
       encryptedSeedBuffer: 'test-encrypted-seed',
-      encryptedEntropyBuffer: 'test-encrypted-entropy',
+      encryptedEntropyBuffer: 'test-encrypted-entropy'
     })),
-    getSeedAndEntropyFromMnemonic: jest.fn(() => Promise.resolve({
+    getSeedAndEntropyFromMnemonic: jest.fn(async () => await Promise.resolve({
       encryptionKey: 'test-encryption-key',
       encryptedSeedBuffer: 'test-encrypted-seed-from-mnemonic',
-      encryptedEntropyBuffer: 'test-encrypted-entropy-from-mnemonic',
+      encryptedEntropyBuffer: 'test-encrypted-entropy-from-mnemonic'
     })),
-    initializeWDK: jest.fn(() => Promise.resolve()),
-    reset: jest.fn(),
-  },
+    initializeWDK: jest.fn(async () => await Promise.resolve()),
+    reset: jest.fn()
+  }
 }))
 
 // Mock workletStore
@@ -35,21 +36,25 @@ jest.mock('../../store/workletStore', () => ({
     getState: jest.fn(() => ({
       isWorkletStarted: true,
       isInitialized: false,
-      credentialsCache: {},
+      credentialsCache: {}
     })),
-    setState: jest.fn(),
+    setState: jest.fn()
   })),
   getCachedCredentials: jest.fn(() => null),
   setCachedCredentials: jest.fn(),
-  clearCredentialsCache: jest.fn(),
+  clearCredentialsCache: jest.fn()
 }))
 
 describe('WalletSetupService', () => {
-  const mockNetworkConfigs: NetworkConfigs = {
-    ethereum: {
-      chainId: 1,
-      blockchain: 'ethereum',
-    },
+  const mockNetworkConfigs: WdkConfigs = {
+    networks: {
+      ethereum: {
+        blockchain: 'ethereum',
+        config: {
+          chainId: 1
+        }
+      }
+    }
   }
 
   beforeEach(() => {
@@ -67,7 +72,7 @@ describe('WalletSetupService', () => {
     if (mockStore) {
       mockStore.getState = jest.fn(() => ({
         isWorkletStarted: true,
-        isInitialized: false,
+        isInitialized: false
       }))
     }
   })
@@ -75,7 +80,6 @@ describe('WalletSetupService', () => {
   describe('createNewWallet', () => {
     it('should create a new wallet without identifier', async () => {
       const result = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs
       )
 
       expect(result).toHaveProperty('encryptionKey')
@@ -98,7 +102,6 @@ describe('WalletSetupService', () => {
     it('should create a new wallet with identifier', async () => {
       const identifier = 'user@example.com'
       const result = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier
       )
 
@@ -123,7 +126,7 @@ describe('WalletSetupService', () => {
       authMock.mockResolvedValueOnce(false)
 
       await expect(
-        WalletSetupService.createNewWallet(mockNetworkConfigs)
+        WalletSetupService.createNewWallet()
       ).rejects.toThrow('Biometric authentication required to create wallet')
     })
   })
@@ -160,7 +163,7 @@ describe('WalletSetupService', () => {
       // Ensure cache is clear and storage is empty
       WalletSetupService.clearCredentialsCache()
       await mockSecureStorage.clearAll()
-      
+
       await expect(
         WalletSetupService.loadExistingWallet()
       ).rejects.toThrow('Encryption key not found')
@@ -205,7 +208,6 @@ describe('WalletSetupService', () => {
 
     it('should initialize wallet from mnemonic without identifier', async () => {
       const result = await WalletSetupService.initializeFromMnemonic(
-        mockNetworkConfigs,
         testMnemonic
       )
 
@@ -222,7 +224,6 @@ describe('WalletSetupService', () => {
     it('should initialize wallet from mnemonic with identifier', async () => {
       const identifier = 'user@example.com'
       const result = await WalletSetupService.initializeFromMnemonic(
-        mockNetworkConfigs,
         testMnemonic,
         identifier
       )
@@ -244,7 +245,6 @@ describe('WalletSetupService', () => {
 
       await expect(
         WalletSetupService.initializeFromMnemonic(
-          mockNetworkConfigs,
           testMnemonic
         )
       ).rejects.toThrow('Biometric authentication required to import wallet')
@@ -256,11 +256,10 @@ describe('WalletSetupService', () => {
       const mockStore = getWorkletStore() as any
       mockStore.getState = jest.fn(() => ({
         isWorkletStarted: true,
-        isInitialized: false,
+        isInitialized: false
       }))
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: true }
       )
 
@@ -272,18 +271,17 @@ describe('WalletSetupService', () => {
       const mockStore = getWorkletStore() as any
       mockStore.getState = jest.fn(() => ({
         isWorkletStarted: true,
-        isInitialized: false,
+        isInitialized: false
       }))
 
       // Ensure cache is clear
       WalletSetupService.clearCredentialsCache()
-      
+
       // Setup: create a wallet first
       await mockSecureStorage.setEncryptionKey('test-key', undefined)
       await mockSecureStorage.setEncryptedSeed('test-seed', undefined)
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: false }
       )
 
@@ -296,12 +294,11 @@ describe('WalletSetupService', () => {
       const mockStore = getWorkletStore() as any
       mockStore.getState = jest.fn(() => ({
         isWorkletStarted: true,
-        isInitialized: false,
+        isInitialized: false
       }))
 
       const identifier = 'user@example.com'
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: true, walletId: identifier }
       )
 
@@ -315,18 +312,17 @@ describe('WalletSetupService', () => {
       const mockStore = getWorkletStore() as any
       mockStore.getState = jest.fn(() => ({
         isWorkletStarted: true,
-        isInitialized: false,
+        isInitialized: false
       }))
 
       // Ensure cache is clear
       WalletSetupService.clearCredentialsCache()
-      
+
       const identifier = 'user@example.com'
       await mockSecureStorage.setEncryptionKey('test-key', identifier)
       await mockSecureStorage.setEncryptedSeed('test-seed', identifier)
 
       await WalletSetupService.initializeWallet(
-        mockNetworkConfigs,
         { createNew: false, walletId: identifier }
       )
 
@@ -340,12 +336,12 @@ describe('WalletSetupService', () => {
       // Mock generateEntropyAndEncrypt to return different values for different calls
       let callCount = 0
       const generateMock = WorkletLifecycleService.generateEntropyAndEncrypt as jest.Mock
-      generateMock.mockImplementation(() => {
+      generateMock.mockImplementation(async () => {
         callCount++
-        return Promise.resolve({
+        return await Promise.resolve({
           encryptionKey: `encryption-key-${callCount}`,
           encryptedSeedBuffer: `encrypted-seed-${callCount}`,
-          encryptedEntropyBuffer: `encrypted-entropy-${callCount}`,
+          encryptedEntropyBuffer: `encrypted-entropy-${callCount}`
         })
       })
 
@@ -354,13 +350,11 @@ describe('WalletSetupService', () => {
 
       // Create wallet for user1
       const result1 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       // Create wallet for user2
       const result2 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 
@@ -392,13 +386,13 @@ describe('WalletSetupService', () => {
       // This is the specific test requested by the user
       let seedCounter = 0
       const generateMock = WorkletLifecycleService.generateEntropyAndEncrypt as jest.Mock
-      generateMock.mockImplementation(() => {
+      generateMock.mockImplementation(async () => {
         seedCounter++
         // Simulate different entropy generation (in real scenario, this would be random)
-        return Promise.resolve({
+        return await Promise.resolve({
           encryptionKey: `key-${seedCounter}-${Date.now()}`,
           encryptedSeedBuffer: `seed-${seedCounter}-${Math.random()}`,
-          encryptedEntropyBuffer: `entropy-${seedCounter}-${Math.random()}`,
+          encryptedEntropyBuffer: `entropy-${seedCounter}-${Math.random()}`
         })
       })
 
@@ -406,12 +400,10 @@ describe('WalletSetupService', () => {
       const identifier2 = 'bob@example.com'
 
       const wallet1 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       const wallet2 = await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 
@@ -441,13 +433,11 @@ describe('WalletSetupService', () => {
 
       // Create wallet for identifier1
       await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier1
       )
 
       // Create wallet for identifier2
       await WalletSetupService.createNewWallet(
-        mockNetworkConfigs,
         identifier2
       )
 
@@ -460,4 +450,3 @@ describe('WalletSetupService', () => {
     })
   })
 })
-
