@@ -163,7 +163,7 @@ export function createWalletStore (): WalletStoreInstance {
           }),
           onRehydrateStorage: () => {
             return (state: WalletState | undefined) => {
-              if (state) {
+              if (state != null) {
                 log('Rehydrating wallet state - resetting loading states')
                 state.walletLoading = {}
                 state.balanceLoading = {}
