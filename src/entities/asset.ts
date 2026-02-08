@@ -1,9 +1,9 @@
 /**
  * Asset Entity
- * 
+ *
  * Defines the interface and base implementation for Assets in the WDK ecosystem.
  * An Asset is any value-holding entity (Native Currency, ERC20 Token, SPL Token, etc.).
- * 
+ *
  * Philosophy:
  * - Explicit Getters: We prefer explicit methods (getAddress, getRuneId) over generic metadata bags.
  * - Core Awareness: rn-core knows about these getters and uses them to construct RPC calls.
@@ -26,21 +26,21 @@ export type AssetConfig<T = Record<string, unknown>> = T & {
 
 /**
  * The Asset Interface.
- * 
+ *
  * This is the contract that rn-core relies on.
- * Custom Assets can implement this interface to map their internal data 
+ * Custom Assets can implement this interface to map their internal data
  * to the format rn-core expects.
  */
 export interface IAsset {
-  getId(): string
-  getNetwork(): string
-  getSymbol(): string
-  getName(): string
-  getDecimals(): number
-  isNative(): boolean
+  getId: () => string
+  getNetwork: () => string
+  getSymbol: () => string
+  getName: () => string
+  getDecimals: () => number
+  isNative: () => boolean
 
-  getContractAddress(): string | null
-  
+  getContractAddress: () => string | null
+
   // Future extensibility examples:
   // getRuneId(): string | null
   // getTokenId(): string | null (for NFTs)
@@ -48,38 +48,38 @@ export interface IAsset {
 
 /**
  * Base Asset Implementation
- * 
+ *
  * A default wrapper that satisfies IAsset using a standard AssetConfig object.
  * App developers can use this directly or extend it.
  */
 export class BaseAsset implements IAsset {
-  constructor(protected readonly config: AssetConfig) {}
+  constructor (protected readonly config: AssetConfig) {}
 
-  getId(): string {
+  getId (): string {
     return this.config.id
   }
-  
-  getNetwork(): string {
+
+  getNetwork (): string {
     return this.config.network
   }
 
-  getSymbol(): string {
+  getSymbol (): string {
     return this.config.symbol
   }
 
-  getName(): string {
+  getName (): string {
     return this.config.name
   }
-  
-  isNative(): boolean {
+
+  isNative (): boolean {
     return this.config.isNative
   }
 
-  getDecimals(): number {
+  getDecimals (): number {
     return this.config.decimals
   }
 
-  getContractAddress(): string | null {
+  getContractAddress (): string | null {
     return this.config.address ?? null
   }
 }

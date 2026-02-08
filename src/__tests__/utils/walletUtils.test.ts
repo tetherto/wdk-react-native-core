@@ -4,7 +4,7 @@
 
 import {
   getWalletAddresses,
-  createBaseWalletStore,
+  createBaseWalletStore
 } from '../../utils/walletUtils'
 import { getWorkletStore } from '../../store/workletStore'
 import { getWalletStore } from '../../store/walletStore'
@@ -12,17 +12,17 @@ import { AccountService } from '../../services/accountService'
 
 // Mock stores and services
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn(),
+  getWorkletStore: jest.fn()
 }))
 
 jest.mock('../../store/walletStore', () => ({
-  getWalletStore: jest.fn(),
+  getWalletStore: jest.fn()
 }))
 
 jest.mock('../../services/accountService', () => ({
   AccountService: {
-    callAccountMethod: jest.fn(),
-  },
+    callAccountMethod: jest.fn()
+  }
 }))
 
 describe('walletUtils', () => {
@@ -35,14 +35,14 @@ describe('walletUtils', () => {
     mockWalletStore = {
       getState: jest.fn(() => ({
         addresses: {},
-        activeWalletId: 'test-wallet-1',
-      })),
+        activeWalletId: 'test-wallet-1'
+      }))
     }
 
     mockWorkletStore = {
       getState: jest.fn(() => ({
-        isInitialized: true,
-      })),
+        isInitialized: true
+      }))
     }
 
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
@@ -60,20 +60,20 @@ describe('walletUtils', () => {
         addresses: {
           'test-wallet-1': {
             ethereum: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
             },
             polygon: {
-              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            },
-          },
+              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+            }
+          }
         },
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
       expect(result).toEqual({
         ethereum: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-        polygon: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        polygon: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       })
     })
 
@@ -83,16 +83,16 @@ describe('walletUtils', () => {
           'test-wallet-1': {
             ethereum: {
               0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-              1: '0x942d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            },
-          },
+              1: '0x942d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+            }
+          }
         },
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
       expect(result).toEqual({
-        ethereum: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        ethereum: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       })
       expect(result.ethereum).not.toBe('0x942d35Cc6634C0532925a3b844Bc9e7595f0bEb0')
     })
@@ -102,11 +102,11 @@ describe('walletUtils', () => {
         addresses: {
           'test-wallet-1': {
             ethereum: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            },
-          },
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+            }
+          }
         },
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const result = getWalletAddresses(mockWalletStore, 1)
@@ -119,16 +119,16 @@ describe('walletUtils', () => {
           'test-wallet-1': {
             ethereum: undefined,
             polygon: {
-              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            },
-          },
+              0: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+            }
+          }
         },
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const result = getWalletAddresses(mockWalletStore, 0)
       expect(result).toEqual({
-        polygon: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        polygon: '0x842d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       })
     })
   })
@@ -165,24 +165,24 @@ describe('walletUtils', () => {
         addresses: {
           'test-wallet-1': {
             ethereum: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-            },
-          },
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+            }
+          }
         },
-        activeWalletId: 'test-wallet-1',
+        activeWalletId: 'test-wallet-1'
       }))
 
       const store = createBaseWalletStore()
       const addresses = store.getWalletAddresses(0)
 
       expect(addresses).toEqual({
-        ethereum: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+        ethereum: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       })
     })
 
     it('should return false for isWalletInitialized when not initialized', () => {
       mockWorkletStore.getState = jest.fn(() => ({
-        isInitialized: false,
+        isInitialized: false
       }))
 
       const store = createBaseWalletStore()
@@ -192,4 +192,3 @@ describe('walletUtils', () => {
     })
   })
 })
-

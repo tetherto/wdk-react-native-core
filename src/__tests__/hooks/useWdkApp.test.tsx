@@ -1,6 +1,6 @@
 /**
  * Tests for useWdkApp hook
- * 
+ *
  * Tests hook logic without DOM rendering
  */
 
@@ -20,12 +20,12 @@ describe('useWdkApp', () => {
       workletState: {
         isReady: true,
         isLoading: false,
-        error: null,
+        error: null
       },
       walletState: {
         status: 'ready',
         identifier: 'test-wallet',
-        error: null,
+        error: null
       },
       isInitializing: false,
       isReady: true,
@@ -33,7 +33,7 @@ describe('useWdkApp', () => {
       loadingWalletId: null,
       walletExists: true,
       error: null,
-      retry: jest.fn(),
+      retry: jest.fn()
     }
 
     // Validate structure

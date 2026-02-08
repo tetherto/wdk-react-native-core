@@ -1,6 +1,6 @@
 /**
  * Tests for WalletSwitchingService
- * 
+ *
  * Tests wallet switching operations
  */
 
@@ -14,15 +14,15 @@ jest.mock('../../services/walletSetupService', () => ({
   WalletSetupService: {
     hasWallet: jest.fn(),
     loadExistingWallet: jest.fn(),
-    clearCredentialsCache: jest.fn(),
-  },
+    clearCredentialsCache: jest.fn()
+  }
 }))
 
 jest.mock('../../services/workletLifecycleService', () => ({
   WorkletLifecycleService: {
     ensureWorkletStarted: jest.fn(),
-    initializeWDK: jest.fn(),
-  },
+    initializeWDK: jest.fn()
+  }
 }))
 
 jest.mock('../../store/walletStore', () => ({
@@ -33,13 +33,13 @@ jest.mock('../../store/walletStore', () => ({
       return state.identifier
     }
     return null
-  }),
+  })
 }))
 
 jest.mock('../../utils/logger', () => ({
   log: jest.fn(),
   logError: jest.fn(),
-  logWarn: jest.fn(),
+  logWarn: jest.fn()
 }))
 
 describe('WalletSwitchingService', () => {
@@ -51,9 +51,9 @@ describe('WalletSwitchingService', () => {
     mockWalletStore = {
       getState: jest.fn(() => ({
         activeWalletId: null,
-        walletLoadingState: { type: 'not_loaded' },
+        walletLoadingState: { type: 'not_loaded' }
       })),
-      setState: jest.fn(),
+      setState: jest.fn()
     }
 
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
@@ -64,11 +64,11 @@ describe('WalletSwitchingService', () => {
       const walletId = 'test-wallet-1'
       const credentials = {
         encryptionKey: 'test-key',
-        encryptedSeed: 'test-seed',
+        encryptedSeed: 'test-seed'
       }
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: null,
+        activeWalletId: null
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -83,7 +83,7 @@ describe('WalletSwitchingService', () => {
       expect(WalletSetupService.loadExistingWallet).toHaveBeenCalledWith(walletId)
       expect(WorkletLifecycleService.initializeWDK).toHaveBeenCalledWith({
         encryptionKey: credentials.encryptionKey,
-        encryptedSeed: credentials.encryptedSeed,
+        encryptedSeed: credentials.encryptedSeed
       })
       // setState is called with a function that updates the state
       expect(mockWalletStore.setState).toHaveBeenCalled()
@@ -111,7 +111,7 @@ describe('WalletSwitchingService', () => {
       const walletId = 'test-wallet-1'
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: walletId,
+        activeWalletId: walletId
       })
 
       await WalletSwitchingService.switchToWallet(walletId)
@@ -124,7 +124,7 @@ describe('WalletSwitchingService', () => {
       const walletId = 'non-existent-wallet'
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: null,
+        activeWalletId: null
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(false)
@@ -142,11 +142,11 @@ describe('WalletSwitchingService', () => {
       const toWalletId = 'wallet-2'
       const credentials = {
         encryptionKey: 'test-key',
-        encryptedSeed: 'test-seed',
+        encryptedSeed: 'test-seed'
       }
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: fromWalletId,
+        activeWalletId: fromWalletId
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -184,11 +184,11 @@ describe('WalletSwitchingService', () => {
       const walletId = 'test-wallet-1'
       const credentials = {
         encryptionKey: 'test-key',
-        encryptedSeed: 'test-seed',
+        encryptedSeed: 'test-seed'
       }
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: null,
+        activeWalletId: null
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -206,7 +206,7 @@ describe('WalletSwitchingService', () => {
       const error = new Error('Failed to load wallet')
 
       mockWalletStore.getState.mockReturnValue({
-        activeWalletId: null,
+        activeWalletId: null
       })
 
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true)
@@ -253,4 +253,3 @@ describe('WalletSwitchingService', () => {
     })
   })
 })
-

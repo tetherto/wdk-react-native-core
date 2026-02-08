@@ -12,7 +12,7 @@ import { handleServiceError } from '../utils/errorHandling'
 import {
   requireInitialized,
   resolveWalletId,
-  updateAddressInState,
+  updateAddressInState
 } from '../utils/storeHelpers'
 import { isValidAddress } from '../utils/typeGuards'
 import { validateAccountIndex, validateNetworkName } from '../utils/validation'
@@ -32,10 +32,10 @@ export class AddressService {
    * @param accountIndex - Account index (default: 0)
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    */
-  static async getAddress(
+  static async getAddress (
     network: string,
     accountIndex = 0,
-    walletId?: string,
+    walletId?: string
   ): Promise<string> {
     // Validate inputs
     validateNetworkName(network)
@@ -54,7 +54,7 @@ export class AddressService {
       // Validate cached address format
       if (!isValidAddress(cachedAddress)) {
         throw new Error(
-          `Cached address for ${targetWalletId}:${network}:${accountIndex} has invalid format`,
+          `Cached address for ${targetWalletId}:${network}:${accountIndex} has invalid format`
         )
       }
       return cachedAddress
@@ -71,7 +71,7 @@ export class AddressService {
         produce(prev, (state) => {
           state.walletLoading[targetWalletId] ??= {}
           state.walletLoading[targetWalletId][loadingKey] = true
-        }),
+        })
       )
 
       // Call getAddress method on the account
@@ -100,7 +100,7 @@ export class AddressService {
         throw new Error(
           `Failed to parse address from worklet response: ${
             error instanceof Error ? error.message : String(error)
-          }`,
+          }`
         )
       }
 
@@ -112,13 +112,13 @@ export class AddressService {
             targetWalletId,
             network,
             accountIndex,
-            address,
+            address
           ),
           (state) => {
             state.walletLoading[targetWalletId] ??= {}
             state.walletLoading[targetWalletId][loadingKey] = false
-          },
-        ),
+          }
+        )
       )
 
       return address
@@ -128,13 +128,13 @@ export class AddressService {
         produce(prev, (state) => {
           state.walletLoading[targetWalletId] ??= {}
           state.walletLoading[targetWalletId][loadingKey] = false
-        }),
+        })
       )
 
       handleServiceError(error, 'AddressService', 'getAddress', {
         network,
         accountIndex,
-        walletId: targetWalletId,
+        walletId: targetWalletId
       })
     }
   }
@@ -147,9 +147,9 @@ export class AddressService {
    * @param walletId - Optional wallet identifier (defaults to activeWalletId from store)
    * @returns Record of network -> accountIndex -> address for successfully loaded addresses
    */
-  static async loadAllAddresses(
+  static async loadAllAddresses (
     accountIndices: number[] = [0],
-    walletId?: string,
+    walletId?: string
   ): Promise<Record<string, Record<number, string>>> {
     // Validate account indices
     if (!Array.isArray(accountIndices) || accountIndices.length === 0) {
@@ -164,9 +164,9 @@ export class AddressService {
     const targetWalletId = resolveWalletId(walletId)
 
     const wdkConfigs = workletStore.getState().wdkConfigs
-    if (!wdkConfigs) {
+    if (wdkConfigs == null) {
       throw new Error(
-        'WDK configs are not available. Ensure the worklet is started with wdkConfigs.',
+        'WDK configs are not available. Ensure the worklet is started with wdkConfigs.'
       )
     }
 
@@ -178,7 +178,7 @@ export class AddressService {
 
     // Check which addresses are already cached to set loading state appropriately
     const walletState = walletStore.getState()
-    const uncachedAddresses: Array<{ network: string; accountIndex: number }> =
+    const uncachedAddresses: Array<{ network: string, accountIndex: number }> =
       []
 
     networks.forEach((network) => {
@@ -201,7 +201,7 @@ export class AddressService {
             const loadingKey = `${network}-${accountIndex}`
             state.walletLoading[targetWalletId][loadingKey] = true
           }
-        }),
+        })
       )
     }
 
@@ -217,18 +217,18 @@ export class AddressService {
               const address = await this.getAddress(
                 network,
                 accountIndex,
-                walletId,
+                walletId
               )
               return [network, accountIndex, address]
             } catch (error) {
               // Log error but continue loading other addresses
               logError(
                 `[AddressService] Failed to load address for ${network}:${accountIndex}:`,
-                error,
+                error
               )
               return [network, accountIndex, null]
             }
-          })(),
+          })()
         )
       })
     })
@@ -240,7 +240,7 @@ export class AddressService {
     const addresses: Record<string, Record<number, string>> = {}
     results.forEach(([network, accountIndex, address]) => {
       if (address !== null) {
-        if (!addresses[network]) {
+        if (addresses[network] == null) {
           addresses[network] = {}
         }
         addresses[network][accountIndex] = address
@@ -250,12 +250,12 @@ export class AddressService {
     const totalRequested = networks.length * accountIndices.length
     const totalLoaded = Object.values(addresses).reduce(
       (sum, networkAddresses) => sum + Object.keys(networkAddresses).length,
-      0,
+      0
     )
     log(
       `[AddressService] Loaded ${totalLoaded}/${totalRequested} addresses for account indices [${accountIndices.join(
-        ', ',
-      )}]`,
+        ', '
+      )}]`
     )
     return addresses
   }

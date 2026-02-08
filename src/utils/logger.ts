@@ -17,7 +17,7 @@ const isDevelopment = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NOD
  * Sanitize an error for logging to prevent sensitive data leakage
  * Handles Error objects, strings, and arbitrary objects
  */
-function sanitizeErrorForLogging(error: unknown): string {
+function sanitizeErrorForLogging (error: unknown): string {
   if (error instanceof Error) {
     return sanitizeErrorMessage(error.message, isDevelopment)
   }
@@ -35,11 +35,11 @@ function sanitizeErrorForLogging(error: unknown): string {
 
 /**
  * Log a message (only in development)
- * 
+ *
  * @param message - Message to log
  * @param args - Additional arguments to log
  */
-export function log(...args: unknown[]): void {
+export function log (...args: unknown[]): void {
   if (isDevelopment) {
     console.log(...args)
   }
@@ -50,7 +50,7 @@ export function log(...args: unknown[]): void {
  * @param message - Error message
  * @param error - Error object or additional data
  */
-export function logError(message: string, error?: unknown): void {
+export function logError (message: string, error?: unknown): void {
   const sanitizedMessage = sanitizeErrorMessage(message, isDevelopment)
   const sanitizedError = error !== undefined ? sanitizeErrorForLogging(error) : undefined
 
@@ -65,14 +65,12 @@ export function logError(message: string, error?: unknown): void {
 
 /**
  * Log a warning (only in development)
- * 
+ *
  * @param message - Warning message
  * @param args - Additional arguments to log
  */
-export function logWarn(...args: unknown[]): void {
+export function logWarn (...args: unknown[]): void {
   if (isDevelopment) {
     console.warn(...args)
   }
 }
-
-
