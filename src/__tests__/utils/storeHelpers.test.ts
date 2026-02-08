@@ -15,10 +15,6 @@ jest.mock('../../store/workletStore', () => ({
   getWorkletStore: jest.fn(),
 }))
 
-jest.mock('../../types/hrpc', () => ({
-  asExtendedHRPC: jest.fn(),
-}))
-
 describe('storeHelpers', () => {
   let mockWorkletStore: any
   let mockHRPC: any

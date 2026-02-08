@@ -54,7 +54,7 @@ describe('AccountService', () => {
         methodName: 'getBalance',
         network: 'ethereum',
         accountIndex: 0,
-        args: null,
+        args: undefined,
       })
     })
 

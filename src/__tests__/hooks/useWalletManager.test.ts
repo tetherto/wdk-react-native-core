@@ -106,7 +106,6 @@ describe('useWalletManager', () => {
         'test-wallet',
       )
       expect(WalletSetupService.initializeFromMnemonic).toHaveBeenCalledWith(
-        mockNetworkConfigs,
         mnemonic,
         'test-wallet',
       )
@@ -209,7 +208,6 @@ describe('useWalletManager', () => {
 
       await WalletSetupService.createNewWallet('new-wallet')
       expect(WalletSetupService.createNewWallet).toHaveBeenCalledWith(
-        mockNetworkConfigs,
         'new-wallet',
       )
     })
