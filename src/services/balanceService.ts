@@ -189,10 +189,7 @@ export class BalanceService {
 
     const walletStore = getWalletStore()
     const walletState = walletStore.getState()
-    const targetWalletId = walletId || walletState.activeWalletId
-    if (!targetWalletId) {
-      return false
-    }
+    const targetWalletId = resolveWalletId(walletId)
     const loadingKey = `${network}-${accountIndex}-${assetId}`
 
     return getNestedState(

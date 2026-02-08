@@ -152,11 +152,6 @@ export async function withOperationMutex<T> (
     // Race between operation and timeout
     return await Promise.race([operation(), timeoutPromise])
   } catch (error) {
-    // If timeout occurred, error is already handled
-    if (timeoutExceeded) {
-      throw error
-    }
-    // Otherwise, re-throw the operation error
     throw error
   } finally {
     // Clear timeout if operation completed before timeout

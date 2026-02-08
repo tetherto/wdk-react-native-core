@@ -197,7 +197,7 @@ export class WalletSetupService {
     const result = await WorkletLifecycleService.generateEntropyAndEncrypt(DEFAULT_MNEMONIC_WORD_COUNT)
 
     // Validate encryption compatibility before saving to keychain
-    log('🔍 Validating encryption compatibility before saving to keychain...')
+    log('Validating encryption compatibility before saving to keychain...')
     try {
       await this.validateEncryptionCompatibility(
         result.encryptionKey,
@@ -205,7 +205,7 @@ export class WalletSetupService {
         result.encryptedEntropyBuffer
       )
     } catch (error) {
-      log('❌ Encryption validation failed - aborting wallet creation', error)
+      log('Encryption validation failed - aborting wallet creation', error)
       // Reset worklet state on validation failure
       WorkletLifecycleService.reset()
       throw error
@@ -316,7 +316,7 @@ export class WalletSetupService {
     const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
 
     // Validate encryption compatibility before saving to keychain
-    log('🔍 Validating encryption compatibility before saving to keychain...')
+    log('Validating encryption compatibility before saving to keychain...')
     try {
       await this.validateEncryptionCompatibility(
         result.encryptionKey,
@@ -324,7 +324,7 @@ export class WalletSetupService {
         result.encryptedEntropyBuffer
       )
     } catch (error) {
-      log('❌ Encryption validation failed - aborting wallet import', error)
+      log('Encryption validation failed - aborting wallet import', error)
       // Reset worklet state on validation failure
       WorkletLifecycleService.reset()
       throw error

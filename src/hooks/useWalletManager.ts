@@ -13,18 +13,6 @@ import { log, logError } from '../utils/logger'
 import { withOperationMutex } from '../utils/operationMutex'
 import { useShallow } from 'zustand/shallow'
 
-// export interface AccountDisplayInfo {
-//   addresses: Record<string, string>
-//   accountIndex: number
-//   derivationPath: string
-// }
-
-// export interface WalletInfo {
-//   walletId: string
-//   name: string
-//   accounts: AccountDisplayInfo[]
-// }
-
 export type { WalletInfo }
 
 export interface UseWalletManagerResult {

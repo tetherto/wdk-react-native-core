@@ -54,13 +54,7 @@ export function logError (message: string, error?: unknown): void {
   const sanitizedMessage = sanitizeErrorMessage(message, isDevelopment)
   const sanitizedError = error !== undefined ? sanitizeErrorForLogging(error) : undefined
 
-  if (isDevelopment) {
-    console.error(sanitizedMessage, sanitizedError)
-  } else {
-    // In production, log sanitized errors only
-    // This prevents information leakage while still allowing error tracking
-    console.error(sanitizedMessage, sanitizedError)
-  }
+  console.error(sanitizedMessage, sanitizedError)
 }
 
 /**

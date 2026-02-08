@@ -436,15 +436,7 @@ export function WdkAppProvider<
   // Wallet state object (exposed separately for flexibility)
   const walletStateObject = useMemo(
     () => ({
-      status: (walletLoadingState.type === 'not_loaded'
-        ? 'not_loaded'
-        : walletLoadingState.type === 'checking'
-          ? 'checking'
-          : walletLoadingState.type === 'loading'
-            ? 'loading'
-            : walletLoadingState.type === 'ready'
-              ? 'ready'
-              : 'error'),
+      status: walletLoadingState.type as 'not_loaded' | 'checking' | 'loading' | 'ready' | 'error',
       identifier: getWalletIdFromLoadingState(walletLoadingState),
       error:
         walletLoadingState.type === 'error' ? walletLoadingState.error : null
