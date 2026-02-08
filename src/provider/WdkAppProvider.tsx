@@ -43,7 +43,6 @@ import {
   shouldResetToNotLoaded,
   getWalletSwitchDecision,
   shouldMarkWalletAsReady,
-  shouldHandleError,
 } from '../utils/walletStateHelpers'
 import { clearAllSensitiveData } from '../store/workletStore'
 import { WalletSetupService } from '../services/walletSetupService'
@@ -376,11 +375,37 @@ export function WdkAppProvider<
   )
 
   // Hooks for wallet operations
-  const {
-    initializeWallet,
-    hasWallet,
-    error: walletManagerError,
-  } = useWalletManager()
+  const { createWallet, unlock, wallets } = useWalletManager()
+
+  // Wrapper for wallet initialization to maintain compatibility
+  const initializeWallet = useCallback(
+    async ({
+      createNew,
+      walletId,
+    }: {
+      createNew?: boolean
+      walletId?: string
+    }) => {
+      if (!walletId) {
+        throw new Error('Wallet ID is required for initialization')
+      }
+
+      if (createNew) {
+        await createWallet(walletId)
+      } else {
+        await unlock(walletId)
+      }
+    },
+    [createWallet, unlock],
+  )
+
+  // Check if wallet exists in the loaded wallet list
+  const hasWallet = useCallback(
+    (walletId: string) => {
+      return wallets.find((w) => w.identifier === walletId)?.exists ?? false
+    },
+    [wallets],
+  )
 
   // Store initializeWallet in a ref to avoid it being a dependency of the effect
   // This breaks the infinite loop: effect runs → component re-renders → initializeWallet recreated → effect runs again
@@ -496,7 +521,13 @@ export function WdkAppProvider<
     return () => {
       cancelled = true
     }
-  }, [isWorkletInitialized, isWorkletLoading, isWorkletStarted, bundleConfig, wdkConfigs])
+  }, [
+    isWorkletInitialized,
+    isWorkletLoading,
+    isWorkletStarted,
+    bundleConfig,
+    wdkConfigs,
+  ])
 
   // Consolidated effect: Sync wallet loading state with activeWalletId, addresses, and errors
   //
@@ -639,7 +670,7 @@ export function WdkAppProvider<
         // Check if wallet already exists before deciding to create new or load existing
         ;(async () => {
           try {
-            const walletExists = await hasWallet(activeWalletId)
+            const walletExists = hasWallet(activeWalletId)
             const shouldCreateNew = !walletExists
 
             log('[WdkAppProvider] Wallet existence check', {
@@ -711,7 +742,7 @@ export function WdkAppProvider<
       // Check if wallet already exists before deciding to create new or load existing
       ;(async () => {
         try {
-          const walletExists = await hasWallet(activeWalletId)
+          const walletExists = hasWallet(activeWalletId)
           const shouldCreateNew = !walletExists
 
           log('[WdkAppProvider] Wallet existence check', {
@@ -774,7 +805,7 @@ export function WdkAppProvider<
       // Check if wallet already exists before deciding to create new or load existing
       ;(async () => {
         try {
-          const walletExists = await hasWallet(activeWalletId)
+          const walletExists = hasWallet(activeWalletId)
           const shouldCreateNew = !walletExists
 
           log('[WdkAppProvider] Wallet existence check', {
@@ -819,23 +850,16 @@ export function WdkAppProvider<
       return
     }
 
-    // Handle errors from useWalletManager
-    if (
-      shouldHandleError(
-        walletManagerError,
-        currentWalletId,
-        activeWalletId,
-        walletLoadingState,
-      )
-    ) {
+    // Handle errors via walletLoadingState
+    if (walletLoadingState.type === 'error') {
+      const error = walletLoadingState.error
       log('[WdkAppProvider] Wallet operation error detected', {
         activeWalletId,
-        error: walletManagerError,
+        error: error.message,
       })
-      const error = new Error(walletManagerError!)
 
       // Check if this is an authentication error (biometric failure)
-      const errorMessage = walletManagerError?.toLowerCase() || ''
+      const errorMessage = error.message.toLowerCase()
       const isAuthError =
         errorMessage.includes('authentication') ||
         errorMessage.includes('biometric') ||
@@ -845,19 +869,11 @@ export function WdkAppProvider<
         log(
           '[WdkAppProvider] Authentication error detected - preventing auto-retry',
           {
-            error: walletManagerError,
+            error: error.message,
           },
         )
-        authErrorRef.current = walletManagerError || 'Authentication failed'
+        authErrorRef.current = error.message
       }
-
-      walletStore.setState((prev) =>
-        updateWalletLoadingState(prev, {
-          type: 'error',
-          identifier: activeWalletId,
-          error,
-        }),
-      )
     }
   }, [
     enableAutoInitialization,
@@ -865,10 +881,10 @@ export function WdkAppProvider<
     activeWalletId,
     walletLoadingState,
     walletAddresses,
-    walletManagerError,
     isWalletInitializing,
     isWorkletStarted,
     isWorkletInitialized,
+    hasWallet,
   ])
   // Note: walletStore removed from deps - it's a singleton that never changes
   // Note: initializeWallet removed from deps and accessed via ref to prevent infinite loop
