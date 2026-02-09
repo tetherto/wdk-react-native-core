@@ -20,11 +20,13 @@ export { BaseAsset } from './entities/asset'
 export { WdkAppProvider } from './provider/WdkAppProvider'
 export type { WdkAppProviderProps, WdkAppContextValue } from './provider/WdkAppProvider'
 
+// Hooks (The Public API)
 export { useWallet } from './hooks/useWallet'
 export { useWdkApp } from './hooks/useWdkApp'
 
-export { useWalletManager } from './hooks/useWalletManager'
-export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManager'
+// export { useWalletManager } from './hooks/useWalletManager'
+export { useWalletManager } from './hooks/useWalletManagerV2'
+export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManagerV2'
 export {
   useBalance,
   useBalancesForWallet,
