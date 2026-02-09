@@ -47,6 +47,10 @@
   ],
   "author": "Tetherto",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
     "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage",
     "@tetherto/pear-wrk-wdk": "github:tetherto/pear-wrk-wdk#v2",
