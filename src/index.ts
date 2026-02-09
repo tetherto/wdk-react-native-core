@@ -12,7 +12,7 @@ export type {
   BalanceFetchResult,
   IAsset,
   // Bundle and HRPC types
-  BundleConfig,
+  BundleConfig
 } from './types'
 
 export { BaseAsset } from './entities/asset'
@@ -20,19 +20,17 @@ export { BaseAsset } from './entities/asset'
 export { WdkAppProvider } from './provider/WdkAppProvider'
 export type { WdkAppProviderProps, WdkAppContextValue } from './provider/WdkAppProvider'
 
-// Hooks (The Public API)
 export { useWallet } from './hooks/useWallet'
 export { useWdkApp } from './hooks/useWdkApp'
 
-// export { useWalletManager } from './hooks/useWalletManager'
-export { useWalletManager } from './hooks/useWalletManagerV2'
-export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManagerV2'
+export { useWalletManager } from './hooks/useWalletManager'
+export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManager'
 export {
   useBalance,
   useBalancesForWallet,
   useBalancesForWallets,
   useRefreshBalance,
-  balanceQueryKeys,
+  balanceQueryKeys
 } from './hooks/useBalance'
 
 export type { AccountInfo } from './store/walletStore'
@@ -41,5 +39,5 @@ export { validateMnemonic } from './utils/mnemonicUtils'
 
 export {
   InitializationStatus,
-  AppStatus,
+  AppStatus
 } from './utils/initializationState'

@@ -1,6 +1,6 @@
 /**
  * Tests for useWorklet hook
- * 
+ *
  * Tests worklet interaction hook
  */
 
@@ -9,7 +9,7 @@ import { getWorkletStore } from '../../store/workletStore'
 
 // Mock stores and services
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn(),
+  getWorkletStore: jest.fn()
 }))
 
 jest.mock('../../services/workletLifecycleService', () => ({
@@ -20,13 +20,13 @@ jest.mock('../../services/workletLifecycleService', () => ({
     getSeedAndEntropyFromMnemonic: jest.fn(),
     initializeWorklet: jest.fn(),
     reset: jest.fn(),
-    clearError: jest.fn(),
-  },
+    clearError: jest.fn()
+  }
 }))
 
 // Mock React hooks
 jest.mock('zustand/react/shallow', () => ({
-  useShallow: jest.fn((selector) => selector),
+  useShallow: jest.fn((selector) => selector)
 }))
 
 describe('useWorklet', () => {
@@ -47,7 +47,7 @@ describe('useWorklet', () => {
         wdkInitResult: null,
         encryptedSeed: null,
         encryptionKey: null,
-        networkConfigs: null,
+        networkConfigs: null
       }
       return selector ? selector(state) : state
     })
@@ -80,7 +80,7 @@ describe('useWorklet', () => {
         wdkInitResult: s.wdkInitResult,
         encryptedSeed: s.encryptedSeed,
         encryptionKey: s.encryptionKey,
-        networkConfigs: s.networkConfigs,
+        networkConfigs: s.networkConfigs
       }))
 
       expect(state).toHaveProperty('isWorkletStarted')
@@ -148,7 +148,7 @@ describe('useWorklet', () => {
           wdkInitResult: null,
           encryptedSeed: null,
           encryptionKey: null,
-          networkConfigs: null,
+          networkConfigs: null
         }
         return selector ? selector(state) : state
       })
@@ -177,7 +177,7 @@ describe('useWorklet', () => {
           wdkInitResult: null,
           encryptedSeed: null,
           encryptionKey: null,
-          networkConfigs: null,
+          networkConfigs: null
         }
         return selector ? selector(state) : state
       })
@@ -192,4 +192,3 @@ describe('useWorklet', () => {
     })
   })
 })
-

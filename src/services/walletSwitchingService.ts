@@ -12,10 +12,10 @@
 
 import { WalletSetupService } from './walletSetupService'
 import { WorkletLifecycleService } from './workletLifecycleService'
-import { getWalletStore } from '../store/walletStore'
 import {
+  getWalletStore,
   updateWalletLoadingState,
-  getWalletIdFromLoadingState,
+  getWalletIdFromLoadingState
 } from '../store/walletStore'
 import { withOperationMutex } from '../utils/operationMutex'
 import { normalizeError } from '../utils/errorUtils'
@@ -46,11 +46,11 @@ export class WalletSwitchingService {
    * await WalletSwitchingService.switchToWallet('user@example.com')
    * ```
    */
-  static async switchToWallet(
+  static async switchToWallet (
     walletId: string,
-    options?: { autoStartWorklet?: boolean },
+    options?: { autoStartWorklet?: boolean }
   ): Promise<void> {
-    return withOperationMutex(`switchToWallet:${walletId}`, async () => {
+    return await withOperationMutex(`switchToWallet:${walletId}`, async () => {
       const walletStore = getWalletStore()
       const activeWalletId = walletStore.getState().activeWalletId
 
@@ -66,8 +66,8 @@ export class WalletSwitchingService {
           updateWalletLoadingState(prev, {
             type: 'loading',
             identifier: walletId,
-            walletExists: true,
-          }),
+            walletExists: true
+          })
         )
 
         // Check if wallet exists first (fail fast)
@@ -85,20 +85,20 @@ export class WalletSwitchingService {
         if (activeWalletId !== null && activeWalletId !== walletId) {
           log('[WalletSwitchingService] Switching wallets', {
             from: activeWalletId,
-            to: walletId,
+            to: walletId
           })
           // Cache is managed by LRU eviction - no need to clear here
         }
 
         // Load credentials for the wallet
         const credentials = await WalletSetupService.loadExistingWallet(
-          walletId,
+          walletId
         )
 
         // Switch worklet to this wallet
         await WorkletLifecycleService.initializeWDK({
           encryptionKey: credentials.encryptionKey,
-          encryptedSeed: credentials.encryptedSeed,
+          encryptedSeed: credentials.encryptedSeed
         })
 
         // Update activeWalletId in store and mark as ready
@@ -106,32 +106,32 @@ export class WalletSwitchingService {
           produce(
             updateWalletLoadingState(prev, {
               type: 'ready',
-              identifier: walletId,
+              identifier: walletId
             }),
             (state) => {
               state.activeWalletId = walletId
-            },
-          ),
+            }
+          )
         )
 
         log('[WalletSwitchingService] Successfully switched to wallet', {
-          walletId,
+          walletId
         })
       } catch (error) {
         // Cleanup state on error
         const normalizedError = normalizeError(error, false, {
           component: 'WalletSwitchingService',
           operation: 'switchToWallet',
-          walletId,
+          walletId
         })
         logError(
           '[WalletSwitchingService] Failed to switch wallet, cleaning up state',
-          normalizedError,
+          normalizedError
         )
 
         walletStore.setState((prev) => {
           const currentWalletId = getWalletIdFromLoadingState(
-            prev.walletLoadingState,
+            prev.walletLoadingState
           )
           // Only update error state if we were loading this wallet
           if (
@@ -141,7 +141,7 @@ export class WalletSwitchingService {
             return updateWalletLoadingState(prev, {
               type: 'error',
               identifier: walletId,
-              error: normalizedError,
+              error: normalizedError
             })
           }
           return prev
@@ -158,7 +158,7 @@ export class WalletSwitchingService {
    * @param walletId - Wallet identifier to check
    * @returns Promise resolving to true if wallet exists and can be switched to
    */
-  static async canSwitchToWallet(walletId: string): Promise<boolean> {
+  static async canSwitchToWallet (walletId: string): Promise<boolean> {
     try {
       return await WalletSetupService.hasWallet(walletId)
     } catch (error) {
@@ -166,11 +166,11 @@ export class WalletSwitchingService {
       const normalizedError = normalizeError(error, false, {
         component: 'WalletSwitchingService',
         operation: 'canSwitchToWallet',
-        walletId,
+        walletId
       })
       logError(
         '[WalletSwitchingService] Failed to check wallet:',
-        normalizedError,
+        normalizedError
       )
       return false
     }

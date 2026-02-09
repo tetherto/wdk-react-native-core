@@ -8,17 +8,17 @@ import type { WorkletStore } from '../store/workletStore'
 
 /**
  * Hook to interact with the worklet
- * 
+ *
  * This is the main hook that components should use to access worklet functionality.
- * 
+ *
  * For wallet-specific operations (addresses, accounts), use `useWallet()` hook instead.
- * 
+ *
  * The worklet automatically starts when `WdkAppProvider` loads.
- * 
+ *
  * @example
  * ```tsx
  * const { hrpc, isInitialized, isLoading, initializeWDK, generateEntropyAndEncrypt, error } = useWorklet()
- * 
+ *
  * useEffect(() => {
  *   if (isInitialized && !isLoading) {
  *     // Worklet is already started by WdkAppProvider
@@ -42,7 +42,7 @@ export interface UseWorkletResult {
   encryptionKey: string | null
   networkConfigs: WdkConfigs | null
   // Actions
-  initializeWDK: (options: { encryptionKey: string; encryptedSeed: string }) => Promise<void>
+  initializeWDK: (options: { encryptionKey: string, encryptedSeed: string }) => Promise<void>
   generateEntropyAndEncrypt: (wordCount?: 12 | 24) => Promise<{
     encryptionKey: string
     encryptedSeedBuffer: string
@@ -64,7 +64,7 @@ export interface UseWorkletResult {
   clearError: () => void
 }
 
-export function useWorklet(): UseWorkletResult {
+export function useWorklet (): UseWorkletResult {
   const store = getWorkletStore()
 
   // Subscribe to state changes
@@ -79,7 +79,7 @@ export function useWorklet(): UseWorkletResult {
     wdkInitResult: state.wdkInitResult,
     encryptedSeed: state.encryptedSeed,
     encryptionKey: state.encryptionKey,
-    networkConfigs: state.wdkConfigs,
+    networkConfigs: state.wdkConfigs
   }))
   const workletState = store(selector)
 
@@ -101,7 +101,6 @@ export function useWorklet(): UseWorkletResult {
     getSeedAndEntropyFromMnemonic: WorkletLifecycleService.getSeedAndEntropyFromMnemonic,
     initializeWorklet: WorkletLifecycleService.initializeWorklet,
     reset: WorkletLifecycleService.reset,
-    clearError: WorkletLifecycleService.clearError,
+    clearError: WorkletLifecycleService.clearError
   }
 }
-

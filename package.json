@@ -1,6 +1,6 @@
 {
   "name": "@tetherto/wdk-react-native-core",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "Core functionality for React Native wallets - wallet management, balance fetching, and worklet operations",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,6 +12,10 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,6 +34,8 @@
   "scripts": {
     "build": "tsc || true",
     "build:strict": "tsc",
+    "lint": "ts-standard",
+    "lint:fix": "ts-standard --fix",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -59,6 +65,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "ts-standard": "12.0.2",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.4.0",
     "@types/jest": "^29.5.0",

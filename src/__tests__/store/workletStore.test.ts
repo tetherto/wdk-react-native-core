@@ -2,10 +2,10 @@
  * Tests for workletStore
  */
 
-import { 
-  createWorkletStore, 
-  getWorkletStore, 
-  resetWorkletStore, 
+import {
+  createWorkletStore,
+  getWorkletStore,
+  resetWorkletStore,
   getCachedCredentials,
   setCachedCredentials,
   clearCredentialsCache,
@@ -40,7 +40,7 @@ describe('workletStore', () => {
     it('should initialize with default state', () => {
       const store = createWorkletStore()
       const state = store.getState()
-      
+
       expect(state.worklet).toBe(null)
       expect(state.hrpc).toBe(null)
       expect(state.ipc).toBe(null)
@@ -77,7 +77,7 @@ describe('workletStore', () => {
       const store1 = createWorkletStore()
       resetWorkletStore()
       const store2 = createWorkletStore()
-      
+
       // After reset, a new instance should be created
       expect(store1).not.toBe(store2)
     })
@@ -86,10 +86,10 @@ describe('workletStore', () => {
   describe('clearSensitiveData', () => {
     it('should clear encrypted seed and encryption key', () => {
       const store = createWorkletStore()
-      
+
       store.setState({
         encryptedSeed: 'encrypted-seed',
-        encryptionKey: 'encryption-key',
+        encryptionKey: 'encryption-key'
       })
 
       clearAllSensitiveData()
@@ -101,11 +101,11 @@ describe('workletStore', () => {
 
     it('should not affect other state', () => {
       const store = createWorkletStore()
-      
+
       store.setState({
         isWorkletStarted: true,
         encryptedSeed: 'encrypted-seed',
-        encryptionKey: 'encryption-key',
+        encryptionKey: 'encryption-key'
       })
 
       clearAllSensitiveData()
@@ -120,10 +120,10 @@ describe('workletStore', () => {
   describe('store state management', () => {
     it('should allow state updates', () => {
       const store = createWorkletStore()
-      
+
       store.setState({
         isWorkletStarted: true,
-        isLoading: true,
+        isLoading: true
       })
 
       const state = store.getState()
@@ -145,10 +145,10 @@ describe('workletStore', () => {
         encryptedSeed: 'seed-123',
         expiresAt: Date.now() + 10000
       }
-      
+
       setCachedCredentials(identifier, credentials)
       const result = getCachedCredentials(identifier)
-      
+
       expect(result).not.toBe(null)
       expect(result?.encryptionKey).toBe('key-123')
       expect(result?.encryptedSeed).toBe('seed-123')
@@ -159,25 +159,25 @@ describe('workletStore', () => {
       const store = getWorkletStore()
       const currentTime = 1000000
       jest.setSystemTime(currentTime)
-      
+
       // Set credentials first
       setCachedCredentials(identifier, {
-        encryptionKey: 'key-123',
+        encryptionKey: 'key-123'
       })
-      
+
       // Manually set expired time in the store (bypassing setCachedCredentials which always sets future time)
       store.setState({
         credentialsCache: {
           ...store.getState().credentialsCache,
           [identifier]: {
             encryptionKey: 'key-123',
-            expiresAt: currentTime - 1000, // Expired (1 second in the past)
-          },
-        },
+            expiresAt: currentTime - 1000 // Expired (1 second in the past)
+          }
+        }
       })
-      
+
       const result = getCachedCredentials(identifier)
-      
+
       expect(result).toBe(null)
     })
 
@@ -186,25 +186,25 @@ describe('workletStore', () => {
       const store = getWorkletStore()
       const currentTime = 1000000
       jest.setSystemTime(currentTime)
-      
+
       // Set credentials first
       setCachedCredentials(identifier, {
-        encryptionKey: 'key-123',
+        encryptionKey: 'key-123'
       })
-      
+
       // Manually set expired time in the store (bypassing setCachedCredentials which always sets future time)
       store.setState({
         credentialsCache: {
           ...store.getState().credentialsCache,
           [identifier]: {
             encryptionKey: 'key-123',
-            expiresAt: currentTime - 1000, // Expired (1 second in the past)
-          },
-        },
+            expiresAt: currentTime - 1000 // Expired (1 second in the past)
+          }
+        }
       })
-      
+
       getCachedCredentials(identifier)
-      
+
       const state = store.getState()
       expect(state.credentialsCache[identifier]).toBeUndefined()
     })
@@ -217,10 +217,10 @@ describe('workletStore', () => {
         encryptionKey: 'key-123',
         encryptedSeed: 'seed-123'
       }
-      
+
       setCachedCredentials(identifier, credentials)
       const result = getCachedCredentials(identifier)
-      
+
       expect(result).not.toBe(null)
       expect(result?.encryptionKey).toBe('key-123')
       expect(result?.encryptedSeed).toBe('seed-123')
@@ -229,10 +229,10 @@ describe('workletStore', () => {
 
     it('should merge with existing credentials', () => {
       const identifier = 'test-wallet'
-      
+
       setCachedCredentials(identifier, { encryptionKey: 'key-123' })
       setCachedCredentials(identifier, { encryptedSeed: 'seed-123' })
-      
+
       const result = getCachedCredentials(identifier)
       expect(result?.encryptionKey).toBe('key-123')
       expect(result?.encryptedSeed).toBe('seed-123')
@@ -240,16 +240,16 @@ describe('workletStore', () => {
 
     it('should update expiration on each set', () => {
       const identifier = 'test-wallet'
-      
+
       setCachedCredentials(identifier, { encryptionKey: 'key-123' })
       const firstExpiry = getCachedCredentials(identifier)?.expiresAt
-      
+
       // Advance time
       jest.advanceTimersByTime(100)
-      
+
       setCachedCredentials(identifier, { encryptedSeed: 'seed-123' })
       const secondExpiry = getCachedCredentials(identifier)?.expiresAt
-      
+
       expect(secondExpiry).toBeGreaterThan(firstExpiry!)
     })
   })
@@ -258,12 +258,12 @@ describe('workletStore', () => {
     it('should clear specific wallet credentials', () => {
       const identifier1 = 'wallet-1'
       const identifier2 = 'wallet-2'
-      
+
       setCachedCredentials(identifier1, { encryptionKey: 'key-1' })
       setCachedCredentials(identifier2, { encryptionKey: 'key-2' })
-      
+
       clearCredentialsCache(identifier1)
-      
+
       expect(getCachedCredentials(identifier1)).toBe(null)
       expect(getCachedCredentials(identifier2)).not.toBe(null)
     })
@@ -271,12 +271,12 @@ describe('workletStore', () => {
     it('should clear all credentials when no identifier provided', () => {
       const identifier1 = 'wallet-1'
       const identifier2 = 'wallet-2'
-      
+
       setCachedCredentials(identifier1, { encryptionKey: 'key-1' })
       setCachedCredentials(identifier2, { encryptionKey: 'key-2' })
-      
+
       clearCredentialsCache()
-      
+
       expect(getCachedCredentials(identifier1)).toBe(null)
       expect(getCachedCredentials(identifier2)).toBe(null)
     })
@@ -285,10 +285,10 @@ describe('workletStore', () => {
   describe('clearAllSensitiveData', () => {
     it('should clear encrypted seed and encryption key', () => {
       const store = createWorkletStore()
-      
+
       store.setState({
         encryptedSeed: 'encrypted-seed',
-        encryptionKey: 'encryption-key',
+        encryptionKey: 'encryption-key'
       })
 
       clearAllSensitiveData()
@@ -300,25 +300,25 @@ describe('workletStore', () => {
 
     it('should clear credentials cache', () => {
       const identifier = 'test-wallet'
-      
+
       setCachedCredentials(identifier, { encryptionKey: 'key-123' })
       clearAllSensitiveData()
-      
+
       expect(getCachedCredentials(identifier)).toBe(null)
     })
 
     it('should clear both active credentials and cache', () => {
       const store = createWorkletStore()
       const identifier = 'test-wallet'
-      
+
       store.setState({
         encryptedSeed: 'encrypted-seed',
-        encryptionKey: 'encryption-key',
+        encryptionKey: 'encryption-key'
       })
       setCachedCredentials(identifier, { encryptionKey: 'key-123' })
-      
+
       clearAllSensitiveData()
-      
+
       const state = store.getState()
       expect(state.encryptedSeed).toBe(null)
       expect(state.encryptionKey).toBe(null)
@@ -326,4 +326,3 @@ describe('workletStore', () => {
     })
   })
 })
-
