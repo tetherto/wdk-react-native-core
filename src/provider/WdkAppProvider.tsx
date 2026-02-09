@@ -375,7 +375,7 @@ export function WdkAppProvider<
   )
 
   // Hooks for wallet operations
-  const { createWallet, unlock, wallets } = useWalletManager()
+  const { createWallet, unlock, hasWallet } = useWalletManager()
 
   // Wrapper for wallet initialization to maintain compatibility
   const initializeWallet = useCallback(
@@ -397,14 +397,6 @@ export function WdkAppProvider<
       }
     },
     [createWallet, unlock],
-  )
-
-  // Check if wallet exists in the loaded wallet list
-  const hasWallet = useCallback(
-    (walletId: string) => {
-      return wallets.find((w) => w.identifier === walletId)?.exists ?? false
-    },
-    [wallets],
   )
 
   // Store initializeWallet in a ref to avoid it being a dependency of the effect
@@ -670,7 +662,7 @@ export function WdkAppProvider<
         // Check if wallet already exists before deciding to create new or load existing
         ;(async () => {
           try {
-            const walletExists = hasWallet(activeWalletId)
+            const walletExists = await hasWallet(activeWalletId)
             const shouldCreateNew = !walletExists
 
             log('[WdkAppProvider] Wallet existence check', {
@@ -742,7 +734,7 @@ export function WdkAppProvider<
       // Check if wallet already exists before deciding to create new or load existing
       ;(async () => {
         try {
-          const walletExists = hasWallet(activeWalletId)
+          const walletExists = await hasWallet(activeWalletId)
           const shouldCreateNew = !walletExists
 
           log('[WdkAppProvider] Wallet existence check', {
@@ -805,7 +797,7 @@ export function WdkAppProvider<
       // Check if wallet already exists before deciding to create new or load existing
       ;(async () => {
         try {
-          const walletExists = hasWallet(activeWalletId)
+          const walletExists = await hasWallet(activeWalletId)
           const shouldCreateNew = !walletExists
 
           log('[WdkAppProvider] Wallet existence check', {

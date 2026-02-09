@@ -85,6 +85,8 @@ export interface UseWalletManagerResult {
 
   /** Get mnemonic phrase from wallet (requires biometric auth). */
   getMnemonic: (walletId: string) => Promise<string | null>
+  
+  hasWallet: (walletId: string) => Promise<boolean>
 
   /** Get encryption key from cache or secure storage. */
   getEncryptionKey: (walletId: string) => Promise<string | null>
@@ -700,6 +702,7 @@ export function useWalletManager(): UseWalletManagerResult {
       createTemporaryWallet,
       clearTemporaryWallet,
       restoreWallet,
+      hasWallet: checkWallet,
       deleteWallet,
       generateMnemonic,
       getMnemonic,
