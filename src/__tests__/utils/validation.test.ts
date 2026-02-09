@@ -9,7 +9,7 @@ import {
   validateAccountIndex,
   validateNetworkName,
   validateTokenAddress,
-  validateBalance,
+  validateBalance
 } from '../../utils/validation'
 import type { WdkConfigs } from '../../types'
 
@@ -21,9 +21,9 @@ describe('validation', () => {
           ethereum: {
             blockchain: 'ethereum',
             config: {
-              chainId: 1,
+              chainId: 1
             }
-          },
+          }
         }
       }
       expect(() => validateWdkConfigs(validConfigs)).not.toThrow()
@@ -55,14 +55,14 @@ describe('validation', () => {
     it('should not throw for object with required methods', () => {
       const obj = {
         method1: jest.fn(),
-        method2: jest.fn(),
+        method2: jest.fn()
       }
       expect(() => validateRequiredMethods(obj, ['method1', 'method2'], 'TestObject')).not.toThrow()
     })
 
     it('should throw for object without required methods', () => {
       const obj = {
-        method1: jest.fn(),
+        method1: jest.fn()
       }
       expect(() => validateRequiredMethods(obj, ['method1', 'method2'], 'TestObject')).toThrow()
       expect(() => validateRequiredMethods(null, ['method1'], 'TestObject')).toThrow()

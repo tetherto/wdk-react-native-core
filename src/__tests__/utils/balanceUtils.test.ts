@@ -87,14 +87,14 @@ describe('balanceUtils', () => {
         balance: BigInt(100),
         amount: BigInt(200),
         name: 'test',
-        count: 42,
+        count: 42
       }
       const result = convertBigIntToString(input)
       expect(result).toEqual({
         balance: '100',
         amount: '200',
         name: 'test',
-        count: 42,
+        count: 42
       })
     })
 
@@ -103,18 +103,18 @@ describe('balanceUtils', () => {
         data: {
           balance: BigInt(100),
           nested: {
-            amount: BigInt(200),
-          },
-        },
+            amount: BigInt(200)
+          }
+        }
       }
       const result = convertBigIntToString(input)
       expect(result).toEqual({
         data: {
           balance: '100',
           nested: {
-            amount: '200',
-          },
-        },
+            amount: '200'
+          }
+        }
       })
     })
 
@@ -122,15 +122,15 @@ describe('balanceUtils', () => {
       const input = {
         balances: [BigInt(100), BigInt(200)],
         data: {
-          amounts: [BigInt(300), BigInt(400)],
-        },
+          amounts: [BigInt(300), BigInt(400)]
+        }
       }
       const result = convertBigIntToString(input)
       expect(result).toEqual({
         balances: ['100', '200'],
         data: {
-          amounts: ['300', '400'],
-        },
+          amounts: ['300', '400']
+        }
       })
     })
 

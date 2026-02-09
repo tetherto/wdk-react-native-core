@@ -1,6 +1,6 @@
 /**
  * Tests for errorHandling utilities
- * 
+ *
  * Tests service error handling patterns
  */
 
@@ -10,11 +10,11 @@ import { logError } from '../../utils/logger'
 
 // Mock dependencies
 jest.mock('../../utils/errorUtils', () => ({
-  normalizeError: jest.fn(),
+  normalizeError: jest.fn()
 }))
 
 jest.mock('../../utils/logger', () => ({
-  logError: jest.fn(),
+  logError: jest.fn()
 }))
 
 describe('errorHandling', () => {
@@ -34,7 +34,7 @@ describe('errorHandling', () => {
 
       expect(normalizeError).toHaveBeenCalledWith(error, false, {
         component: 'TestService',
-        operation: 'testOperation',
+        operation: 'testOperation'
       })
       expect(logError).toHaveBeenCalledWith('[TestService] testOperation failed:', normalizedError)
     })
@@ -53,7 +53,7 @@ describe('errorHandling', () => {
       expect(normalizeError).toHaveBeenCalledWith(error, false, {
         component: 'TestService',
         operation: 'testOperation',
-        ...context,
+        ...context
       })
     })
 
@@ -80,7 +80,7 @@ describe('errorHandling', () => {
 
       expect(normalizeError).toHaveBeenCalledWith(error, false, {
         component: 'TestService',
-        operation: 'testOperation',
+        operation: 'testOperation'
       })
     })
 
@@ -94,7 +94,7 @@ describe('errorHandling', () => {
 
       expect(normalizeError).toHaveBeenCalledWith(null, false, {
         component: 'TestService',
-        operation: 'testOperation',
+        operation: 'testOperation'
       })
     })
 
@@ -139,9 +139,8 @@ describe('errorHandling', () => {
 
       expect(normalizeError).toHaveBeenCalledWith(error, false, {
         component: 'TestService',
-        operation: 'testOperation',
+        operation: 'testOperation'
       })
     })
   })
 })
-

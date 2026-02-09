@@ -1,6 +1,6 @@
 /**
  * Account Service
- * 
+ *
  * Handles account method calls through the worklet.
  * This service provides a generic interface for calling account methods
  * like getBalance, getTokenBalance, signMessage, signTransaction, etc.
@@ -16,20 +16,20 @@ import { validateAccountIndex, validateNetworkName } from '../utils/validation'
 
 /**
  * Account Service
- * 
+ *
  * Provides methods for calling account operations through the worklet.
  */
 export class AccountService {
   /**
    * Call a method on a wallet account
    * Generic method for calling any account method through the worklet
-   * 
+   *
    * The worklet should already have the correct wallet loaded via `initializeWDK`.
    * Wallet switching is handled at the hook level before calling this service.
-   * 
+   *
    * @template TMethods - Map of method names to definitions (args/result)
    * @template K - Method name (key of TMethods)
-   * 
+   *
    * @param network - Network name
    * @param accountIndex - Account index
    * @param methodName - Method name
@@ -37,7 +37,7 @@ export class AccountService {
    * @param walletId - Optional wallet identifier (for consistency, worklet should already have correct wallet loaded)
    * @returns Promise with the method result
    * @throws Error if validation fails
-   * 
+   *
    * @example
    * ```typescript
    * // Define types
@@ -45,10 +45,10 @@ export class AccountService {
    *   getBalance: { args: undefined; result: string };
    *   transfer: { args: { to: string }; result: string };
    * }
-   * 
+   *
    * // Strict usage - single argument
    * await AccountService.callAccountMethod<MyMethods, 'transfer'>('eth', 0, 'transfer', { to: '0x...' })
-   * 
+   *
    * // Multiple arguments via array (spread as positional args)
    * await AccountService.callAccountMethod('eth', 0, 'transfer', [
    *   { to: '0x...', amount: '1000' },  // 1st arg: options
@@ -78,7 +78,7 @@ export class AccountService {
     const hrpc = requireInitialized()
 
     // Validate and sanitize args before stringification
-    let argsString: string | undefined = undefined
+    let argsString: string | undefined
     if (args !== undefined && args !== null) {
       // Validate structure and stringify safely
       argsString = safeStringify(args)
@@ -89,7 +89,7 @@ export class AccountService {
         methodName: String(methodName),
         network,
         accountIndex,
-        args: argsString,
+        args: argsString
       })
 
       // Validate response structure
@@ -113,7 +113,7 @@ export class AccountService {
         }
         throw new Error(`Failed to parse result from ${methodName}: ${error instanceof Error ? error.message : String(error)}`)
       }
-      
+
       // Runtime type validation based on method type
       if (methodName === 'getBalance' || methodName === 'getTokenBalance') {
         // Validate balance format
@@ -121,16 +121,15 @@ export class AccountService {
           throw new Error(`Invalid balance format: ${parsed}`)
         }
       }
-      
+
       // Recursively convert BigInt values to strings to prevent serialization errors
       return convertBigIntToString(parsed) as TMethods[K]['result']
     } catch (error) {
       handleServiceError(error, 'AccountService', `callAccountMethod:${String(methodName)}`, {
         network,
         accountIndex,
-        methodName,
+        methodName
       })
     }
   }
 }
-

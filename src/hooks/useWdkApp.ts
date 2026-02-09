@@ -13,7 +13,7 @@
  * Simple usage (most common):
  * ```tsx
  * import { AppStatus } from '@tetherto/wdk-react-native-core'
- * 
+ *
  * function MyComponent() {
  *   const { status, isReady, activeWalletId, error } = useWdkApp()
  *
@@ -68,11 +68,10 @@ import type { WdkAppContextValue } from '../provider/WdkAppProvider'
  * @returns WdkApp context value with initialization state
  * @throws Error if used outside WdkAppProvider
  */
-export function useWdkApp(): WdkAppContextValue {
+export function useWdkApp (): WdkAppContextValue {
   const context = useContext(WdkAppContext)
-  if (!context) {
+  if (context == null) {
     throw new Error('useWdkApp must be used within WdkAppProvider')
   }
   return context
 }
-

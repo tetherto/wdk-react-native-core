@@ -23,7 +23,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
+  useRef
 } from 'react'
 import { AppState, type AppStateStatus } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -31,18 +31,18 @@ import { createSecureStorage } from '@tetherto/wdk-react-native-secure-storage'
 
 import { useWalletManager } from '../hooks/useWalletManager'
 import { useWorklet } from '../hooks/useWorklet'
-import { getWalletStore } from '../store/walletStore'
-import type { WalletStore } from '../store/walletStore'
 import {
+  getWalletStore,
   updateWalletLoadingState,
   getWalletIdFromLoadingState,
   isWalletLoadingState,
-  isWalletErrorState,
+  isWalletErrorState
 } from '../store/walletStore'
+import type { WalletStore } from '../store/walletStore'
 import {
   shouldResetToNotLoaded,
   getWalletSwitchDecision,
-  shouldMarkWalletAsReady,
+  shouldMarkWalletAsReady
 } from '../utils/walletStateHelpers'
 import { clearAllSensitiveData } from '../store/workletStore'
 import { WalletSetupService } from '../services/walletSetupService'
@@ -189,9 +189,9 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       staleTime: DEFAULT_QUERY_STALE_TIME_MS,
-      gcTime: DEFAULT_QUERY_GC_TIME_MS,
-    },
-  },
+      gcTime: DEFAULT_QUERY_GC_TIME_MS
+    }
+  }
 })
 
 // Custom deep equality for walletLoadingState comparison
@@ -215,13 +215,13 @@ const deepEqualityFn = (a: any, b: any) => {
 export function WdkAppProvider<
   TNetwork extends Record<string, unknown> = Record<string, unknown>,
   TProtocol extends Record<string, unknown> = Record<string, unknown>,
->({
+> ({
   bundle: bundleConfig,
   wdkConfigs,
   enableAutoInitialization = true,
   currentUserId,
   clearSensitiveDataOnBackground = false,
-  children,
+  children
 }: WdkAppProviderProps<TNetwork, TProtocol>) {
   // Create secureStorage singleton and set it in WalletSetupService synchronously
   // CRITICAL: This must be synchronous (not in useEffect) to prevent race conditions
@@ -267,7 +267,7 @@ export function WdkAppProvider<
           previousState === 'active'
         ) {
           log(
-            '[WdkAppProvider] App going to background - clearing sensitive data and marking for re-auth',
+            '[WdkAppProvider] App going to background - clearing sensitive data and marking for re-auth'
           )
           clearAllSensitiveData()
 
@@ -281,12 +281,12 @@ export function WdkAppProvider<
 
           if (currentStateType === 'ready' && currentState.activeWalletId) {
             log(
-              '[WdkAppProvider] Resetting wallet state to trigger biometrics on foreground',
+              '[WdkAppProvider] Resetting wallet state to trigger biometrics on foreground'
             )
             walletStore.setState((prev) =>
               updateWalletLoadingState(prev, {
-                type: 'not_loaded',
-              }),
+                type: 'not_loaded'
+              })
             )
           } else if (
             currentStateType === 'loading' ||
@@ -295,8 +295,8 @@ export function WdkAppProvider<
             log(
               '[WdkAppProvider] Preserving wallet loading state during background transition',
               {
-                currentState: currentStateType,
-              },
+                currentState: currentStateType
+              }
             )
             // Do not reset - allow biometric authentication to complete
           }
@@ -309,10 +309,10 @@ export function WdkAppProvider<
           (previousState === 'background' || previousState === 'inactive')
         ) {
           log(
-            '[WdkAppProvider] App coming to foreground - auto-initialization will trigger biometrics',
+            '[WdkAppProvider] App coming to foreground - auto-initialization will trigger biometrics'
           )
         }
-      },
+      }
     )
 
     return () => subscription.remove()
@@ -325,7 +325,7 @@ export function WdkAppProvider<
     } catch (error) {
       const err = normalizeError(error, true, {
         component: 'WdkAppProvider',
-        operation: 'propsValidation',
+        operation: 'propsValidation'
       })
       logError('[WdkAppProvider] Invalid props:', err)
       // Always throw validation errors - they indicate programming errors
@@ -339,7 +339,7 @@ export function WdkAppProvider<
     isWorkletStarted,
     isInitialized: isWorkletInitialized,
     isLoading: isWorkletLoading,
-    error: workletError,
+    error: workletError
   } = workletHookState
 
   // Wallet state - read from walletStore (single source of truth)
@@ -347,15 +347,15 @@ export function WdkAppProvider<
 
   // Subscribe to primitive values directly
   const activeWalletId = walletStore(
-    (state: WalletStore) => state.activeWalletId,
+    (state: WalletStore) => state.activeWalletId
   )
 
   // For walletLoadingState, use a ref to manually check equality and prevent unnecessary re-renders
   const walletLoadingStateRef = useRef(
-    walletStore.getState().walletLoadingState,
+    walletStore.getState().walletLoadingState
   )
   const [walletLoadingState, setWalletLoadingState] = React.useState(
-    walletStore.getState().walletLoadingState,
+    walletStore.getState().walletLoadingState
   )
 
   useEffect(() => {
@@ -371,7 +371,7 @@ export function WdkAppProvider<
   }, [walletStore])
 
   const walletAddresses = walletStore((state: WalletStore) =>
-    state.activeWalletId ? state.addresses[state.activeWalletId] : undefined,
+    state.activeWalletId ? state.addresses[state.activeWalletId] : undefined
   )
 
   // Hooks for wallet operations
@@ -381,7 +381,7 @@ export function WdkAppProvider<
   const initializeWallet = useCallback(
     async ({
       createNew,
-      walletId,
+      walletId
     }: {
       createNew?: boolean
       walletId?: string
@@ -396,7 +396,7 @@ export function WdkAppProvider<
         await unlock(walletId)
       }
     },
-    [createWallet, unlock],
+    [createWallet, unlock]
   )
 
   // Store initializeWallet in a ref to avoid it being a dependency of the effect
@@ -420,28 +420,20 @@ export function WdkAppProvider<
     () => ({
       isReady: isWorkletStarted && !isWorkletLoading && !workletError,
       isLoading: isWorkletLoading,
-      error: workletError,
+      error: workletError
     }),
-    [isWorkletStarted, isWorkletLoading, workletError],
+    [isWorkletStarted, isWorkletLoading, workletError]
   )
 
   // Wallet state object (exposed separately for flexibility)
   const walletStateObject = useMemo(
     () => ({
-      status: (walletLoadingState.type === 'not_loaded'
-        ? 'not_loaded'
-        : walletLoadingState.type === 'checking'
-        ? 'checking'
-        : walletLoadingState.type === 'loading'
-        ? 'loading'
-        : walletLoadingState.type === 'ready'
-        ? 'ready'
-        : 'error') as 'not_loaded' | 'checking' | 'loading' | 'ready' | 'error',
+      status: walletLoadingState.type as 'not_loaded' | 'checking' | 'loading' | 'ready' | 'error',
       identifier: getWalletIdFromLoadingState(walletLoadingState),
       error:
-        walletLoadingState.type === 'error' ? walletLoadingState.error : null,
+        walletLoadingState.type === 'error' ? walletLoadingState.error : null
     }),
-    [walletLoadingState],
+    [walletLoadingState]
   )
 
   // Worklet initialization status (worklet-specific)
@@ -449,7 +441,7 @@ export function WdkAppProvider<
     return getWorkletStatus({
       isWorkletStarted,
       isLoading: isWorkletLoading,
-      error: workletError,
+      error: workletError
     })
   }, [isWorkletStarted, isWorkletLoading, workletError])
 
@@ -459,9 +451,9 @@ export function WdkAppProvider<
       {
         isWorkletStarted,
         isLoading: isWorkletLoading,
-        error: workletError,
+        error: workletError
       },
-      walletLoadingState,
+      walletLoadingState
     )
   }, [isWorkletStarted, isWorkletLoading, workletError, walletLoadingState])
 
@@ -470,13 +462,13 @@ export function WdkAppProvider<
     log('[WdkAppProvider] Checking initialization conditions', {
       isWorkletInitialized,
       isWorkletLoading,
-      isWorkletStarted,
+      isWorkletStarted
     })
 
     // Skip if worklet is loading
     if (isWorkletLoading) {
       log('[WdkAppProvider] Initialization skipped', {
-        reason: 'already loading',
+        reason: 'already loading'
       })
       return
     }
@@ -500,7 +492,7 @@ export function WdkAppProvider<
         if (!cancelled) {
           const err = normalizeError(error, true, {
             component: 'WdkAppProvider',
-            operation: 'workletInitialization',
+            operation: 'workletInitialization'
           })
           logError('[WdkAppProvider] Failed to initialize worklet:', error)
         }
@@ -518,7 +510,7 @@ export function WdkAppProvider<
     isWorkletLoading,
     isWorkletStarted,
     bundleConfig,
-    wdkConfigs,
+    wdkConfigs
   ])
 
   // Consolidated effect: Sync wallet loading state with activeWalletId, addresses, and errors
@@ -542,7 +534,7 @@ export function WdkAppProvider<
       // Clear authentication error flag when auto-init is disabled (e.g., logout)
       if (authErrorRef.current) {
         log(
-          '[WdkAppProvider] Clearing authentication error flag - auto-init disabled',
+          '[WdkAppProvider] Clearing authentication error flag - auto-init disabled'
         )
         authErrorRef.current = null
       }
@@ -556,8 +548,8 @@ export function WdkAppProvider<
       log(
         '[WdkAppProvider] Waiting for user identity confirmation before auto-init',
         {
-          hasActiveWalletId: !!activeWalletId,
-        },
+          hasActiveWalletId: !!activeWalletId
+        }
       )
       return
     }
@@ -567,12 +559,12 @@ export function WdkAppProvider<
     if (activeWalletId !== currentUserId) {
       log('[WdkAppProvider] Setting activeWalletId to current user', {
         activeWalletId,
-        currentUserId,
+        currentUserId
       })
 
       // Set activeWalletId to current user - let useOnboarding handle initialization
       walletStore.setState({
-        activeWalletId: currentUserId,
+        activeWalletId: currentUserId
       })
 
       // Clear auth error flag to allow fresh authentication
@@ -590,15 +582,15 @@ export function WdkAppProvider<
       log(
         '[WdkAppProvider] Skipping auto-initialization due to authentication error',
         {
-          error: authErrorRef.current,
-        },
+          error: authErrorRef.current
+        }
       )
       return
     }
 
     const currentWalletId = getWalletIdFromLoadingState(walletLoadingState)
     const hasAddresses = !!(
-      walletAddresses && Object.keys(walletAddresses).length > 0
+      (walletAddresses != null) && Object.keys(walletAddresses).length > 0
     )
 
     // Handle activeWalletId cleared
@@ -607,12 +599,12 @@ export function WdkAppProvider<
       // Clear authentication error flag when wallet is reset
       if (authErrorRef.current) {
         log(
-          '[WdkAppProvider] Clearing authentication error flag on wallet reset',
+          '[WdkAppProvider] Clearing authentication error flag on wallet reset'
         )
         authErrorRef.current = null
       }
       walletStore.setState((prev) =>
-        updateWalletLoadingState(prev, { type: 'not_loaded' }),
+        updateWalletLoadingState(prev, { type: 'not_loaded' })
       )
       return
     }
@@ -626,7 +618,7 @@ export function WdkAppProvider<
     const switchDecision = getWalletSwitchDecision(
       currentWalletId,
       activeWalletId,
-      hasAddresses,
+      hasAddresses
     )
     if (switchDecision.shouldSwitch) {
       log('[WdkAppProvider] Active wallet changed', {
@@ -634,7 +626,7 @@ export function WdkAppProvider<
         to: activeWalletId,
         hasAddresses,
         isWorkletStarted,
-        shouldMarkReady: switchDecision.shouldMarkReady,
+        shouldMarkReady: switchDecision.shouldMarkReady
       })
 
       // When switching to a wallet, trigger proper initialization with biometrics
@@ -645,8 +637,8 @@ export function WdkAppProvider<
             '[WdkAppProvider] Skipping wallet switch initialization - already in progress',
             {
               activeWalletId,
-              walletLoadingState: walletLoadingState.type,
-            },
+              walletLoadingState: walletLoadingState.type
+            }
           )
           return
         }
@@ -655,8 +647,8 @@ export function WdkAppProvider<
           '[WdkAppProvider] Wallet switch detected - triggering initialization',
           {
             activeWalletId,
-            hasAddresses,
-          },
+            hasAddresses
+          }
         )
 
         // Check if wallet already exists before deciding to create new or load existing
@@ -668,20 +660,20 @@ export function WdkAppProvider<
             log('[WdkAppProvider] Wallet existence check', {
               activeWalletId,
               walletExists,
-              shouldCreateNew,
+              shouldCreateNew
             })
 
             // Call initializeWallet to trigger biometrics and properly load the wallet
             // This will transition state to 'checking' immediately, preventing duplicate calls
             await initializeWalletRef.current({
               createNew: shouldCreateNew,
-              walletId: activeWalletId,
+              walletId: activeWalletId
             })
             log('[WdkAppProvider] Wallet initialized successfully after switch')
           } catch (error) {
             logError(
               '[WdkAppProvider] Failed to initialize wallet after switch:',
-              error,
+              error
             )
             // Error will be handled by the error handling logic below
           }
@@ -690,8 +682,8 @@ export function WdkAppProvider<
         // Worklet not started yet - reset to not_loaded and wait
         walletStore.setState((prev) =>
           updateWalletLoadingState(prev, {
-            type: 'not_loaded',
-          }),
+            type: 'not_loaded'
+          })
         )
       }
       // This effect will run again when isWorkletStarted becomes true
@@ -714,8 +706,8 @@ export function WdkAppProvider<
           '[WdkAppProvider] Skipping cached wallet initialization - already in progress',
           {
             activeWalletId,
-            walletLoadingState: walletLoadingState.type,
-          },
+            walletLoadingState: walletLoadingState.type
+          }
         )
         return
       }
@@ -727,8 +719,8 @@ export function WdkAppProvider<
           hasAddresses,
           isWorkletStarted,
           isWorkletInitialized,
-          walletLoadingState: walletLoadingState.type,
-        },
+          walletLoadingState: walletLoadingState.type
+        }
       )
 
       // Check if wallet already exists before deciding to create new or load existing
@@ -740,7 +732,7 @@ export function WdkAppProvider<
           log('[WdkAppProvider] Wallet existence check', {
             activeWalletId,
             walletExists,
-            shouldCreateNew,
+            shouldCreateNew
           })
 
           // Call initializeWallet to trigger biometrics and properly load the wallet
@@ -748,13 +740,13 @@ export function WdkAppProvider<
           // Then it will go through: checking -> loading -> ready
           await initializeWalletRef.current({
             createNew: shouldCreateNew,
-            walletId: activeWalletId,
+            walletId: activeWalletId
           })
           log('[WdkAppProvider] Wallet initialized successfully from cache')
         } catch (error) {
           logError(
             '[WdkAppProvider] Failed to initialize wallet from cache:',
-            error,
+            error
           )
           // Error will be handled by the error handling logic below
         }
@@ -778,8 +770,8 @@ export function WdkAppProvider<
           '[WdkAppProvider] Skipping wallet initialization - already in progress',
           {
             activeWalletId,
-            walletLoadingState: walletLoadingState.type,
-          },
+            walletLoadingState: walletLoadingState.type
+          }
         )
         return
       }
@@ -790,8 +782,8 @@ export function WdkAppProvider<
           activeWalletId,
           hasAddresses,
           isWorkletStarted,
-          walletLoadingState: walletLoadingState.type,
-        },
+          walletLoadingState: walletLoadingState.type
+        }
       )
 
       // Check if wallet already exists before deciding to create new or load existing
@@ -803,14 +795,14 @@ export function WdkAppProvider<
           log('[WdkAppProvider] Wallet existence check', {
             activeWalletId,
             walletExists,
-            shouldCreateNew,
+            shouldCreateNew
           })
 
           // Call initializeWallet to trigger biometrics and properly load the wallet
           // This will transition state to 'checking' immediately, preventing duplicate calls
           await initializeWalletRef.current({
             createNew: shouldCreateNew,
-            walletId: activeWalletId,
+            walletId: activeWalletId
           })
           log('[WdkAppProvider] Wallet initialized successfully')
         } catch (error) {
@@ -829,15 +821,15 @@ export function WdkAppProvider<
         hasAddresses,
         currentWalletId,
         activeWalletId,
-        isWorkletInitialized,
+        isWorkletInitialized
       )
     ) {
       log('[WdkAppProvider] Wallet ready', { activeWalletId })
       walletStore.setState((prev) =>
         updateWalletLoadingState(prev, {
           type: 'ready',
-          identifier: activeWalletId,
-        }),
+          identifier: activeWalletId
+        })
       )
       return
     }
@@ -847,7 +839,7 @@ export function WdkAppProvider<
       const error = walletLoadingState.error
       log('[WdkAppProvider] Wallet operation error detected', {
         activeWalletId,
-        error: error.message,
+        error: error.message
       })
 
       // Check if this is an authentication error (biometric failure)
@@ -861,8 +853,8 @@ export function WdkAppProvider<
         log(
           '[WdkAppProvider] Authentication error detected - preventing auto-retry',
           {
-            error: error.message,
-          },
+            error: error.message
+          }
         )
         authErrorRef.current = error.message
       }
@@ -876,7 +868,7 @@ export function WdkAppProvider<
     isWalletInitializing,
     isWorkletStarted,
     isWorkletInitialized,
-    hasWallet,
+    hasWallet
   ])
   // Note: walletStore removed from deps - it's a singleton that never changes
   // Note: initializeWallet removed from deps and accessed via ref to prevent infinite loop
@@ -891,7 +883,7 @@ export function WdkAppProvider<
     }
     if (isWalletErrorState(walletLoadingState)) {
       walletStore.setState((prev) =>
-        updateWalletLoadingState(prev, { type: 'not_loaded' }),
+        updateWalletLoadingState(prev, { type: 'not_loaded' })
       )
     }
   }, [walletLoadingState])
@@ -942,7 +934,7 @@ export function WdkAppProvider<
       loadingWalletId,
       walletExists,
       error: initializationError,
-      retry,
+      retry
     }),
     [
       status,
@@ -955,8 +947,8 @@ export function WdkAppProvider<
       loadingWalletId,
       walletExists,
       initializationError,
-      retry,
-    ],
+      retry
+    ]
   )
 
   return (

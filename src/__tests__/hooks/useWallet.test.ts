@@ -1,6 +1,6 @@
 /**
  * Tests for useWallet hook
- * 
+ *
  * Tests wallet hook logic without React rendering
  */
 
@@ -12,23 +12,23 @@ import { BalanceService } from '../../services/balanceService'
 
 // Mock stores and services
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn(),
+  getWorkletStore: jest.fn()
 }))
 
 jest.mock('../../store/walletStore', () => ({
-  getWalletStore: jest.fn(),
+  getWalletStore: jest.fn()
 }))
 
 jest.mock('../../services/addressService', () => ({
   AddressService: {
-    getAddress: jest.fn(),
-  },
+    getAddress: jest.fn()
+  }
 }))
 
 jest.mock('../../services/accountService', () => ({
   AccountService: {
-    callAccountMethod: jest.fn(),
-  },
+    callAccountMethod: jest.fn()
+  }
 }))
 
 jest.mock('../../services/balanceService', () => ({
@@ -40,8 +40,8 @@ jest.mock('../../services/balanceService', () => ({
     isBalanceLoading: jest.fn(),
     updateLastBalanceUpdate: jest.fn(),
     getLastBalanceUpdate: jest.fn(),
-    clearBalances: jest.fn(),
-  },
+    clearBalances: jest.fn()
+  }
 }))
 
 describe('useWallet', () => {
@@ -53,7 +53,7 @@ describe('useWallet', () => {
 
     mockWorkletStore = jest.fn((selector: any) => {
       const state = {
-        isInitialized: true,
+        isInitialized: true
       }
       return selector ? selector(state) : state
     })
@@ -62,23 +62,23 @@ describe('useWallet', () => {
       const state = {
         addresses: {
           ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-          },
+            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+          }
         },
         walletLoading: {},
         balances: {
           ethereum: {
             0: {
-              native: '1000000000000000000',
-            },
-          },
+              native: '1000000000000000000'
+            }
+          }
         },
         balanceLoading: {},
         lastBalanceUpdate: {
           ethereum: {
-            0: 1234567890,
-          },
-        },
+            0: 1234567890
+          }
+        }
       }
       return selector ? selector(state) : state
     })
@@ -90,7 +90,7 @@ describe('useWallet', () => {
   it('should call services correctly', () => {
     // Test that the hook calls the correct services
     // Since we can't easily test React hooks in Node, we verify the service calls
-    
+
     const mockAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
     ;(AddressService.getAddress as jest.Mock).mockResolvedValue(mockAddress)
 
@@ -111,12 +111,11 @@ describe('useWallet', () => {
     // Verify stores return expected structure
     expect(getWorkletStore).toBeDefined()
     expect(getWalletStore).toBeDefined()
-    
+
     const workletStore = getWorkletStore()
     const walletStore = getWalletStore()
-    
+
     expect(workletStore).toBeDefined()
     expect(walletStore).toBeDefined()
   })
 })
-
