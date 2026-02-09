@@ -42,7 +42,7 @@ describe('result', () => {
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error).toBeInstanceOf(Error)
-        expect((result.error).message).toBe('async error')
+        expect((result.error as Error).message).toBe('async error')
       }
     })
   })
@@ -65,8 +65,9 @@ describe('result', () => {
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error).toBeInstanceOf(Error)
-        expect((result.error).message).toBe('sync error')
+        expect((result.error as Error).message).toBe('sync error')
       }
     })
   })
 })
+

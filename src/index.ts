@@ -12,7 +12,7 @@ export type {
   BalanceFetchResult,
   IAsset,
   // Bundle and HRPC types
-  BundleConfig
+  BundleConfig,
 } from './types'
 
 export { BaseAsset } from './entities/asset'
@@ -30,7 +30,7 @@ export {
   useBalancesForWallet,
   useBalancesForWallets,
   useRefreshBalance,
-  balanceQueryKeys
+  balanceQueryKeys,
 } from './hooks/useBalance'
 
 export type { AccountInfo } from './store/walletStore'
@@ -39,5 +39,5 @@ export { validateMnemonic } from './utils/mnemonicUtils'
 
 export {
   InitializationStatus,
-  AppStatus
+  AppStatus,
 } from './utils/initializationState'

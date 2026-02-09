@@ -18,47 +18,47 @@ jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(),
   useMutation: jest.fn(),
   useQueries: jest.fn(),
-  useQueryClient: jest.fn()
+  useQueryClient: jest.fn(),
 }))
 
 // Mock stores and services
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn()
+  getWorkletStore: jest.fn(),
 }))
 
 jest.mock('../../store/walletStore', () => ({
-  getWalletStore: jest.fn()
+  getWalletStore: jest.fn(),
 }))
 
 jest.mock('../../services/accountService', () => ({
   AccountService: {
-    callAccountMethod: jest.fn()
-  }
+    callAccountMethod: jest.fn(),
+  },
 }))
 
 jest.mock('../../services/balanceService', () => ({
   BalanceService: {
     updateBalance: jest.fn(),
     updateLastBalanceUpdate: jest.fn(),
-    getBalance: jest.fn()
-  }
+    getBalance: jest.fn(),
+  },
 }))
 
 jest.mock('../../utils/balanceUtils', () => ({
-  convertBalanceToString: jest.fn((val) => String(val))
+  convertBalanceToString: jest.fn((val) => String(val)),
 }))
 
 jest.mock('../../utils/storeHelpers', () => ({
-  resolveWalletId: jest.fn((id) => id || 'default-wallet')
+  resolveWalletId: jest.fn((id) => id || 'default-wallet'),
 }))
 
 jest.mock('../../utils/validation', () => ({
-  validateWalletParams: jest.fn()
+  validateWalletParams: jest.fn(),
 }))
 
 jest.mock('../../utils/logger', () => ({
   log: jest.fn(),
-  logError: jest.fn()
+  logError: jest.fn(),
 }))
 
 const MOCK_NATIVE_TOKEN_ID = 'eth-native'
@@ -72,14 +72,14 @@ describe('useBalance', () => {
 
     mockWorkletStore = {
       getState: jest.fn(() => ({
-        isInitialized: true
-      }))
+        isInitialized: true,
+      })),
     }
 
     mockWalletStore = {
       getState: jest.fn(() => ({
-        activeWalletId: 'test-wallet-1'
-      }))
+        activeWalletId: 'test-wallet-1',
+      })),
     }
     ;(getWorkletStore as jest.Mock).mockReturnValue(mockWorkletStore)
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
@@ -98,7 +98,7 @@ describe('useBalance', () => {
       const walletNetworkKey = balanceQueryKeys.byWalletAndNetwork(
         'wallet-1',
         0,
-        'ethereum'
+        'ethereum',
       )
       expect(walletNetworkKey).toEqual([
         QUERY_KEY_TAGS.BALANCES,
@@ -106,14 +106,14 @@ describe('useBalance', () => {
         'wallet-1',
         0,
         QUERY_KEY_TAGS.NETWORK,
-        'ethereum'
+        'ethereum',
       ])
 
       const nativeTokenKey = balanceQueryKeys.byToken(
         'wallet-1',
         0,
         'ethereum',
-        MOCK_NATIVE_TOKEN_ID
+        MOCK_NATIVE_TOKEN_ID,
       )
       expect(nativeTokenKey).toEqual([
         QUERY_KEY_TAGS.BALANCES,
@@ -123,14 +123,14 @@ describe('useBalance', () => {
         QUERY_KEY_TAGS.NETWORK,
         'ethereum',
         QUERY_KEY_TAGS.TOKEN,
-        MOCK_NATIVE_TOKEN_ID
+        MOCK_NATIVE_TOKEN_ID,
       ])
 
       const tokenKey = balanceQueryKeys.byToken(
         'wallet-1',
         0,
         'ethereum',
-        '0x123'
+        '0x123',
       )
       expect(tokenKey).toEqual([
         QUERY_KEY_TAGS.BALANCES,
@@ -140,7 +140,7 @@ describe('useBalance', () => {
         QUERY_KEY_TAGS.NETWORK,
         'ethereum',
         QUERY_KEY_TAGS.TOKEN,
-        '0x123'
+        '0x123',
       ])
     })
   })
@@ -161,10 +161,10 @@ describe('useBalance', () => {
           accountIndex: 0,
           assetId: MOCK_NATIVE_TOKEN_ID,
           balance: null,
-          error: 'Wallet not initialized'
+          error: 'Wallet not initialized',
         },
         isLoading: false,
-        error: null
+        error: null,
       })
 
       // The hook would be called in a React component, but we can test the query function
@@ -174,7 +174,7 @@ describe('useBalance', () => {
     it('should fetch native balance successfully', async () => {
       const mockBalance = '1000000000000000000'
       ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(
-        mockBalance
+        mockBalance,
       )
       ;(convertBalanceToString as jest.Mock).mockReturnValue(mockBalance)
 
@@ -196,7 +196,7 @@ describe('useBalance', () => {
       const mockBalance = '2000000000000000000'
       const tokenAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       ;(AccountService.callAccountMethod as jest.Mock).mockResolvedValue(
-        mockBalance
+        mockBalance,
       )
       ;(convertBalanceToString as jest.Mock).mockReturnValue(mockBalance)
 
@@ -213,7 +213,7 @@ describe('useBalance', () => {
           'ethereum',
           0,
           'getTokenBalance',
-          tokenAddress
+          tokenAddress,
         )
       }
     })
@@ -244,13 +244,13 @@ describe('useBalance', () => {
           getId: () => MOCK_NATIVE_TOKEN_ID,
           getNetwork: () => 'ethereum',
           isNative: () => true,
-          getContractAddress: () => null
+          getContractAddress: () => null,
         } as IAsset,
         {
           getId: () => '0x123',
           getNetwork: () => 'ethereum',
           isNative: () => false,
-          getContractAddress: () => '0x123'
+          getContractAddress: () => '0x123',
         } as IAsset
       ]
 
@@ -259,7 +259,7 @@ describe('useBalance', () => {
       mockUseQuery.mockReturnValue({
         data: [],
         isLoading: false,
-        error: null
+        error: null,
       })
 
       // We just check the hook can be imported and mocking works
@@ -287,7 +287,7 @@ describe('useBalance', () => {
         'wallet-1',
         0,
         'ethereum',
-        MOCK_NATIVE_TOKEN_ID
+        MOCK_NATIVE_TOKEN_ID,
       )
 
       expect(allKeys).toEqual([QUERY_KEY_TAGS.BALANCES])

@@ -1,6 +1,6 @@
 /**
  * Tests for WdkAppProvider
- *
+ * 
  * Tests validation logic without rendering DOM components
  */
 
@@ -14,10 +14,10 @@ describe('WdkAppProvider validation', () => {
       ethereum: {
         blockchain: 'ethereum',
         config: {
-          chainId: 1
-        }
-      }
-    }
+          chainId: 1,
+        },
+      },
+    },
   }
 
   it('should validate networkConfigs', () => {
@@ -34,7 +34,7 @@ describe('WdkAppProvider validation', () => {
 
   it('should validate secureStorage has required methods', () => {
     const requiredMethods = ['authenticate', 'hasWallet', 'setEncryptionKey', 'setEncryptedSeed', 'getAllEncrypted']
-
+    
     for (const method of requiredMethods) {
       expect(typeof mockSecureStorage[method as keyof typeof mockSecureStorage]).toBe('function')
     }
@@ -42,10 +42,10 @@ describe('WdkAppProvider validation', () => {
 
   it('should detect missing secureStorage methods', () => {
     const invalidStorage = {
-      authenticate: jest.fn()
+      authenticate: jest.fn(),
       // Missing other methods
     }
-
+    
     const requiredMethods = ['hasWallet', 'setEncryptionKey', 'setEncryptedSeed', 'getAllEncrypted']
     for (const method of requiredMethods) {
       expect(typeof (invalidStorage as any)[method]).not.toBe('function')

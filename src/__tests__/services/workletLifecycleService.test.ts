@@ -1,21 +1,21 @@
 /**
  * Tests for WorkletLifecycleService
- *
+ * 
  * Tests worklet initialization with various network configurations
  */
 
 // Mock HRPC module
+jest.mock('@tetherto/pear-wrk-wdk/hrpc', () => {
+  return {
+    __esModule: true,
+    default: jest.fn(),
+  }
+})
+
 import { WorkletLifecycleService } from '../../services/workletLifecycleService'
 import { getWorkletStore } from '../../store/workletStore'
 import type { WdkConfigs, BundleConfig } from '../../types'
 import HRPC from '@tetherto/pear-wrk-wdk/hrpc'
-
-jest.mock('@tetherto/pear-wrk-wdk/hrpc', () => {
-  return {
-    __esModule: true,
-    default: jest.fn()
-  }
-})
 
 // Cast HRPC to jest.Mock for usage in tests
 const MockHRPC = HRPC as unknown as jest.Mock
@@ -25,20 +25,20 @@ const mockWorkletInstance = {
   start: jest.fn(),
   IPC: {
     send: jest.fn(),
-    on: jest.fn()
-  }
+    on: jest.fn(),
+  },
 }
 
 jest.mock('react-native-bare-kit', () => ({
-  Worklet: jest.fn().mockImplementation(() => mockWorkletInstance)
+  Worklet: jest.fn().mockImplementation(() => mockWorkletInstance),
 }))
 
 // Shared mock workletStart function to track calls across all HRPC instances
-const mockWorkletStart = jest.fn(async () => await Promise.resolve({ status: 'success' }))
+const mockWorkletStart = jest.fn(() => Promise.resolve({ status: 'success' }))
 
 const mockHRPCInstance = {
   workletStart: mockWorkletStart,
-  ipc: mockWorkletInstance.IPC
+  ipc: mockWorkletInstance.IPC,
 }
 
 // Mock bundleConfig that will be passed to startWorklet
@@ -60,13 +60,13 @@ jest.mock('../../store/workletStore', () => ({
           isLoading: false,
           worklet: null,
           hrpc: null,
-          error: null
+          error: null,
         })),
-        setState: jest.fn()
+        setState: jest.fn(),
       }
     }
     return sharedMockStore
-  })
+  }),
 }))
 
 /**
@@ -88,10 +88,10 @@ const defaultNetworkConfigs = {
         entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
         safeModulesVersion: '0.3.0',
         paymasterToken: {
-          address: '0xd077A400968890Eacc75cdc901F0356c943e4fDb'
+          address: '0xd077A400968890Eacc75cdc901F0356c943e4fDb',
         },
-        transferMaxFee: 100000
-      }
+        transferMaxFee: 100000,
+      },
     },
     ethereum: {
       blockchain: 'ethereum',
@@ -104,10 +104,10 @@ const defaultNetworkConfigs = {
         entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
         safeModulesVersion: '0.3.0',
         paymasterToken: {
-          address: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+          address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
         },
-        transferMaxFee: 100000
-      }
+        transferMaxFee: 100000,
+      },
     },
     polygon: {
       blockchain: 'polygon',
@@ -120,10 +120,10 @@ const defaultNetworkConfigs = {
         entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
         safeModulesVersion: '0.3.0',
         paymasterToken: {
-          address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
+          address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
         },
-        transferMaxFee: 100000
-      }
+        transferMaxFee: 100000,
+      },
     },
     arbitrum: {
       blockchain: 'arbitrum',
@@ -136,10 +136,10 @@ const defaultNetworkConfigs = {
         entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
         safeModulesVersion: '0.3.0',
         paymasterToken: {
-          address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+          address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
         },
-        transferMaxFee: 100000
-      }
+        transferMaxFee: 100000,
+      },
     },
     plasma: {
       blockchain: 'plasma',
@@ -152,19 +152,19 @@ const defaultNetworkConfigs = {
         entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
         safeModulesVersion: '0.3.0',
         paymasterToken: {
-          address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb'
+          address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb',
         },
-        transferMaxFee: 100000
-      }
+        transferMaxFee: 100000,
+      },
     },
     spark: {
       blockchain: 'spark',
       config: {
         chainId: 99999,
-        network: 'MAINNET'
-      }
-    }
-  }
+        network: 'MAINNET',
+      },
+    },
+  },
 } as WdkConfigs
 
 describe('WorkletLifecycleService', () => {
@@ -196,7 +196,7 @@ describe('WorkletLifecycleService', () => {
       encryptionKey: null,
       networkConfigs: null,
       workletStartResult: null,
-      wdkInitResult: null
+      wdkInitResult: null,
     }
     // Update the shared mock store
     sharedMockStore.getState = jest.fn(() => defaultState)
@@ -219,12 +219,12 @@ describe('WorkletLifecycleService', () => {
 
       // Verify workletStart was called with serialized config
       expect(mockHRPCInstance.workletStart).toHaveBeenCalledWith({
-        config: JSON.stringify(defaultNetworkConfigs)
+        config: JSON.stringify(defaultNetworkConfigs),
       })
 
       // Verify store state was updated (check that setState was called at least once)
       expect(mockStore.setState).toHaveBeenCalled()
-
+      
       // Verify the final state update contains the expected values
       const setStateMock = mockStore.setState as jest.Mock
       const finalStateCall = setStateMock.mock.calls[setStateMock.mock.calls.length - 1]
@@ -263,24 +263,24 @@ describe('WorkletLifecycleService', () => {
         blockchain: 'ethereum',
         config: {
           chainId: 1,
-          provider: 'https://wallet-ap7ha02ezs.rumble.com/eth'
-        }
+          provider: 'https://wallet-ap7ha02ezs.rumble.com/eth',
+        },
       })
 
       expect(parsedConfig.polygon).toMatchObject({
         blockchain: 'polygon',
         config: {
           chainId: 137,
-          provider: 'https://wallet-ap7ha02ezs.rumble.com/pol'
-        }
+          provider: 'https://wallet-ap7ha02ezs.rumble.com/pol',
+        },
       })
 
       expect(parsedConfig.arbitrum).toMatchObject({
         blockchain: 'arbitrum',
         config: {
           chainId: 42161,
-          provider: 'https://wallet-ap7ha02ezs.rumble.com/arb'
-        }
+          provider: 'https://wallet-ap7ha02ezs.rumble.com/arb',
+        },
       })
 
       // Verify extended properties are preserved
@@ -301,7 +301,7 @@ describe('WorkletLifecycleService', () => {
 
       // Verify each network has required fields
       const networks = ['sepolia', 'ethereum', 'polygon', 'arbitrum', 'plasma', 'spark']
-
+      
       for (const network of networks) {
         expect(parsedConfig).toHaveProperty(network)
         expect(parsedConfig[network]).toHaveProperty('config')
@@ -341,7 +341,7 @@ describe('WorkletLifecycleService', () => {
       const { Worklet: WorkletConstructor } = require('react-native-bare-kit')
       WorkletConstructor.mockClear()
       ;(mockStore.setState as jest.Mock).mockClear()
-
+      
       // Set up mock store to return "already started" state
       const alreadyStartedState = {
         isWorkletStarted: true,
@@ -355,7 +355,7 @@ describe('WorkletLifecycleService', () => {
         encryptionKey: null,
         networkConfigs: defaultNetworkConfigs,
         workletStartResult: null,
-        wdkInitResult: null
+        wdkInitResult: null,
       }
       ;(mockStore as any).getState = jest.fn(() => alreadyStartedState)
 
@@ -375,7 +375,7 @@ describe('WorkletLifecycleService', () => {
       const { Worklet: WorkletConstructor } = require('react-native-bare-kit')
       WorkletConstructor.mockClear()
       ;(mockStore.setState as jest.Mock).mockClear()
-
+      
       // Set up mock store to return "already loading" state
       const alreadyLoadingState = {
         isWorkletStarted: false,
@@ -389,7 +389,7 @@ describe('WorkletLifecycleService', () => {
         encryptionKey: null,
         networkConfigs: null,
         workletStartResult: null,
-        wdkInitResult: null
+        wdkInitResult: null,
       }
       ;(mockStore as any).getState = jest.fn(() => alreadyLoadingState)
 
@@ -413,12 +413,12 @@ describe('WorkletLifecycleService', () => {
 
       // Verify setState was called (at least for loading state and error state)
       expect(mockStore.setState).toHaveBeenCalled()
-
+      
       // Verify error state was set in the last call
       const setStateMock = mockStore.setState as jest.Mock
       const allCalls = setStateMock.mock.calls
       expect(allCalls.length).toBeGreaterThan(0)
-
+      
       // Check if any call sets error state
       let errorStateFound = false
       for (const call of allCalls) {
@@ -441,13 +441,13 @@ describe('WorkletLifecycleService', () => {
       const existingWorklet = {
         start: jest.fn(),
         IPC: mockWorkletInstance.IPC,
-        cleanup: jest.fn()
+        cleanup: jest.fn(),
       } as any
-
+      
       const existingHRPC = {
-        workletStart: jest.fn(async () => await Promise.resolve({ status: 'success' })),
+        workletStart: jest.fn(() => Promise.resolve({ status: 'success' })),
         ipc: mockWorkletInstance.IPC,
-        cleanup: jest.fn()
+        cleanup: jest.fn(),
       } as any
 
       ;(mockStore as any).getState = jest.fn().mockReturnValue({
@@ -462,7 +462,7 @@ describe('WorkletLifecycleService', () => {
         encryptionKey: null,
         networkConfigs: null,
         workletStartResult: null,
-        wdkInitResult: null
+        wdkInitResult: null,
       })
 
       await WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig)
@@ -478,10 +478,10 @@ describe('WorkletLifecycleService', () => {
           ethereum: {
             blockchain: 'ethereum',
             config: {
-              chainId: 1
-            }
-          }
-        }
+              chainId: 1,
+            },
+          },
+        },
       }
 
       await WorkletLifecycleService.startWorklet(minimalConfig, mockBundleConfig)
@@ -497,8 +497,8 @@ describe('WorkletLifecycleService', () => {
       expect(parsedConfig.ethereum).toMatchObject({
         blockchain: 'ethereum',
         config: {
-          chainId: 1
-        }
+          chainId: 1,
+        },
       })
     })
 
@@ -514,10 +514,10 @@ describe('WorkletLifecycleService', () => {
               paymasterUrl: 'https://paymaster.example.com',
               paymasterAddress: '0x1234567890123456789012345678901234567890',
               entryPointAddress: '0x0987654321098765432109876543210987654321',
-              transferMaxFee: 50000
-            }
-          }
-        }
+              transferMaxFee: 50000,
+            },
+          },
+        },
       }
 
       await WorkletLifecycleService.startWorklet(fullConfig, mockBundleConfig)
@@ -539,9 +539,10 @@ describe('WorkletLifecycleService', () => {
           paymasterUrl: 'https://paymaster.example.com',
           paymasterAddress: '0x1234567890123456789012345678901234567890',
           entryPointAddress: '0x0987654321098765432109876543210987654321',
-          transferMaxFee: 50000
-        }
+          transferMaxFee: 50000,
+        },
       })
     })
   })
 })
+

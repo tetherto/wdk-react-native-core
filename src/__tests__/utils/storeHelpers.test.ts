@@ -6,13 +6,13 @@ import {
   requireInitialized,
   isInitialized,
   updateBalanceInState,
-  updateAddressInState
+  updateAddressInState,
 } from '../../utils/storeHelpers'
 import { getWorkletStore } from '../../store/workletStore'
 
 // Mock stores
 jest.mock('../../store/workletStore', () => ({
-  getWorkletStore: jest.fn()
+  getWorkletStore: jest.fn(),
 }))
 
 describe('storeHelpers', () => {
@@ -23,14 +23,14 @@ describe('storeHelpers', () => {
     jest.clearAllMocks()
 
     mockHRPC = {
-      callMethod: jest.fn()
+      callMethod: jest.fn(),
     }
 
     mockWorkletStore = {
       getState: jest.fn(() => ({
         isInitialized: true,
-        hrpc: mockHRPC
-      }))
+        hrpc: mockHRPC,
+      })),
     }
 
     ;(getWorkletStore as jest.Mock).mockReturnValue(mockWorkletStore)
@@ -46,7 +46,7 @@ describe('storeHelpers', () => {
     it('should throw error when not initialized', () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: false,
-        hrpc: null
+        hrpc: null,
       }))
 
       expect(() => requireInitialized()).toThrow('WDK not initialized')
@@ -55,7 +55,7 @@ describe('storeHelpers', () => {
     it('should throw error when HRPC is null', () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: true,
-        hrpc: null
+        hrpc: null,
       }))
 
       expect(() => requireInitialized()).toThrow('WDK not initialized')
@@ -70,7 +70,7 @@ describe('storeHelpers', () => {
     it('should return false when not initialized', () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: false,
-        hrpc: null
+        hrpc: null,
       }))
 
       expect(isInitialized()).toBe(false)
@@ -79,7 +79,7 @@ describe('storeHelpers', () => {
     it('should return false when HRPC is null', () => {
       mockWorkletStore.getState = jest.fn(() => ({
         isInitialized: true,
-        hrpc: null
+        hrpc: null,
       }))
 
       expect(isInitialized()).toBe(false)
@@ -89,7 +89,7 @@ describe('storeHelpers', () => {
   describe('updateBalanceInState', () => {
     it('should update balance in empty state', () => {
       const prev = {
-        balances: {}
+        balances: {},
       } as any
 
       const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
@@ -98,10 +98,10 @@ describe('storeHelpers', () => {
         'wallet-1': {
           ethereum: {
             0: {
-              native: '100'
-            }
-          }
-        }
+              native: '100',
+            },
+          },
+        },
       })
     })
 
@@ -111,11 +111,11 @@ describe('storeHelpers', () => {
           'wallet-1': {
             ethereum: {
               0: {
-                native: '50'
-              }
-            }
-          }
-        }
+                native: '50',
+              },
+            },
+          },
+        },
       } as any
 
       const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
@@ -129,11 +129,11 @@ describe('storeHelpers', () => {
           'wallet-1': {
             polygon: {
               0: {
-                native: '50'
-              }
-            }
-          }
-        }
+                native: '50',
+              },
+            },
+          },
+        },
       } as any
 
       const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 0, 'native', '100')
@@ -148,11 +148,11 @@ describe('storeHelpers', () => {
           'wallet-1': {
             ethereum: {
               0: {
-                native: '50'
-              }
-            }
-          }
-        }
+                native: '50',
+              },
+            },
+          },
+        },
       } as any
 
       const result = updateBalanceInState(prev, 'wallet-1', 'ethereum', 1, 'native', '200')
@@ -167,11 +167,11 @@ describe('storeHelpers', () => {
           'wallet-1': {
             ethereum: {
               0: {
-                native: '50'
-              }
-            }
-          }
-        }
+                native: '50',
+              },
+            },
+          },
+        },
       } as any
 
       const result = updateBalanceInState(
@@ -191,7 +191,7 @@ describe('storeHelpers', () => {
   describe('updateAddressInState', () => {
     it('should update address in empty state', () => {
       const prev = {
-        addresses: {}
+        addresses: {},
       } as any
 
       const result = updateAddressInState(
@@ -205,9 +205,9 @@ describe('storeHelpers', () => {
       expect(result.addresses).toEqual({
         'wallet-1': {
           ethereum: {
-            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-          }
-        }
+            0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+          },
+        },
       })
     })
 
@@ -216,10 +216,10 @@ describe('storeHelpers', () => {
         addresses: {
           'wallet-1': {
             ethereum: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-            }
-          }
-        }
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
+          },
+        },
       } as any
 
       const result = updateAddressInState(
@@ -240,10 +240,10 @@ describe('storeHelpers', () => {
         addresses: {
           'wallet-1': {
             polygon: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-            }
-          }
-        }
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
+          },
+        },
       } as any
 
       const result = updateAddressInState(
@@ -267,10 +267,10 @@ describe('storeHelpers', () => {
         addresses: {
           'wallet-1': {
             ethereum: {
-              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
-            }
-          }
-        }
+              0: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+            },
+          },
+        },
       } as any
 
       const result = updateAddressInState(
@@ -290,3 +290,4 @@ describe('storeHelpers', () => {
     })
   })
 })
+

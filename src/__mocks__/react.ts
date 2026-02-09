@@ -10,7 +10,7 @@ export const useMemo = jest.fn((fn: any) => fn())
 export const useRef = jest.fn((initial: any) => ({ current: initial }))
 export const createContext = jest.fn(() => ({
   Provider: ({ children }: any) => children,
-  Consumer: ({ children }: any) => children
+  Consumer: ({ children }: any) => children,
 }))
 export const useContext = jest.fn()
 export const useReducer = jest.fn((reducer: any, initial: any) => [initial, jest.fn()])
@@ -29,5 +29,6 @@ export default {
   useReducer,
   Component,
   Fragment,
-  version
+  version,
 }
+

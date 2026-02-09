@@ -10,7 +10,7 @@ import type { WdkConfigs } from '../../types'
 
 // Mock stores and services
 jest.mock('../../store/walletStore', () => ({
-  getWalletStore: jest.fn()
+  getWalletStore: jest.fn(),
 }))
 
 jest.mock('../../services/walletSetupService', () => ({
@@ -20,24 +20,24 @@ jest.mock('../../services/walletSetupService', () => ({
     initializeFromMnemonic: jest.fn(),
     deleteWallet: jest.fn(),
     getMnemonic: jest.fn(),
-    createNewWallet: jest.fn()
-  }
+    createNewWallet: jest.fn(),
+  },
 }))
 
 jest.mock('../../utils/logger', () => ({
   log: jest.fn(),
-  logError: jest.fn()
+  logError: jest.fn(),
 }))
 
 // Mock React hooks
 jest.mock('react', () => ({
   useCallback: jest.fn((fn) => fn),
   useMemo: jest.fn((fn) => fn()),
-  useState: jest.fn((initial) => [initial, jest.fn()])
+  useState: jest.fn((initial) => [initial, jest.fn()]),
 }))
 
 jest.mock('zustand/react/shallow', () => ({
-  useShallow: jest.fn((selector) => selector)
+  useShallow: jest.fn((selector) => selector),
 }))
 
 describe('useWalletManager', () => {
@@ -47,10 +47,10 @@ describe('useWalletManager', () => {
       ethereum: {
         blockchain: 'ethereum',
         config: {
-          chainId: 1
-        }
-      }
-    }
+          chainId: 1,
+        },
+      },
+    },
   }
 
   beforeEach(() => {
@@ -59,9 +59,9 @@ describe('useWalletManager', () => {
     mockWalletStore = {
       getState: jest.fn(() => ({
         walletList: [],
-        activeWalletId: null
+        activeWalletId: null,
       })),
-      setState: jest.fn()
+      setState: jest.fn(),
     }
     ;(getWalletStore as jest.Mock).mockReturnValue(mockWalletStore)
   })
@@ -69,7 +69,7 @@ describe('useWalletManager', () => {
   describe('initializeWallet', () => {
     it('should call WalletSetupService.initializeWallet', async () => {
       ;(WalletSetupService.initializeWallet as jest.Mock).mockResolvedValue(
-        undefined
+        undefined,
       )
 
       const { useWalletManager } = await import('../../hooks/useWalletManager')
@@ -82,12 +82,12 @@ describe('useWalletManager', () => {
     it('should handle initialization errors', async () => {
       const error = new Error('Initialization failed')
       ;(WalletSetupService.initializeWallet as jest.Mock).mockRejectedValue(
-        error
+        error,
       )
 
       expect(WalletSetupService.initializeWallet).toBeDefined()
       await expect(
-        WalletSetupService.initializeWallet({})
+        WalletSetupService.initializeWallet({}),
       ).rejects.toThrow('Initialization failed')
     })
   })
@@ -103,11 +103,11 @@ describe('useWalletManager', () => {
       expect(WalletSetupService.initializeFromMnemonic).toBeDefined()
       await WalletSetupService.initializeFromMnemonic(
         mnemonic,
-        'test-wallet'
+        'test-wallet',
       )
       expect(WalletSetupService.initializeFromMnemonic).toHaveBeenCalledWith(
         mnemonic,
-        'test-wallet'
+        'test-wallet',
       )
     })
 
@@ -120,8 +120,8 @@ describe('useWalletManager', () => {
       await expect(
         WalletSetupService.initializeFromMnemonic(
           'invalid',
-          'test-wallet'
-        )
+          'test-wallet',
+        ),
       ).rejects.toThrow('Invalid mnemonic')
     })
   })
@@ -146,18 +146,18 @@ describe('useWalletManager', () => {
   describe('deleteWallet', () => {
     it('should delete wallet and update store', async () => {
       ;(WalletSetupService.deleteWallet as jest.Mock).mockResolvedValue(
-        undefined
+        undefined,
       )
       mockWalletStore.getState.mockReturnValue({
         walletList: [
-          { identifier: 'test-wallet', exists: true, isActive: true }
+          { identifier: 'test-wallet', exists: true, isActive: true },
         ],
-        activeWalletId: 'test-wallet'
+        activeWalletId: 'test-wallet',
       })
 
       await WalletSetupService.deleteWallet('test-wallet')
       expect(WalletSetupService.deleteWallet).toHaveBeenCalledWith(
-        'test-wallet'
+        'test-wallet',
       )
     })
 
@@ -166,7 +166,7 @@ describe('useWalletManager', () => {
       ;(WalletSetupService.deleteWallet as jest.Mock).mockRejectedValue(error)
 
       await expect(
-        WalletSetupService.deleteWallet('test-wallet')
+        WalletSetupService.deleteWallet('test-wallet'),
       ).rejects.toThrow('Delete failed')
     })
   })
@@ -194,7 +194,7 @@ describe('useWalletManager', () => {
       ;(WalletSetupService.getMnemonic as jest.Mock).mockRejectedValue(error)
 
       await expect(
-        WalletSetupService.getMnemonic('test-wallet')
+        WalletSetupService.getMnemonic('test-wallet'),
       ).rejects.toThrow('Failed to get mnemonic')
     })
   })
@@ -203,12 +203,12 @@ describe('useWalletManager', () => {
     it('should create new wallet', async () => {
       ;(WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(false)
       ;(WalletSetupService.createNewWallet as jest.Mock).mockResolvedValue(
-        undefined
+        undefined,
       )
 
       await WalletSetupService.createNewWallet('new-wallet')
       expect(WalletSetupService.createNewWallet).toHaveBeenCalledWith(
-        'new-wallet'
+        'new-wallet',
       )
     })
 
@@ -222,13 +222,13 @@ describe('useWalletManager', () => {
 
   describe('refreshWalletList', () => {
     it('should refresh wallet list with known identifiers', async () => {
-      ;(WalletSetupService.hasWallet as jest.Mock).mockImplementation(async (id) => {
-        return await Promise.resolve(id === 'wallet-1' || id === 'wallet-2')
+      ;(WalletSetupService.hasWallet as jest.Mock).mockImplementation((id) => {
+        return Promise.resolve(id === 'wallet-1' || id === 'wallet-2')
       })
 
       mockWalletStore.getState.mockReturnValue({
         walletList: [],
-        activeWalletId: 'wallet-1'
+        activeWalletId: 'wallet-1',
       })
 
       // Verify hasWallet can be called for multiple wallets
@@ -246,7 +246,7 @@ describe('useWalletManager', () => {
       ;(WalletSetupService.hasWallet as jest.Mock).mockRejectedValue(error)
 
       await expect(WalletSetupService.hasWallet('test-wallet')).rejects.toThrow(
-        'Refresh failed'
+        'Refresh failed',
       )
     })
   })
@@ -255,12 +255,12 @@ describe('useWalletManager', () => {
     it('should return wallet list from store', () => {
       const walletList = [
         { identifier: 'wallet-1', exists: true, isActive: true },
-        { identifier: 'wallet-2', exists: true, isActive: false }
+        { identifier: 'wallet-2', exists: true, isActive: false },
       ]
 
       mockWalletStore.getState.mockReturnValue({
         walletList,
-        activeWalletId: 'wallet-1'
+        activeWalletId: 'wallet-1',
       })
 
       const state = mockWalletStore.getState()

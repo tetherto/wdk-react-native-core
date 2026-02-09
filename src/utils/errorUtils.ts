@@ -1,15 +1,15 @@
 /**
  * Error utility functions for consistent error handling
- *
+ * 
  * ## Usage Guidelines
- *
+ * 
  * **For Services**: Use `handleServiceError()` from `errorHandling.ts` - this provides
  * consistent normalization and logging for service-layer errors. Errors are NOT sanitized
  * (sanitizeLevel: false) because services log internally and need full error details.
- *
+ * 
  * **For Hooks/UI**: Use `normalizeError()` directly with appropriate sanitization level.
  * Hooks should sanitize errors before exposing them to UI components to prevent information leakage.
- *
+ * 
  * @example Service usage (use handleServiceError instead):
  * ```typescript
  * import { handleServiceError } from './errorHandling'
@@ -19,7 +19,7 @@
  *   handleServiceError(error, 'MyService', 'operationName', { context })
  * }
  * ```
- *
+ * 
  * @example Hook/UI usage:
  * ```typescript
  * import { normalizeError } from './errorUtils'
@@ -36,9 +36,9 @@
  * Sanitization levels for error messages
  */
 export enum SanitizationLevel {
-  NONE = 'none', // No sanitization (internal debugging only)
-  DEVELOPMENT = 'dev', // Mask sensitive strings but show structure
-  PRODUCTION = 'prod', // Aggressive sanitization
+  NONE = 'none',           // No sanitization (internal debugging only)
+  DEVELOPMENT = 'dev',     // Mask sensitive strings but show structure
+  PRODUCTION = 'prod',     // Aggressive sanitization
 }
 
 /**
@@ -61,7 +61,7 @@ const SENSITIVE_PATTERNS = [
   // API tokens and keys in various formats
   /\b(api[_-]?key|access[_-]?token|bearer[_-]?token|auth[_-]?token)\s*[:=]\s*[^\s]{20,}/gi,
   // Passwords (but not "password" as a word)
-  /\bpassword\s*[:=]\s*[^\s]{8,}/gi
+  /\bpassword\s*[:=]\s*[^\s]{8,}/gi,
 ]
 
 /**
@@ -72,20 +72,20 @@ const SAFE_PATTERNS = [
   /\b(public[_-]?key|publicKey)\b/gi, // Public keys are safe
   /\b(error|Error|ERROR)\b/g, // Error messages themselves
   /\b(function|Function|const|let|var)\b/g, // Code keywords
-  /\b(undefined|null|true|false)\b/g // JavaScript literals
+  /\b(undefined|null|true|false)\b/g, // JavaScript literals
 ]
 
 /**
  * Check if a string matches a safe pattern (should not be sanitized)
  */
-function isSafePattern (text: string): boolean {
+function isSafePattern(text: string): boolean {
   return SAFE_PATTERNS.some(pattern => pattern.test(text))
 }
 
 /**
  * Mask sensitive string patterns (hex/base64) for development mode
  */
-function maskSensitiveStrings (message: string): string {
+function maskSensitiveStrings(message: string): string {
   return message
     .replace(/\b0x?[a-f0-9]{32,}\b/gi, (match) => {
       if (match.length <= 20) return match
@@ -99,7 +99,7 @@ function maskSensitiveStrings (message: string): string {
 /**
  * Remove file paths from error messages
  */
-function removeFilePaths (message: string): string {
+function removeFilePaths(message: string): string {
   return message
     .replace(/file:\/\/[^\s]+/gi, '[file path]')
     .replace(/\/[^\s]+\/[^\s]+/g, '[path]')
@@ -108,7 +108,7 @@ function removeFilePaths (message: string): string {
 /**
  * Get replacement text for a sensitive pattern match
  */
-function getSensitiveReplacement (match: string): string {
+function getSensitiveReplacement(match: string): string {
   const lowerMatch = match.toLowerCase()
   if (lowerMatch.includes('encryption') || lowerMatch.includes('encrypted')) {
     return '[encryption data]'
@@ -137,7 +137,7 @@ function getSensitiveReplacement (match: string): string {
 /**
  * Apply sensitive pattern sanitization
  */
-function applySensitivePatternSanitization (message: string): string {
+function applySensitivePatternSanitization(message: string): string {
   let sanitized = message
   for (const pattern of SENSITIVE_PATTERNS) {
     sanitized = sanitized.replace(pattern, (match) => {
@@ -153,16 +153,16 @@ function applySensitivePatternSanitization (message: string): string {
 /**
  * Sanitize error message to prevent information leakage
  * Removes or masks sensitive information while preserving useful debugging info
- *
+ * 
  * @param message - Error message to sanitize
  * @param isDevelopment - Whether we're in development mode (less sanitization)
  * @param context - Optional context about where the error occurred (for better sanitization)
  * @returns Sanitized error message
  */
-export function sanitizeErrorMessage (
+export function sanitizeErrorMessage(
   message: string,
   isDevelopment = false,
-  context?: { operation?: string, component?: string }
+  context?: { operation?: string; component?: string }
 ): string {
   if (isDevelopment) {
     return maskSensitiveStrings(message)
@@ -171,7 +171,7 @@ export function sanitizeErrorMessage (
   // In production, be more aggressive with sanitization
   let sanitized = removeFilePaths(message)
   sanitized = applySensitivePatternSanitization(sanitized)
-
+  
   // Additional cleanup: remove any remaining long hex/base64 strings
   sanitized = sanitized.replace(/\b0x?[a-f0-9]{32,}\b/gi, '[hex string]')
   sanitized = sanitized.replace(/\b[A-Za-z0-9+/]{40,}={0,2}\b/g, '[base64 string]')
@@ -183,18 +183,18 @@ export function sanitizeErrorMessage (
  * Normalize error to Error instance
  * Converts any error-like value to a proper Error object
  * Always sanitizes the error message (with different levels) to prevent information leakage
- *
+ * 
  * @param error - Error to normalize
  * @param sanitizeLevel - Sanitization level or boolean (default: PRODUCTION in production, DEVELOPMENT in dev)
  * @param context - Optional context about where the error occurred
  * @returns Normalized Error instance
  */
-export function normalizeError (
+export function normalizeError(
   error: unknown,
-  sanitizeLevel: SanitizationLevel | boolean = process.env.NODE_ENV === 'production'
-    ? SanitizationLevel.PRODUCTION
+  sanitizeLevel: SanitizationLevel | boolean = process.env.NODE_ENV === 'production' 
+    ? SanitizationLevel.PRODUCTION 
     : SanitizationLevel.DEVELOPMENT,
-  context?: { operation?: string, component?: string, [key: string]: unknown }
+  context?: { operation?: string; component?: string; [key: string]: unknown }
 ): Error {
   let errorMessage: string
 
@@ -209,7 +209,7 @@ export function normalizeError (
   }
 
   // Always sanitize, but with different levels
-  const level = typeof sanitizeLevel === 'boolean'
+  const level = typeof sanitizeLevel === 'boolean' 
     ? (sanitizeLevel ? SanitizationLevel.PRODUCTION : SanitizationLevel.NONE)
     : sanitizeLevel
 
@@ -222,7 +222,7 @@ export function normalizeError (
   }
 
   const normalizedError = new Error(errorMessage)
-
+  
   // Preserve error name and stack if available
   if (error instanceof Error) {
     normalizedError.name = error.name
@@ -243,26 +243,26 @@ export function normalizeError (
 /**
  * Get error message from any error-like value
  */
-export function getErrorMessage (error: unknown): string {
+export function getErrorMessage(error: unknown): string {
   return normalizeError(error).message
 }
 
 /**
  * Check if error is a specific type
  */
-export function isErrorType (error: unknown, typeName: string): boolean {
+export function isErrorType(error: unknown, typeName: string): boolean {
   return error instanceof Error && error.name === typeName
 }
 
 /**
  * Create a standardized error with context
  */
-export function createContextualError (
+export function createContextualError(
   message: string,
   context?: Record<string, unknown>
 ): Error {
   const error = new Error(message)
-  if (context != null) {
+  if (context) {
     Object.assign(error, { context })
   }
   return error
@@ -271,11 +271,11 @@ export function createContextualError (
 /**
  * Check if an error is an authentication error
  * Used to prevent automatic retries when authentication fails
- *
+ * 
  * @param error - Error to check
  * @returns true if the error is an authentication error
  */
-export function isAuthenticationError (error: unknown): boolean {
+export function isAuthenticationError(error: unknown): boolean {
   // Check if it's an AuthenticationError instance from secure storage
   if (error && typeof error === 'object' && 'constructor' in error) {
     const errorName = error.constructor.name
@@ -297,3 +297,4 @@ export function isAuthenticationError (error: unknown): boolean {
 
   return false
 }
+

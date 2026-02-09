@@ -1,6 +1,6 @@
 /**
  * Mock SecureStorage for testing
- *
+ * 
  * Supports identifier parameter for multi-wallet testing
  */
 
@@ -16,72 +16,72 @@ const getStorageKey = (identifier?: string): string => {
 }
 
 export const mockSecureStorage = {
-  authenticate: jest.fn(async () => await Promise.resolve(true)),
-  hasWallet: jest.fn(async (identifier?: string) => {
+  authenticate: jest.fn(() => Promise.resolve(true)),
+  hasWallet: jest.fn((identifier?: string) => {
     const key = getStorageKey(identifier)
     const wallet = storage[key]
-    return await Promise.resolve(wallet !== undefined && wallet.encryptionKey !== null)
+    return Promise.resolve(wallet !== undefined && wallet.encryptionKey !== null)
   }),
-  setEncryptionKey: jest.fn(async (key: string, identifier?: string) => {
+  setEncryptionKey: jest.fn((key: string, identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    if (storage[storageKey] == null) {
+    if (!storage[storageKey]) {
       storage[storageKey] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
     }
     storage[storageKey].encryptionKey = key
-    return await Promise.resolve()
+    return Promise.resolve()
   }),
-  getEncryptionKey: jest.fn(async (identifier?: string) => {
+  getEncryptionKey: jest.fn((identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    return await Promise.resolve(storage[storageKey]?.encryptionKey || null)
+    return Promise.resolve(storage[storageKey]?.encryptionKey || null)
   }),
-  setEncryptedSeed: jest.fn(async (seed: string, identifier?: string) => {
+  setEncryptedSeed: jest.fn((seed: string, identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    if (storage[storageKey] == null) {
+    if (!storage[storageKey]) {
       storage[storageKey] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
     }
     storage[storageKey].encryptedSeed = seed
-    return await Promise.resolve()
+    return Promise.resolve()
   }),
-  getEncryptedSeed: jest.fn(async (identifier?: string) => {
+  getEncryptedSeed: jest.fn((identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    return await Promise.resolve(storage[storageKey]?.encryptedSeed || null)
+    return Promise.resolve(storage[storageKey]?.encryptedSeed || null)
   }),
-  setEncryptedEntropy: jest.fn(async (entropy: string, identifier?: string) => {
+  setEncryptedEntropy: jest.fn((entropy: string, identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    if (storage[storageKey] == null) {
+    if (!storage[storageKey]) {
       storage[storageKey] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
     }
     storage[storageKey].encryptedEntropy = entropy
-    return await Promise.resolve()
+    return Promise.resolve()
   }),
-  getEncryptedEntropy: jest.fn(async (identifier?: string) => {
+  getEncryptedEntropy: jest.fn((identifier?: string) => {
     const storageKey = getStorageKey(identifier)
-    return await Promise.resolve(storage[storageKey]?.encryptedEntropy || null)
+    return Promise.resolve(storage[storageKey]?.encryptedEntropy || null)
   }),
-  getAllEncrypted: jest.fn(async (identifier?: string) => {
+  getAllEncrypted: jest.fn((identifier?: string) => {
     const storageKey = getStorageKey(identifier)
     const wallet = storage[storageKey]
-    return await Promise.resolve({
+    return Promise.resolve({
       encryptedSeed: wallet?.encryptedSeed || null,
       encryptedEntropy: wallet?.encryptedEntropy || null,
-      encryptionKey: wallet?.encryptionKey || null
+      encryptionKey: wallet?.encryptionKey || null,
     })
   }),
-  clearAll: jest.fn(async () => {
+  clearAll: jest.fn(() => {
     Object.keys(storage).forEach(key => delete storage[key])
-    return await Promise.resolve()
+    return Promise.resolve()
   }),
-  isBiometricAvailable: jest.fn(async () => await Promise.resolve(true)),
-  deleteWallet: jest.fn(async (identifier?: string) => {
+  isBiometricAvailable: jest.fn(() => Promise.resolve(true)),
+  deleteWallet: jest.fn((identifier?: string) => {
     const storageKey = getStorageKey(identifier)
     delete storage[storageKey]
-    return await Promise.resolve()
+    return Promise.resolve()
   }),
   cleanup: jest.fn(),
   // Helper method to clear storage between tests
   _clearStorage: () => {
     Object.keys(storage).forEach(key => delete storage[key])
-  }
+  },
 }
 
 export default mockSecureStorage

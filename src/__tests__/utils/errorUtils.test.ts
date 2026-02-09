@@ -8,7 +8,7 @@ import {
   isErrorType,
   createContextualError,
   sanitizeErrorMessage,
-  SanitizationLevel
+  SanitizationLevel,
 } from '../../utils/errorUtils'
 
 describe('errorUtils', () => {
@@ -50,33 +50,33 @@ describe('errorUtils', () => {
     it('should sanitize error messages in production', () => {
       const originalEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'production'
-
+      
       const error = new Error('Error with 0x1234567890123456789012345678901234567890')
       const normalized = normalizeError(error, true)
       expect(normalized.message).not.toContain('0x1234567890123456789012345678901234567890')
-
+      
       process.env.NODE_ENV = originalEnv
     })
 
     it('should use SanitizationLevel enum', () => {
       const error = new Error('Error with 0x1234567890123456789012345678901234567890')
-
+      
       const none = normalizeError(error, SanitizationLevel.NONE)
       expect(none.message).toContain('0x1234567890123456789012345678901234567890')
-
+      
       const dev = normalizeError(error, SanitizationLevel.DEVELOPMENT)
       expect(dev.message).toContain('0x1234')
-
+      
       const prod = normalizeError(error, SanitizationLevel.PRODUCTION)
       expect(prod.message).not.toContain('0x1234567890123456789012345678901234567890')
     })
 
     it('should handle boolean sanitize parameter for backward compatibility', () => {
       const error = new Error('Error with 0x1234567890123456789012345678901234567890')
-
+      
       const sanitized = normalizeError(error, true)
       expect(sanitized.message).not.toContain('0x1234567890123456789012345678901234567890')
-
+      
       const notSanitized = normalizeError(error, false)
       expect(notSanitized.message).toContain('0x1234567890123456789012345678901234567890')
     })
@@ -84,10 +84,10 @@ describe('errorUtils', () => {
     it('should sanitize stack traces based on level', () => {
       const error = new Error('Test error')
       error.stack = 'Error: Test error\n    at file:///path/to/sensitive/key.js:1:1'
-
+      
       const prod = normalizeError(error, SanitizationLevel.PRODUCTION)
       expect(prod.stack).not.toContain('/path/to/sensitive/key.js')
-
+      
       const none = normalizeError(error, SanitizationLevel.NONE)
       expect(none.stack).toContain('/path/to/sensitive/key.js')
     })

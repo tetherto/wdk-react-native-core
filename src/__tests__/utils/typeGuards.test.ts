@@ -13,7 +13,7 @@ import {
   isAssetConfig,
   isValidAccountIndex,
   isValidNetworkName,
-  isValidBalanceString
+  isValidBalanceString,
 } from '../../utils/typeGuards'
 import type { WdkConfigs, WdkNetworkConfig } from '../../types'
 
@@ -23,8 +23,8 @@ describe('typeGuards', () => {
       const valid: WdkNetworkConfig = {
         blockchain: 'ethereum',
         config: {
-          chainId: 1
-        }
+          chainId: 1,
+        },
       }
       expect(isWdkConfig(valid)).toBe(true)
     })
@@ -45,10 +45,10 @@ describe('typeGuards', () => {
           ethereum: {
             blockchain: 'ethereum',
             config: {
-              chainId: 1
-            }
-          }
-        }
+              chainId: 1,
+            },
+          },
+        },
       }
       expect(isWdkConfigs(valid)).toBe(true)
     })
@@ -70,7 +70,7 @@ describe('typeGuards', () => {
         name: 'Ethereum',
         decimals: 18,
         isNative: true,
-        address: null
+        address: null,
       }
       expect(isAssetConfig(valid)).toBe(true)
 
@@ -81,7 +81,7 @@ describe('typeGuards', () => {
         name: 'Tether',
         decimals: 6,
         isNative: false,
-        address: '0x1234567890123456789012345678901234567890'
+        address: '0x1234567890123456789012345678901234567890',
       }
       expect(isAssetConfig(validWithAddress)).toBe(true)
     })
@@ -90,10 +90,10 @@ describe('typeGuards', () => {
       expect(isAssetConfig(null)).toBe(false)
       expect(isAssetConfig({})).toBe(false)
       expect(isAssetConfig({ symbol: 'ETH' })).toBe(false)
-      expect(isAssetConfig({
+      expect(isAssetConfig({ 
         id: 'eth',
-        symbol: 'ETH',
-        name: 'Ethereum',
+        symbol: 'ETH', 
+        name: 'Ethereum', 
         decimals: '18' // Invalid type
       })).toBe(false)
     })
@@ -104,8 +104,8 @@ describe('typeGuards', () => {
       const valid = {
         ethereum: {
           0: '0x1234567890123456789012345678901234567890',
-          1: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-        }
+          1: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        },
       }
       expect(isWalletAddresses(valid)).toBe(true)
     })
@@ -125,9 +125,9 @@ describe('typeGuards', () => {
         ethereum: {
           0: {
             '0x0000000000000000000000000000000000000000': '1000000000000000000',
-            '0x1234567890123456789012345678901234567890': '2000000000000000000'
-          }
-        }
+            '0x1234567890123456789012345678901234567890': '2000000000000000000',
+          },
+        },
       }
       expect(isWalletBalances(valid)).toBe(true)
     })
@@ -229,3 +229,4 @@ describe('typeGuards', () => {
     })
   })
 })
+

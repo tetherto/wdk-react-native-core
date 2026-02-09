@@ -1,6 +1,6 @@
 /**
  * Tests for initializationState utilities
- *
+ * 
  * Tests worklet initialization state machine helpers
  */
 
@@ -19,7 +19,7 @@ import {
   getStatusMessage,
   getAppStatusMessage,
   getWorkletStatus,
-  getCombinedStatus
+  getCombinedStatus,
 } from '../../utils/initializationState'
 
 describe('initializationState', () => {
@@ -191,7 +191,7 @@ describe('initializationState', () => {
       const status = getWorkletStatus({
         isWorkletStarted: false,
         isLoading: false,
-        error: 'Test error'
+        error: 'Test error',
       })
 
       expect(status).toBe(InitializationStatus.ERROR)
@@ -201,7 +201,7 @@ describe('initializationState', () => {
       const status = getWorkletStatus({
         isWorkletStarted: false,
         isLoading: true,
-        error: null
+        error: null,
       })
 
       expect(status).toBe(InitializationStatus.STARTING_WORKLET)
@@ -211,7 +211,7 @@ describe('initializationState', () => {
       const status = getWorkletStatus({
         isWorkletStarted: false,
         isLoading: false,
-        error: null
+        error: null,
       })
 
       expect(status).toBe(InitializationStatus.IDLE)
@@ -221,7 +221,7 @@ describe('initializationState', () => {
       const status = getWorkletStatus({
         isWorkletStarted: true,
         isLoading: false,
-        error: null
+        error: null,
       })
 
       expect(status).toBe(InitializationStatus.WORKLET_READY)
@@ -234,7 +234,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: false,
           isLoading: false,
-          error: 'Worklet error'
+          error: 'Worklet error',
         },
         { type: 'not_loaded' }
       )
@@ -247,7 +247,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: false,
           isLoading: true,
-          error: null
+          error: null,
         },
         { type: 'not_loaded' }
       )
@@ -260,7 +260,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: false,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'not_loaded' }
       )
@@ -273,7 +273,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: true,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'not_loaded' }
       )
@@ -286,7 +286,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: true,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'checking' as const }
       )
@@ -299,7 +299,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: true,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'loading' as const }
       )
@@ -312,7 +312,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: true,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'ready' as const }
       )
@@ -325,7 +325,7 @@ describe('initializationState', () => {
         {
           isWorkletStarted: true,
           isLoading: false,
-          error: null
+          error: null,
         },
         { type: 'error' as const }
       )
@@ -334,3 +334,4 @@ describe('initializationState', () => {
     })
   })
 })
+

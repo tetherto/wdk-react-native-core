@@ -19,7 +19,7 @@ export {
   type CallMethodResponse,
   type WdkWorkletConfig,
   type NetworkConfig,
-  type ProtocolConfig
+  type ProtocolConfig,
 } from '@tetherto/pear-wrk-wdk'
 
 // Re-export HRPC class/interface

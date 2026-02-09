@@ -1,9 +1,9 @@
 /**
  * Runtime Type Guards
- *
+ * 
  * Provides runtime type checking for critical data paths to ensure type safety
  * beyond TypeScript's compile-time checks.
- *
+ * 
  * NOTE: These type guards now use Zod schemas internally for validation.
  * They are kept for backward compatibility but may be deprecated in the future.
  */
@@ -19,7 +19,7 @@ import {
   bitcoinAddressSchema,
   accountIndexSchema,
   networkNameSchema,
-  balanceStringSchema
+  balanceStringSchema,
 } from './schemas'
 
 import type {
@@ -27,14 +27,14 @@ import type {
   AssetConfig,
   WalletAddresses,
   WalletBalances,
-  WdkNetworkConfig
+  WdkNetworkConfig,
 } from '../types'
 
 /**
  * Type guard to check if a value is a valid NetworkConfig
  * Uses Zod schema internally for validation
  */
-export function isWdkConfig (value: unknown): value is WdkNetworkConfig {
+export function isWdkConfig(value: unknown): value is WdkNetworkConfig {
   return wdkConfigSchema.safeParse(value).success
 }
 
@@ -42,7 +42,7 @@ export function isWdkConfig (value: unknown): value is WdkNetworkConfig {
  * Type guard to check if a value is a valid NetworkConfigs
  * Uses Zod schema internally for validation
  */
-export function isWdkConfigs (value: unknown): value is WdkConfigs {
+export function isWdkConfigs(value: unknown): value is WdkConfigs {
   return wdkConfigsSchema.safeParse(value).success
 }
 
@@ -50,7 +50,7 @@ export function isWdkConfigs (value: unknown): value is WdkConfigs {
  * Type guard to check if a value is a valid AssetConfig
  * Uses Zod schema internally for validation
  */
-export function isAssetConfig (value: unknown): value is AssetConfig {
+export function isAssetConfig(value: unknown): value is AssetConfig {
   return assetConfigSchema.safeParse(value).success
 }
 
@@ -58,7 +58,7 @@ export function isAssetConfig (value: unknown): value is AssetConfig {
  * Type guard to check if a value is a valid WalletAddresses structure
  * Uses Zod schema internally for validation
  */
-export function isWalletAddresses (value: unknown): value is WalletAddresses {
+export function isWalletAddresses(value: unknown): value is WalletAddresses {
   return walletAddressesSchema.safeParse(value).success
 }
 
@@ -66,7 +66,7 @@ export function isWalletAddresses (value: unknown): value is WalletAddresses {
  * Type guard to check if a value is a valid WalletBalances structure
  * Uses Zod schema internally for validation
  */
-export function isWalletBalances (value: unknown): value is WalletBalances {
+export function isWalletBalances(value: unknown): value is WalletBalances {
   return walletBalancesSchema.safeParse(value).success
 }
 
@@ -74,7 +74,7 @@ export function isWalletBalances (value: unknown): value is WalletBalances {
  * Type guard to check if a value is a valid Ethereum address
  * Uses Zod schema internally for validation
  */
-export function isEthereumAddress (value: unknown): value is string {
+export function isEthereumAddress(value: unknown): value is string {
   return ethereumAddressSchema.safeParse(value).success
 }
 
@@ -83,7 +83,7 @@ export function isEthereumAddress (value: unknown): value is string {
  * Spark addresses start with "spark1" followed by Bech32-encoded characters
  * Uses Zod schema internally for validation
  */
-export function isSparkAddress (value: unknown): value is string {
+export function isSparkAddress(value: unknown): value is string {
   return sparkAddressSchema.safeParse(value).success
 }
 
@@ -91,14 +91,14 @@ export function isSparkAddress (value: unknown): value is string {
  * Type guard to check if a value is a valid Bitcoin address
  * Uses Zod schema internally for validation
  */
-export function isBitcoinAddress (value: unknown): value is string {
+export function isBitcoinAddress(value: unknown): value is string {
   return bitcoinAddressSchema.safeParse(value).success
 }
 
 /**
  * Type guard to check if a value is a valid address (Ethereum, Spark, or Bitcoin format)
  */
-export function isValidAddress (value: unknown): value is string {
+export function isValidAddress(value: unknown): value is string {
   return isEthereumAddress(value) || isSparkAddress(value) || isBitcoinAddress(value)
 }
 
@@ -106,7 +106,7 @@ export function isValidAddress (value: unknown): value is string {
  * Type guard to check if a value is a valid account index
  * Uses Zod schema internally for validation
  */
-export function isValidAccountIndex (value: unknown): value is number {
+export function isValidAccountIndex(value: unknown): value is number {
   return accountIndexSchema.safeParse(value).success
 }
 
@@ -114,7 +114,7 @@ export function isValidAccountIndex (value: unknown): value is number {
  * Type guard to check if a value is a valid network name
  * Uses Zod schema internally for validation
  */
-export function isValidNetworkName (value: unknown): value is string {
+export function isValidNetworkName(value: unknown): value is string {
   return networkNameSchema.safeParse(value).success
 }
 
@@ -122,6 +122,6 @@ export function isValidNetworkName (value: unknown): value is string {
  * Type guard to check if a value is a valid balance string
  * Uses Zod schema internally for validation
  */
-export function isValidBalanceString (value: unknown): value is string {
+export function isValidBalanceString(value: unknown): value is string {
   return balanceStringSchema.safeParse(value).success
 }

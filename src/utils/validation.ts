@@ -1,6 +1,6 @@
 /**
  * Validation utilities for WDK provider props and inputs
- *
+ * 
  * These functions throw errors for invalid inputs.
  * Uses Zod schemas for validation with better error messages.
  * For type guards (boolean returns), see typeGuards.ts
@@ -13,18 +13,18 @@ import {
   networkNameSchema,
   balanceStringSchema,
   ethereumAddressSchema,
-  assetIdSchema
+  assetIdSchema,
 } from './schemas'
 import type { WdkConfigs } from '../types'
 
 /**
  * Extract error message from Zod error
  */
-function getZodErrorMessage (error: unknown): string {
+function getZodErrorMessage(error: unknown): string {
   if (error instanceof z.ZodError) {
     // Get the first error message for simplicity
     const firstIssue = error.issues[0]
-    if (firstIssue != null) {
+    if (firstIssue) {
       return firstIssue.message
     }
     return 'Validation failed'
@@ -38,7 +38,7 @@ function getZodErrorMessage (error: unknown): string {
 /**
  * Validate network configuration
  */
-export function validateWdkConfigs (networkConfigs: WdkConfigs): void {
+export function validateWdkConfigs(networkConfigs: WdkConfigs): void {
   try {
     wdkConfigsSchema.parse(networkConfigs)
   } catch (error) {
@@ -49,7 +49,7 @@ export function validateWdkConfigs (networkConfigs: WdkConfigs): void {
 /**
  * Validate balance refresh interval
  */
-export function validateBalanceRefreshInterval (interval: number | undefined): void {
+export function validateBalanceRefreshInterval(interval: number | undefined): void {
   if (interval !== undefined) {
     if (typeof interval !== 'number') {
       throw new Error('balanceRefreshInterval must be a number')
@@ -65,12 +65,12 @@ export function validateBalanceRefreshInterval (interval: number | undefined): v
 
 /**
  * Validate that an object has required methods
- *
+ * 
  * @param obj - Object to validate
  * @param requiredMethods - Array of required method names
  * @param objectName - Name of the object for error messages
  */
-export function validateRequiredMethods (
+export function validateRequiredMethods(
   obj: unknown,
   requiredMethods: string[],
   objectName: string
@@ -89,7 +89,7 @@ export function validateRequiredMethods (
 /**
  * Validate account index
  */
-export function validateAccountIndex (accountIndex: number): void {
+export function validateAccountIndex(accountIndex: number): void {
   try {
     accountIndexSchema.parse(accountIndex)
   } catch (error) {
@@ -101,7 +101,7 @@ export function validateAccountIndex (accountIndex: number): void {
 /**
  * Validate network name
  */
-export function validateNetworkName (network: string): void {
+export function validateNetworkName(network: string): void {
   try {
     networkNameSchema.parse(network)
   } catch (error) {
@@ -117,7 +117,7 @@ export function validateNetworkName (network: string): void {
 /**
  * Validate token address (can be null for native tokens)
  */
-export function validateTokenAddress (tokenAddress: string | null): void {
+export function validateTokenAddress(tokenAddress: string | null): void {
   if (tokenAddress === null) {
     return
   }
@@ -129,7 +129,7 @@ export function validateTokenAddress (tokenAddress: string | null): void {
   }
 }
 
-export function validateAssetId (assetId: string): void {
+export function validateAssetId(assetId: string): void {
   try {
     assetIdSchema.parse(assetId)
   } catch (error) {
@@ -141,7 +141,7 @@ export function validateAssetId (assetId: string): void {
 /**
  * Validate balance string
  */
-export function validateBalance (balance: string): void {
+export function validateBalance(balance: string): void {
   try {
     balanceStringSchema.parse(balance)
   } catch (error) {
@@ -153,12 +153,12 @@ export function validateBalance (balance: string): void {
 /**
  * Validate wallet parameters (network, accountIndex, optional tokenAddress)
  * Convenience function to validate common wallet operation parameters
- *
+ * 
  * @param network - Network name
  * @param accountIndex - Account index
  * @param assetId - Asset ID (optional)
  */
-export function validateWalletParams (
+export function validateWalletParams(
   network: string,
   accountIndex: number,
   assetId?: string
@@ -167,3 +167,4 @@ export function validateWalletParams (
   validateAccountIndex(accountIndex)
   assetId && validateAssetId(assetId)
 }
+

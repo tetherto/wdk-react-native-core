@@ -1,6 +1,6 @@
 /**
  * JSON Utilities
- *
+ * 
  * Provides safe JSON stringification and validation utilities
  * to prevent security issues and ensure data integrity.
  */
@@ -9,26 +9,26 @@
  * Validate that a value has a safe JSON structure
  * Prevents prototype pollution and circular references
  */
-export function validateJSONStructure (value: unknown): boolean {
+export function validateJSONStructure(value: unknown): boolean {
   try {
     // Check for circular references
     const seen = new WeakSet()
-
-    function check (value: unknown): boolean {
+    
+    function check(value: unknown): boolean {
       if (value === null || typeof value !== 'object') {
         return true
       }
-
-      if (seen.has(value)) {
+      
+      if (seen.has(value as object)) {
         return false // Circular reference
       }
-
-      seen.add(value)
-
+      
+      seen.add(value as object)
+      
       if (Array.isArray(value)) {
         return value.every(check)
       }
-
+      
       // Check for prototype pollution
       const proto = Object.getPrototypeOf(value)
       // Reject objects with non-standard prototypes (not null, Object.prototype, or Array.prototype)
@@ -38,10 +38,10 @@ export function validateJSONStructure (value: unknown): boolean {
         // Reject objects that inherit from Array.prototype but aren't arrays
         return false
       }
-
+      
       return Object.values(value as Record<string, unknown>).every(check)
     }
-
+    
     return check(value)
   } catch {
     return false
@@ -51,18 +51,18 @@ export function validateJSONStructure (value: unknown): boolean {
 /**
  * Safe JSON stringify with validation
  * Validates structure before stringifying to prevent security issues
- *
+ * 
  * @param value - Value to stringify
  * @param space - Optional spacing for pretty printing
  * @returns JSON string
  * @throws Error if value cannot be safely stringified
  */
-export function safeStringify (value: unknown, space?: number): string {
+export function safeStringify(value: unknown, space?: number): string {
   // Validate structure first
   if (!validateJSONStructure(value)) {
     throw new Error('Value contains circular references or unsafe prototype properties')
   }
-
+  
   try {
     return JSON.stringify(value, null, space)
   } catch (error) {
@@ -72,3 +72,4 @@ export function safeStringify (value: unknown, space?: number): string {
     throw new Error('Failed to stringify value: Unknown error')
   }
 }
+

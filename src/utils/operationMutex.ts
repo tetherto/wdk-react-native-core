@@ -39,8 +39,8 @@ export interface MutexResult {
  * }
  * ```
  */
-export function acquireOperationMutex (
-  operationDescription: string
+export function acquireOperationMutex(
+  operationDescription: string,
 ): MutexResult {
   const walletStore = getWalletStore()
   const state = walletStore.getState()
@@ -48,19 +48,19 @@ export function acquireOperationMutex (
   // Check if operation is already in progress
   if (state.isOperationInProgress) {
     logWarn(
-      `[OperationMutex] Operation "${operationDescription}" blocked by: ${state.currentOperation}`
+      `[OperationMutex] Operation "${operationDescription}" blocked by: ${state.currentOperation}`,
     )
     return {
       acquired: false,
       currentOperation: state.currentOperation,
-      release: () => {} // No-op release
+      release: () => {}, // No-op release
     }
   }
 
   // Acquire mutex
   walletStore.setState({
     isOperationInProgress: true,
-    currentOperation: operationDescription
+    currentOperation: operationDescription,
   })
 
   log(`[OperationMutex] Acquired mutex for: ${operationDescription}`)
@@ -75,15 +75,15 @@ export function acquireOperationMutex (
       if (currentState.currentOperation === operationDescription) {
         walletStore.setState({
           isOperationInProgress: false,
-          currentOperation: null
+          currentOperation: null,
         })
         log(`[OperationMutex] Released mutex for: ${operationDescription}`)
       } else {
         logWarn(
-          `[OperationMutex] Attempted to release mutex for "${operationDescription}" but current operation is "${currentState.currentOperation}"`
+          `[OperationMutex] Attempted to release mutex for "${operationDescription}" but current operation is "${currentState.currentOperation}"`,
         )
       }
-    }
+    },
   }
 }
 
@@ -116,16 +116,16 @@ const DEFAULT_OPERATION_TIMEOUT_MS = 30 * 1000
  * }, 60000) // 60 second timeout
  * ```
  */
-export async function withOperationMutex<T> (
+export async function withOperationMutex<T>(
   operationDescription: string,
   operation: () => Promise<T>,
-  timeoutMs: number = DEFAULT_OPERATION_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_OPERATION_TIMEOUT_MS,
 ): Promise<T> {
   const mutex = acquireOperationMutex(operationDescription)
 
   if (!mutex.acquired) {
     throw new Error(
-      `Cannot execute "${operationDescription}": Another operation is in progress (${mutex.currentOperation})`
+      `Cannot execute "${operationDescription}": Another operation is in progress (${mutex.currentOperation})`,
     )
   }
 
@@ -137,13 +137,13 @@ export async function withOperationMutex<T> (
     timeoutId = setTimeout(() => {
       timeoutExceeded = true
       logWarn(
-        `[OperationMutex] Operation "${operationDescription}" exceeded timeout of ${timeoutMs}ms`
+        `[OperationMutex] Operation "${operationDescription}" exceeded timeout of ${timeoutMs}ms`,
       )
       mutex.release()
       reject(
         new Error(
-          `Operation "${operationDescription}" exceeded timeout of ${timeoutMs}ms`
-        )
+          `Operation "${operationDescription}" exceeded timeout of ${timeoutMs}ms`,
+        ),
       )
     }, timeoutMs)
   })
@@ -168,7 +168,7 @@ export async function withOperationMutex<T> (
 /**
  * Check if an operation is currently in progress
  */
-export function isOperationInProgress (): boolean {
+export function isOperationInProgress(): boolean {
   const walletStore = getWalletStore()
   return walletStore.getState().isOperationInProgress
 }
@@ -176,7 +176,7 @@ export function isOperationInProgress (): boolean {
 /**
  * Get current operation description
  */
-export function getCurrentOperation (): string | null {
+export function getCurrentOperation(): string | null {
   const walletStore = getWalletStore()
   return walletStore.getState().currentOperation
 }

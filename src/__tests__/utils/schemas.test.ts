@@ -5,14 +5,14 @@
 import {
   workletResponseSchema,
   balanceResponseSchema,
-  accountMethodResponseSchema
+  accountMethodResponseSchema,
 } from '../../utils/schemas'
 
 describe('schemas', () => {
   describe('workletResponseSchema', () => {
     it('should validate valid worklet response', () => {
       const valid = {
-        result: '{"data": "test"}'
+        result: '{"data": "test"}',
       }
       expect(() => workletResponseSchema.parse(valid)).not.toThrow()
     })
@@ -20,14 +20,14 @@ describe('schemas', () => {
     it('should validate worklet response with error', () => {
       const valid = {
         result: '{"data": "test"}',
-        error: 'Some error'
+        error: 'Some error',
       }
       expect(() => workletResponseSchema.parse(valid)).not.toThrow()
     })
 
     it('should reject invalid worklet response', () => {
       const invalid = {
-        result: null
+        result: null,
       }
       expect(() => workletResponseSchema.parse(invalid)).toThrow()
     })
@@ -79,3 +79,4 @@ describe('schemas', () => {
     })
   })
 })
+

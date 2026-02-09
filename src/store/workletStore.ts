@@ -48,7 +48,7 @@ import { Worklet } from 'react-native-bare-kit'
 import type {
   WdkConfigs,
   HRPC,
-  WorkletStartResponse
+  WorkletStartResponse,
 } from '../types'
 import { log } from '../utils/logger'
 import { produce } from 'immer'
@@ -133,7 +133,7 @@ const initialState: WorkletState = {
   workletStartResult: null,
   wdkInitResult: null,
   credentialsCache: {},
-  credentialsCacheTTL: 5 * 60 * 1000 // 5 minutes
+  credentialsCacheTTL: 5 * 60 * 1000, // 5 minutes
 }
 
 let workletStoreInstance: WorkletStoreInstance | null = null
@@ -144,25 +144,25 @@ let workletStoreInstance: WorkletStoreInstance | null = null
  * This store is runtime-only - all state resets on app restart.
  * All operations are handled by WorkletLifecycleService, not the store itself.
  */
-export function createWorkletStore (): WorkletStoreInstance {
-  if (workletStoreInstance != null) {
+export function createWorkletStore(): WorkletStoreInstance {
+  if (workletStoreInstance) {
     return workletStoreInstance
   }
 
   const store = create<WorkletStore>()(
     devtools(
       () => ({
-        ...initialState
+        ...initialState,
       }),
-      { name: 'WorkletStore' }
-    )
+      { name: 'WorkletStore' },
+    ),
   )
 
   workletStoreInstance = store
   return store
 }
 
-export function getWorkletStore () {
+export function getWorkletStore() {
   return createWorkletStore()
 }
 
@@ -170,7 +170,7 @@ export function getWorkletStore () {
  * Evict least recently used credentials from cache when limit is reached
  * Logs eviction for monitoring
  */
-function evictLRUCredentials (): void {
+function evictLRUCredentials(): void {
   const store = getWorkletStore()
   const state = store.getState()
   const cacheSize = Object.keys(state.credentialsCache).length
@@ -184,7 +184,7 @@ function evictLRUCredentials (): void {
   let oldestAccess = Infinity
 
   for (const [identifier, accessTime] of credentialsAccessOrder.entries()) {
-    if (accessTime < oldestAccess && (state.credentialsCache[identifier] != null)) {
+    if (accessTime < oldestAccess && state.credentialsCache[identifier]) {
       oldestAccess = accessTime
       oldestIdentifier = identifier
     }
@@ -196,10 +196,10 @@ function evictLRUCredentials (): void {
     store.setState(
       produce(state, (draft) => {
         delete draft.credentialsCache[oldestIdentifier]
-      })
+      }),
     )
     log(
-      `[WorkletStore] Evicted LRU credentials cache entry: ${oldestIdentifier} (cache size: ${cacheSize}/${MAX_CREDENTIALS_CACHE_SIZE})`
+      `[WorkletStore] Evicted LRU credentials cache entry: ${oldestIdentifier} (cache size: ${cacheSize}/${MAX_CREDENTIALS_CACHE_SIZE})`,
     )
   }
 }
@@ -208,13 +208,13 @@ function evictLRUCredentials (): void {
  * Log cache size if it exceeds warning threshold (50% of max)
  * Useful for monitoring cache growth in production
  */
-function logCacheSizeIfNeeded (cacheSize: number): void {
+function logCacheSizeIfNeeded(cacheSize: number): void {
   const warningThreshold = Math.ceil(MAX_CREDENTIALS_CACHE_SIZE * 0.5)
   if (cacheSize >= warningThreshold) {
     log(
       `[WorkletStore] Credentials cache size: ${cacheSize}/${MAX_CREDENTIALS_CACHE_SIZE} (${Math.round(
-        (cacheSize / MAX_CREDENTIALS_CACHE_SIZE) * 100
-      )}% full)`
+        (cacheSize / MAX_CREDENTIALS_CACHE_SIZE) * 100,
+      )}% full)`,
     )
   }
 }
@@ -224,14 +224,14 @@ function logCacheSizeIfNeeded (cacheSize: number): void {
  * Returns null if not cached or expired
  * Updates access time for LRU tracking
  */
-export function getCachedCredentials (
-  identifier: string
+export function getCachedCredentials(
+  identifier: string,
 ): CachedCredentials | null {
   const store = getWorkletStore()
   const state = store.getState()
   const cached = state.credentialsCache[identifier]
 
-  if (cached == null) return null
+  if (!cached) return null
 
   // Check expiration
   if (Date.now() > cached.expiresAt) {
@@ -240,7 +240,7 @@ export function getCachedCredentials (
     store.setState(
       produce(state, (draft) => {
         delete draft.credentialsCache[identifier]
-      })
+      }),
     )
     return null
   }
@@ -257,16 +257,16 @@ export function getCachedCredentials (
  * Evicts LRU entries if cache size limit is reached
  * Logs cache size for monitoring
  */
-export function setCachedCredentials (
+export function setCachedCredentials(
   identifier: string,
-  credentials: Partial<CachedCredentials>
+  credentials: Partial<CachedCredentials>,
 ): void {
   const store = getWorkletStore()
   const state = store.getState()
 
   // Evict LRU credentials if needed before adding new entry
   // Check if we're adding a new entry (not just updating existing)
-  const isNewEntry = state.credentialsCache[identifier] == null
+  const isNewEntry = !state.credentialsCache[identifier]
   if (isNewEntry) {
     evictLRUCredentials()
   }
@@ -278,15 +278,15 @@ export function setCachedCredentials (
   store.setState((prev) =>
     produce(prev, (state) => {
       const credentialTemplate = {
-        expiresAt: Date.now() + state.credentialsCacheTTL
+        expiresAt: Date.now() + state.credentialsCacheTTL,
       }
       state.credentialsCache[identifier] ??= credentialTemplate
       Object.assign(
         state.credentialsCache[identifier],
         credentialTemplate,
-        credentials
+        credentials,
       )
-    })
+    }),
   )
 
   // Log cache size for monitoring (after state update)
@@ -298,7 +298,7 @@ export function setCachedCredentials (
  * Clear credentials cache for a specific wallet or all wallets
  * Also clears access tracking
  */
-export function clearCredentialsCache (identifier?: string): void {
+export function clearCredentialsCache(identifier?: string): void {
   const store = getWorkletStore()
   const state = store.getState()
 
@@ -308,7 +308,7 @@ export function clearCredentialsCache (identifier?: string): void {
     store.setState(
       produce(state, (draft) => {
         delete draft.credentialsCache[identifier]
-      })
+      }),
     )
   } else {
     // Clear all
@@ -327,14 +327,14 @@ export function clearCredentialsCache (identifier?: string): void {
  * references allows garbage collection, but the old values may remain in memory
  * until GC runs. This is a JavaScript limitation.
  */
-export function clearAllSensitiveData (): void {
+export function clearAllSensitiveData(): void {
   const store = getWorkletStore()
   credentialsAccessOrder.clear()
   credentialsAccessCounter = 0
   store.setState({
     encryptedSeed: null,
     encryptionKey: null,
-    credentialsCache: {}
+    credentialsCache: {},
   })
 }
 
@@ -342,7 +342,7 @@ export function clearAllSensitiveData (): void {
  * Reset the worklet store instance (useful for testing)
  * Also resets access tracking
  */
-export function resetWorkletStore (): void {
+export function resetWorkletStore(): void {
   credentialsAccessOrder.clear()
   credentialsAccessCounter = 0
   workletStoreInstance = null
@@ -352,7 +352,7 @@ export function resetWorkletStore (): void {
  * Get current credentials cache size
  * Useful for monitoring and debugging
  */
-export function getCredentialsCacheSize (): number {
+export function getCredentialsCacheSize(): number {
   const store = getWorkletStore()
   return Object.keys(store.getState().credentialsCache).length
 }

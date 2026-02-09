@@ -26,7 +26,7 @@ describe('walletStore', () => {
     it('should initialize with default state', () => {
       const store = createWalletStore()
       const state = store.getState()
-
+      
       expect(state.addresses).toEqual({})
       expect(state.walletLoading).toEqual({})
       expect(state.balances).toEqual({})
@@ -52,15 +52,15 @@ describe('walletStore', () => {
   describe('store state management', () => {
     it('should allow state updates', () => {
       const store = createWalletStore()
-
+      
       store.setState({
         addresses: {
           'wallet-1': {
             ethereum: {
-              0: '0x1234567890123456789012345678901234567890'
-            }
-          }
-        }
+              0: '0x1234567890123456789012345678901234567890',
+            },
+          },
+        },
       })
 
       const state = store.getState()
@@ -69,15 +69,15 @@ describe('walletStore', () => {
 
     it('should allow partial state updates', () => {
       const store = createWalletStore()
-
+      
       store.setState({
         addresses: {
           'wallet-1': {
             ethereum: {
-              0: '0x1234567890123456789012345678901234567890'
-            }
-          }
-        }
+              0: '0x1234567890123456789012345678901234567890',
+            },
+          },
+        },
       })
 
       store.setState({
@@ -85,11 +85,11 @@ describe('walletStore', () => {
           'wallet-1': {
             ethereum: {
               0: {
-                '0x0000000000000000000000000000000000000000': '1000000000000000000'
-              }
-            }
-          }
-        }
+                '0x0000000000000000000000000000000000000000': '1000000000000000000',
+              },
+            },
+          },
+        },
       })
 
       const state = store.getState()
@@ -98,3 +98,4 @@ describe('walletStore', () => {
     })
   })
 })
+
