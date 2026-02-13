@@ -10,7 +10,7 @@ import { isOperationInProgress } from '../utils/operationMutex'
 import { log, logError } from '../utils/logger'
 import type { WalletStore } from '../store/walletStore'
 import type { WorkletStore } from '../store/workletStore'
-import type { MethodMap, LooseMethods } from '../types/accountMethods'
+import type { MethodMap, DefaultAccountMethods } from '../types/accountMethods'
 
 // Stable empty objects to prevent creating new objects on every render
 const EMPTY_ADDRESSES = {} as Record<string, Record<number, string>>
@@ -64,7 +64,7 @@ function normalizeErrorToError(error: unknown): Error {
  * This hook provides access to wallet addresses and account methods.
  * 
  * @template TMethods - Optional map of method names to definitions (args/result) for strict typing.
- *                     Defaults to LooseMethods (any string, any args).
+ *                     Defaults to DefaultAccountMethods (any string, any args).
  * 
  * @example
  * ```tsx
@@ -78,7 +78,7 @@ function normalizeErrorToError(error: unknown): Error {
  * await callAccountMethod('eth', 0, 'signTransaction', { ... }) // Strictly typed!
  * ```
  */
-export interface UseWalletResult<TMethods extends MethodMap = LooseMethods> {
+export interface UseWalletResult<TMethods extends MethodMap = DefaultAccountMethods> {
   // State (reactive)
   addresses: Record<string, Record<number, string>>  // network -> accountIndex -> address (for current wallet)
   walletLoading: Record<string, boolean>  // loading states for current wallet
@@ -108,11 +108,11 @@ export interface UseWalletResult<TMethods extends MethodMap = LooseMethods> {
     network: string,
     accountIndex: number,
     methodName: K,
-    args?: TMethods[K]['args'] | unknown[]
+    ...args: TMethods[K]['params']
   ) => Promise<TMethods[K]['result']>
 }
 
-export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
+export function useWallet<TMethods extends MethodMap = DefaultAccountMethods>(options?: {
   walletId?: string
   /** Account indices to automatically load addresses for */
   autoLoadAccountIndices?: number[]
@@ -373,13 +373,13 @@ export function useWallet<TMethods extends MethodMap = LooseMethods>(options?: {
     network: string,
     accountIndex: number,
     methodName: K,
-    args?: TMethods[K]['args'] | unknown[]
+    ...args: TMethods[K]['params']
   ): Promise<TMethods[K]['result']> => {
-    return AccountService.callAccountMethod<TMethods, K>(
+    return AccountService.callAccountMethod<TMethods[K]['result']>(
       network, 
       accountIndex, 
-      methodName, 
-      args
+      methodName as string,
+      ...args
     )
   }, [targetWalletId])
 

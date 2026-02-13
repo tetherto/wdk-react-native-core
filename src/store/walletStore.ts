@@ -45,12 +45,10 @@
  * - All operations are handled by focused services (AddressService, BalanceService), not the store itself
  */
 
-// External packages
 import { create } from 'zustand'
 import { persist, createJSONStorage, devtools } from 'zustand/middleware'
 import { produce } from 'immer'
 
-// Local imports
 import type {
   WalletAddressesByWallet,
   WalletBalancesByWallet,
