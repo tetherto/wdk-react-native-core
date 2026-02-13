@@ -8,7 +8,6 @@
 export type {
   WdkConfigs,
   AssetConfig,
-  Wallet,
   BalanceFetchResult,
   IAsset,
   // Bundle and HRPC types
@@ -21,16 +20,18 @@ export { WdkAppProvider } from './provider/WdkAppProvider'
 export type { WdkAppProviderProps, WdkAppContextValue } from './provider/WdkAppProvider'
 
 // Hooks (The Public API)
-export { useWallet } from './hooks/useWallet'
 export { useWdkApp } from './hooks/useWdkApp'
+export { useAddresses } from './hooks/useAddresses'
+export type { UseAddressesReturn } from './hooks/useAddresses'
 
-// export { useWalletManager } from './hooks/useWalletManager'
+export { useAccount } from './hooks/useAccount'
+export type { UseAccountParams, UseAccountReturn } from './hooks/useAccount'
+
 export { useWalletManager } from './hooks/useWalletManagerV2'
 export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManagerV2'
 export {
   useBalance,
   useBalancesForWallet,
-  useBalancesForWallets,
   useRefreshBalance,
   balanceQueryKeys,
 } from './hooks/useBalance'

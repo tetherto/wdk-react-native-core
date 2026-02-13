@@ -69,8 +69,6 @@ export interface BalanceQueryOptions {
   refetchInterval?: number | false
   /** Stale time in milliseconds */
   staleTime?: number
-  /** Wallet identifier (defaults to activeWalletId) */
-  walletId?: string
 }
 
 /**
@@ -201,21 +199,31 @@ async function fetchBalance(
   }
 
   try {
-    const isNative = asset.isNative()
-    const methodName = isNative ? ACCOUNT_METHOD_GET_BALANCE : ACCOUNT_METHOD_GET_TOKEN_BALANCE
-    const methodArg = asset.getContractAddress() // null for native
+    let balanceResult: string
 
-    const balanceResult = await AccountService.callAccountMethod(
-      network,
-      accountIndex,
-      methodName,
-      methodArg
-    ) as string
+    if (asset.isNative()) {
+      balanceResult = await AccountService.callAccountMethod<'getBalance'>(
+        network,
+        accountIndex,
+        'getBalance',
+      )
+    } else {
+      const tokenAddress = asset.getContractAddress()
 
-    // Convert to string (handles BigInt values)
+      if (!tokenAddress) {
+        throw new Error('Token address cannot be null')
+      }
+
+      balanceResult = await AccountService.callAccountMethod<'getTokenBalance'>(
+        network,
+        accountIndex,
+        'getTokenBalance',
+        tokenAddress,
+      )
+    }
+
     const balance = convertBalanceToString(balanceResult)
 
-    // Update Zustand store (single source of truth)
     const targetWalletId = resolveWalletId(walletId)
     BalanceService.updateBalance(accountIndex, network, assetId, balance, targetWalletId)
     BalanceService.updateLastBalanceUpdate(network, accountIndex, targetWalletId)
@@ -275,19 +283,15 @@ export function useBalance(
   const workletStore = getWorkletStore()
   const walletStore = getWalletStore()
 
-  // Check if wallet is initialized
   const isInitialized = workletStore.getState().isInitialized
+  const walletId = walletStore.getState().activeWalletId
   
-  // Get walletId from options or activeWalletId
-  const activeWalletId = walletStore.getState().activeWalletId
-  const walletId = options?.walletId || activeWalletId || '__temporary__'
+  if (!walletId) {
+    throw new Error('WalletId cannot be null')
+  }
 
-  // Get properties from asset
   const assetId = asset.getId()
 
-  // Get initial data from Zustand (single source of truth)
-  // This ensures balances are available immediately on app restart before refetch
-  // We use assetId as the key in the store now
   const initialBalance = BalanceService.getBalance(accountIndex, network, assetId, walletId)
   const initialData: BalanceFetchResult | undefined = initialBalance !== null
     ? {
@@ -306,7 +310,6 @@ export function useBalance(
     refetchInterval: options?.refetchInterval,
     staleTime: options?.staleTime ?? DEFAULT_QUERY_STALE_TIME_MS,
     gcTime: DEFAULT_QUERY_GC_TIME_MS,
-    // Use Zustand as initial data source (single source of truth)
     initialData,
   })
 }
@@ -336,13 +339,16 @@ export function useBalancesForWallet(
   assetConfigs: IAsset[],
   options?: BalanceQueryOptions
 ) {
+  const walletStore = getWalletStore()
   const workletStore = getWorkletStore()
   const isInitialized = workletStore.getState().isInitialized
 
-  // Resolve walletId from options or store
-  const walletId = resolveWalletId(options?.walletId)
+  const walletId = walletStore.getState().activeWalletId
+  
+  if (!walletId) {
+    throw new Error('WalletId cannot be null')
+  }
 
-  // Get initial data from Zustand (single source of truth)
   const initialData: BalanceFetchResult[] | undefined = (() => {
     const initialBalances: BalanceFetchResult[] = []
     let hasAnyInitialData = false
@@ -360,7 +366,6 @@ export function useBalancesForWallet(
           balance,
         })
       } else {
-        // Include placeholder for missing balances
         initialBalances.push({
           success: false,
           network: asset.getNetwork(),
@@ -382,7 +387,6 @@ export function useBalancesForWallet(
     refetchInterval: options?.refetchInterval,
     staleTime: options?.staleTime ?? DEFAULT_QUERY_STALE_TIME_MS,
     gcTime: DEFAULT_QUERY_GC_TIME_MS,
-    // Use Zustand as initial data source
     initialData,
   })
 }
@@ -509,13 +513,9 @@ export function useRefreshBalance() {
 
   return useMutation({
     mutationFn: async (params: RefreshBalanceParams) => {
-      // Resolve walletId from params or store
       const walletId = resolveWalletId(params.walletId)
 
-      // Invalidate queries based on type
       await invalidateBalanceQueries(queryClient, params, walletId)
-
-      // Refetch the invalidated queries
       await queryClient.refetchQueries()
     },
   })
