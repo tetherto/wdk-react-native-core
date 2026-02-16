@@ -6,13 +6,13 @@
  * like getBalance, getTokenBalance, signMessage, signTransaction, etc.
  */
 
-import { validateAccountIndex, validateNetworkName } from 'src/utils/validation'
+import { validateAccountIndex, validateNetworkName } from '../utils/validation'
 import { DefaultAccountMethods } from '../types/accountMethods'
 import { handleServiceError } from '../utils/errorHandling'
-import { requireInitialized } from 'src/utils/storeHelpers'
-import { safeStringify } from 'src/utils/jsonUtils'
-import { workletResponseSchema } from 'src/utils/schemas'
-import { convertBigIntToString } from 'src/utils/balanceUtils'
+import { requireInitialized } from '../utils/storeHelpers'
+import { safeStringify } from '../utils/jsonUtils'
+import { workletResponseSchema } from '../utils/schemas'
+import { convertBigIntToString } from '../utils/balanceUtils'
 
 /**
  * Account Service
