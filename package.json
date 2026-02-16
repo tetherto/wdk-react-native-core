@@ -10,7 +10,8 @@
     "dist",
     "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "tsconfig.json"
   ],
   "exports": {
     ".": {
@@ -28,14 +29,14 @@
   },
   "homepage": "https://github.com/tetherto/wdk-react-native-core#readme",
   "scripts": {
-    "build": "tsc || true",
+    "build": "tsc",
     "build:strict": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prepack": "npm run build",
-    "postinstall": "npm run build"
+    "prepare": "npm run build"
   },
   "keywords": [
     "wallet",
@@ -52,7 +53,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage",
+    "@tetherto/wdk-react-native-secure-storage": "github:nampc1/wdk-react-native-secure-storage-fork#dev",
     "@tetherto/pear-wrk-wdk": "github:tetherto/pear-wrk-wdk#v2",
     "@tanstack/react-query": "^5.0.0",
     "expo-crypto": "^15.0.8",

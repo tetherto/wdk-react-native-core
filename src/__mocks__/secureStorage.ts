@@ -82,6 +82,9 @@ export const mockSecureStorage = {
   _clearStorage: () => {
     Object.keys(storage).forEach(key => delete storage[key])
   },
+  isDeviceSecurityEnabled: jest.fn(() => {
+    return Promise.resolve(true)
+  })
 }
 
 export default mockSecureStorage

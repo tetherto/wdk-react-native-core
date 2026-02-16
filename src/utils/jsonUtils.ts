@@ -49,9 +49,19 @@ export function validateJSONStructure(value: unknown): boolean {
 }
 
 /**
- * Safe JSON stringify with validation
- * Validates structure before stringifying to prevent security issues
- * 
+ * Custom replacer function for JSON.stringify that converts BigInt to string.
+ */
+const replacer = (_key: string, value: unknown) => {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+  return value
+}
+
+/**
+ * Safe JSON stringify with validation and BigInt support.
+ * Validates structure before stringifying and correctly handles BigInts.
+ *
  * @param value - Value to stringify
  * @param space - Optional spacing for pretty printing
  * @returns JSON string
@@ -60,11 +70,13 @@ export function validateJSONStructure(value: unknown): boolean {
 export function safeStringify(value: unknown, space?: number): string {
   // Validate structure first
   if (!validateJSONStructure(value)) {
-    throw new Error('Value contains circular references or unsafe prototype properties')
+    throw new Error(
+      'Value contains circular references or unsafe prototype properties',
+    )
   }
-  
+
   try {
-    return JSON.stringify(value, null, space)
+    return JSON.stringify(value, replacer, space)
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Failed to stringify value: ${error.message}`)

@@ -41,24 +41,6 @@ export interface WdkConfigs<TNetwork = Record<string, unknown>, TProtocol = Reco
 }
 
 /**
- * Wallet
- * 
- * Represents a wallet instance with metadata.
- */
-export interface Wallet {
-  /** Account index (0-based) */
-  accountIndex: number
-  /** Unique wallet identifier */
-  identifier: string
-  /** Wallet display name */
-  name: string
-  /** Timestamp when wallet was created */
-  createdAt: number
-  /** Timestamp when wallet was last updated */
-  updatedAt: number
-}
-
-/**
  * Wallet Addresses
  * 
  * Maps network -> accountIndex -> address

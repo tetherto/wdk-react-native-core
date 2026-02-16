@@ -2,7 +2,6 @@ import { produce } from 'immer'
 import { useMemo, useCallback } from 'react'
 import { WalletSetupService } from '../services/walletSetupService'
 import { WorkletLifecycleService } from '../services/workletLifecycleService'
-import { AddressService } from '../services/addressService'
 import {
   getWalletStore,
   updateWalletLoadingState,
