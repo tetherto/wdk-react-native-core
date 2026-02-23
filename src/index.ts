@@ -27,6 +27,13 @@ export type { UseAddressesReturn } from './hooks/useAddresses'
 export { useAccount } from './hooks/useAccount'
 export type { UseAccountParams, UseAccountReturn } from './hooks/useAccount'
 
+export { useFeePreload } from './hooks/useFeePreload'
+export type {
+  UseFeePreloadConfig,
+  UseFeePreloadParams,
+  UseFeePreloadReturn,
+} from './hooks/useFeePreload'
+
 export { useWalletManager } from './hooks/useWalletManagerV2'
 export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManagerV2'
 export {
