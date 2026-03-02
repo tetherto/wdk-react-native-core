@@ -29,7 +29,12 @@ export interface UseAddressesReturn {
   /** True if ANY address is currently being loaded. */
   isLoading: boolean
   /**
-   * Triggers a fetch for addresses for the given account indices.
+   * Manually triggers a fetch for addresses for the given account indices.
+   *
+   * Note: In many cases, address loading is handled automatically by hooks
+   * like `useAccount`. This function is a utility for cases where you need
+   * explicit control to pre-load multiple addresses.
+   *
    * If the `networks` array is provided, it fetches only for those networks.
    * Otherwise, it fetches for all configured networks.
    */
