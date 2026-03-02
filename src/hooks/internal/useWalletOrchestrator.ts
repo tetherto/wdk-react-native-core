@@ -15,7 +15,7 @@ import {
   shouldResetToNotLoaded,
 } from '../../utils/walletStateHelpers'
 import { log, logError } from '../../utils/logger'
-import { WdkAppState } from 'src/provider/WdkAppProviderV2'
+import type { WdkAppState } from '../../provider/WdkAppProviderV2'
 
 // Custom deep equality for walletLoadingState comparison
 const deepEqualityFn = (a: any, b: any) => {
