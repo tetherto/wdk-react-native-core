@@ -56,8 +56,8 @@ export interface UseAccountReturn<T extends object> {
   
   /**
    * Query fee for a transaction.
-   * All params are optional — missing values are passed as-is to the WDK,
-   * which handles any network-specific defaults internally.
+   * All params are optional — if not provided, falls back to the account's own
+   * address for `to` and '1' (smallest unit) for `amount`.
    */
   estimateFee: (params?: Partial<TransactionParams>) => Promise<Omit<TransactionResult, 'hash'>>
 
@@ -229,12 +229,15 @@ export function useAccount<T extends object = {}>(
   
   const estimateFee = useCallback(
     async (params?: Partial<TransactionParams>): Promise<Omit<TransactionResult, 'hash'>> => {
+      const to = params?.to ?? address ?? ''
+      const amount = params?.amount ?? '1'
+
       if (!params?.asset || params.asset.isNative()) {
         return await AccountService.callAccountMethod<'quoteSendTransaction'>(
           accountParams.network,
           accountParams.accountIndex,
           'quoteSendTransaction',
-          { to: params?.to, value: params?.amount },
+          { to, value: amount },
         )
       }
 
@@ -248,10 +251,10 @@ export function useAccount<T extends object = {}>(
         accountParams.network,
         accountParams.accountIndex,
         'quoteTransfer',
-        { recipient: params?.to, amount: params?.amount, token: tokenAddress },
+        { recipient: to, amount, token: tokenAddress },
       )
     },
-    [accountParams.network, accountParams.accountIndex],
+    [accountParams.network, accountParams.accountIndex, address],
   )
 
   const extension = useCallback((): T => {
