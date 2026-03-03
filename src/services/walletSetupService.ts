@@ -192,10 +192,11 @@ export class WalletSetupService {
     const workletStore = getWorkletStore()
     const requireBiometrics = workletStore.getState().requireBiometrics ?? true
 
-    // Require biometric authentication
-    const authenticated = await secureStorage.authenticate()
-    if (!authenticated) {
-      throw new Error('Biometric authentication required to create wallet')
+    if (requireBiometrics) {
+      const authenticated = await secureStorage.authenticate()
+      if (!authenticated) {
+        throw new Error('Biometric authentication required to create wallet')
+      }
     }
 
     // Ensure worklet is started (WdkAppProvider must be mounted)
