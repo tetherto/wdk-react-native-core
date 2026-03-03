@@ -21,6 +21,7 @@ export type WdkAppState =
   | { status: 'NO_WALLET' }
   | { status: 'LOCKED'; walletId: string }
   | { status: 'READY'; walletId: string }
+  | { status: 'ACCOUNT_LOADED'; walletId: string }
   | { status: 'ERROR'; error: Error };
 
 export interface WdkAppContextValue {
