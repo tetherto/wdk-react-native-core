@@ -290,31 +290,42 @@ export function useAccount<T extends object = {}>(
   )
   
   const estimateFee = useCallback(
-    async (params?: Partial<TransactionParams>): Promise<Omit<TransactionResult, 'hash'>> => {
-      const to = params?.to ?? address ?? ''
-      const amount = params?.amount ?? '1'
-
-      if (!params?.asset || params.asset.isNative()) {
-        return await AccountService.callAccountMethod<'quoteSendTransaction'>(
+    async (params: TransactionParams): Promise<Omit<TransactionResult, 'hash'>> => {
+      if (params.asset.isNative()) {
+        const feeResponse = await AccountService.callAccountMethod<'quoteSendTransaction'>(
           accountParams.network,
           accountParams.accountIndex,
           'quoteSendTransaction',
-          { to, value: amount },
+          { to: params.to, value: params.amount },
         )
+        
+        return {
+          success: true,
+          ...feeResponse
+        }
       }
 
       const tokenAddress = params.asset.getContractAddress()
 
       if (!tokenAddress) {
-        throw new Error('Token address cannot be null')
+        return {
+          success: false,
+          error: 'Token address cannot be null',
+          fee: ''
+        }
       }
 
-      return await AccountService.callAccountMethod<'quoteTransfer'>(
+      const feeResponse =  await AccountService.callAccountMethod<'quoteTransfer'>(
         accountParams.network,
         accountParams.accountIndex,
         'quoteTransfer',
-        { recipient: to, amount, token: tokenAddress },
+        { recipient: params.to, amount: params.amount, token: tokenAddress },
       )
+      
+      return {
+        success: true,
+        ...feeResponse
+      }
     },
     [accountParams.network, accountParams.accountIndex, address],
   )
