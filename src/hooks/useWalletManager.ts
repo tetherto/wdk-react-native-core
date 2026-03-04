@@ -57,6 +57,21 @@ export interface UseWalletManagerResult {
   /** Clear the wallet cache. */
   clearCache: () => void
 
+  /**
+   * Create a temporary wallet for previewing addresses
+   * This creates a wallet in memory only (no biometrics, not saved to secure storage)
+   * Useful for previewing addresses before committing to creating a real wallet
+   *
+   * @param mnemonic - Optional mnemonic to restore from. If not provided, generates a new random wallet.
+   */
+  createTemporaryWallet: (mnemonic?: string) => Promise<void>
+
+  /**
+   * Clear the temporary wallet session.
+   * Resets the WDK state and clears any temporary data from memory.
+   */
+  clearTemporaryWallet: () => void
+
   /** Get mnemonic phrase from wallet (requires biometric auth). */
   getMnemonic: (walletId: string) => Promise<string | null>
 
@@ -496,6 +511,61 @@ export function useWalletManager(): UseWalletManagerResult {
   )
 
   /**
+   * Create a temporary wallet for previewing addresses
+   * This creates a wallet in memory only (no biometrics, not saved to secure storage)
+   * Useful for previewing addresses before committing to creating a real wallet
+   *
+   * @param mnemonic - Optional mnemonic to restore from. If not provided, generates a new random wallet.
+   */
+  const createTemporaryWallet = useCallback(
+    async (mnemonic?: string) => {
+      return withOperationMutex('createTemporaryWallet', async () => {
+        try {
+          const effectiveWdkConfigs = getWdkConfigs()
+
+          // Ensure worklet is started (auto-start if needed)
+          await WorkletLifecycleService.ensureWorkletStarted(
+            effectiveWdkConfigs,
+            { autoStart: true },
+          )
+
+          let encryptionKey: string
+          let encryptedSeed: string
+
+          if (mnemonic) {
+            const result =
+              await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(
+                mnemonic,
+              )
+            encryptionKey = result.encryptionKey
+            encryptedSeed = result.encryptedSeedBuffer
+          } else {
+            // Generate entropy and encrypt (no biometrics, no keychain save)
+            const result =
+              await WorkletLifecycleService.generateEntropyAndEncrypt()
+            encryptionKey = result.encryptionKey
+            encryptedSeed = result.encryptedSeedBuffer
+          }
+
+          // Initialize WDK with temporary credentials
+          await WorkletLifecycleService.initializeWDK({
+            encryptionKey,
+            encryptedSeed,
+          })
+
+          // Don't update activeWalletId for temporary wallet (it's not a real wallet)
+          // Temporary wallets don't affect walletLoadingState
+          log('[useWalletManager] Temporary wallet created successfully')
+        } catch (err) {
+          logError('[useWalletManager] Failed to create temporary wallet:', err)
+          throw err
+        }
+      })
+    },
+    [getWdkConfigs],
+  )
+
+  /**
    * Create a new wallet and add it to the wallet list
    */
   const createWallet = useCallback(
@@ -560,6 +630,12 @@ export function useWalletManager(): UseWalletManagerResult {
     log('[useWalletManager] Cleared wallet cache')
   }, [walletStore])
 
+  const clearTemporaryWallet = useCallback(() => {
+    WorkletLifecycleService.reset()
+    clearCache()
+    log('[useWalletManager] Cleared temporary wallet session')
+  }, [clearCache])
+  
   return useMemo(
     () => ({
       activeWalletId,
@@ -574,6 +650,8 @@ export function useWalletManager(): UseWalletManagerResult {
 
       // Wallet Management
       createWallet,
+      createTemporaryWallet,
+      clearTemporaryWallet,
       restoreWallet,
       deleteWallet,
       generateMnemonic,
@@ -591,6 +669,8 @@ export function useWalletManager(): UseWalletManagerResult {
       setActiveWalletId,
       clearCache,
       createWallet,
+      createTemporaryWallet,
+      clearTemporaryWallet,
       restoreWallet,
       deleteWallet,
       generateMnemonic,
