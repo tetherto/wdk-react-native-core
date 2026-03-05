@@ -12,7 +12,7 @@ import { getWorkletStore } from '../store/workletStore'
 import { WdkConfigs } from '../types'
 import { log, logError } from '../utils/logger'
 import { withOperationMutex } from '../utils/operationMutex'
-import { useShallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_WALLET_IDENTIFIER } from '../utils/constants'
 
 export type { WalletInfo }

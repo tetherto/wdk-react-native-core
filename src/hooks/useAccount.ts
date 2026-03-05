@@ -6,7 +6,7 @@ import { BalanceFetchResult } from '../types'
 import { convertBalanceToString } from '../utils/balanceUtils'
 import { useAddressLoader } from './useAddressLoader'
 import { getWorkletStore } from 'src/store/workletStore'
-import { useShallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 
 /**
  * Returns a promise that resolves when the wallet worklet is initialized.
