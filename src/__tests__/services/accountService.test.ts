@@ -54,7 +54,7 @@ describe('AccountService', () => {
         methodName: 'getBalance',
         network: 'ethereum',
         accountIndex: 0,
-        args: null,
+        args: '[]',
       })
     })
 
@@ -77,15 +77,13 @@ describe('AccountService', () => {
         methodName: 'signMessage',
         network: 'ethereum',
         accountIndex: 0,
-        args: JSON.stringify(mockArgs),
+        args: JSON.stringify([mockArgs]),
       })
     })
 
     it('should handle array arguments for multi-param methods', async () => {
-      // Test array args for methods like transfer(options, config)
       const mockArgs = [
-        { to: '0x123', amount: '1000' },  // options (1st arg)
-        { paymasterToken: '0xabc', transferMaxFee: '100' }  // config (2nd arg)
+        { recipient: '0x123', amount: '1000', token: '0x123' }
       ]
       const mockResult = { txHash: '0x456' }
       mockHRPC.callMethod.mockResolvedValue({
@@ -96,7 +94,11 @@ describe('AccountService', () => {
         'ethereum',
         0,
         'transfer',
-        mockArgs
+        {
+          recipient: '0x123',
+          amount: '1000',
+          token: '0x123'
+        }
       )
 
       expect(result).toEqual(mockResult)
@@ -239,7 +241,7 @@ describe('AccountService', () => {
         methodName: 'signMessage',
         network: 'ethereum',
         accountIndex: 0,
-        args: JSON.stringify(mockArgs),
+        args: JSON.stringify([mockArgs]),
       })
     })
 
@@ -258,7 +260,7 @@ describe('AccountService', () => {
       })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('Invalid balance format')
     })
 
@@ -270,8 +272,7 @@ describe('AccountService', () => {
       const result = await AccountService.callAccountMethod(
         'ethereum',
         0,
-        'getBalance',
-        null
+        'getBalance'
       )
 
       expect(result).toBe('1000000000000000000')
@@ -279,13 +280,13 @@ describe('AccountService', () => {
 
     it('should validate network name', async () => {
       await expect(
-        AccountService.callAccountMethod('', 0, 'getBalance', null)
+        AccountService.callAccountMethod('', 0, 'getBalance')
       ).rejects.toThrow(/network.*non-empty|Network name must contain only|String must contain at least 1 character/)
     })
 
     it('should validate account index', async () => {
       await expect(
-        AccountService.callAccountMethod('ethereum', -1, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', -1, 'getBalance')
       ).rejects.toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
     })
 
@@ -296,7 +297,7 @@ describe('AccountService', () => {
       }))
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('WDK not initialized')
     })
 
@@ -307,7 +308,7 @@ describe('AccountService', () => {
       }))
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('WDK not initialized')
     })
 
@@ -318,7 +319,7 @@ describe('AccountService', () => {
       })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow(/Method getBalance returned no result|Expected string/)
     })
 
@@ -328,7 +329,7 @@ describe('AccountService', () => {
       })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('Parsed result is null or undefined')
     })
 
@@ -338,7 +339,7 @@ describe('AccountService', () => {
       })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('Parsed result is null or undefined')
     })
 
@@ -348,7 +349,7 @@ describe('AccountService', () => {
       })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow('Failed to parse result from getBalance')
     })
 
@@ -356,7 +357,7 @@ describe('AccountService', () => {
       mockHRPC.callMethod.mockRejectedValue(new Error('Worklet error'))
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance', null)
+        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
       ).rejects.toThrow()
     })
   })

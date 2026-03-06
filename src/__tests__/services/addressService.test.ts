@@ -68,7 +68,6 @@ describe('AddressService', () => {
         methodName: 'getAddress',
         network: 'ethereum',
         accountIndex: 0,
-        args: null,
       })
 
       // Verify address was cached

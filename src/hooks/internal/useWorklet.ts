@@ -1,10 +1,10 @@
 import { useShallow } from 'zustand/react/shallow'
 import type { Worklet } from 'react-native-bare-kit'
 
-import { WorkletLifecycleService } from '../services/workletLifecycleService'
-import { getWorkletStore } from '../store/workletStore'
-import type { WdkConfigs, BundleConfig, HRPC, WorkletStartResponse } from '../types'
-import type { WorkletStore } from '../store/workletStore'
+import { WorkletLifecycleService } from '../../services/workletLifecycleService'
+import { getWorkletStore } from '../../store/workletStore'
+import type { WdkConfigs, BundleConfig, HRPC, WorkletStartResponse } from '../../types'
+import type { WorkletStore } from '../../store/workletStore'
 
 /**
  * Hook to interact with the worklet

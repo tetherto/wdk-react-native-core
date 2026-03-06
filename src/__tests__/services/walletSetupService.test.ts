@@ -87,7 +87,8 @@ describe('WalletSetupService', () => {
       expect(mockSecureStorage.authenticate).toHaveBeenCalled()
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'test-encryption-key',
-        undefined
+        undefined,
+        { requireBiometrics: true }
       )
       expect(mockSecureStorage.setEncryptedSeed).toHaveBeenCalledWith(
         'test-encrypted-seed',
@@ -109,7 +110,8 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptedSeed')
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'test-encryption-key',
-        identifier
+        identifier,
+        { requireBiometrics: true }
       )
       expect(mockSecureStorage.setEncryptedSeed).toHaveBeenCalledWith(
         'test-encrypted-seed',
@@ -142,7 +144,7 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptionKey', 'test-key')
       expect(result).toHaveProperty('encryptedSeed', 'test-seed')
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(undefined)
-      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(undefined)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(undefined, { requireBiometrics: true })
     })
 
     it('should load existing wallet with identifier', async () => {
@@ -156,7 +158,7 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptionKey', 'test-key')
       expect(result).toHaveProperty('encryptedSeed', 'test-seed')
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(identifier)
-      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier, { requireBiometrics: true })
     })
 
     it('should throw error if encryption key not found', async () => {
@@ -216,7 +218,8 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptedEntropy')
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'test-encryption-key',
-        undefined
+        undefined,
+        { requireBiometrics: true }
       )
       expect(WorkletLifecycleService.initializeWDK).toHaveBeenCalled()
     })
@@ -231,7 +234,8 @@ describe('WalletSetupService', () => {
       expect(result).toHaveProperty('encryptionKey')
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'test-encryption-key',
-        identifier
+        identifier,
+        { requireBiometrics: true }
       )
       expect(mockSecureStorage.setEncryptedSeed).toHaveBeenCalledWith(
         'test-encrypted-seed-from-mnemonic',
@@ -304,7 +308,8 @@ describe('WalletSetupService', () => {
 
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         expect.any(String),
-        identifier
+        identifier,
+        { requireBiometrics: true }
       )
     })
 
@@ -327,7 +332,7 @@ describe('WalletSetupService', () => {
       )
 
       expect(mockSecureStorage.getEncryptedSeed).toHaveBeenCalledWith(identifier)
-      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier)
+      expect(mockSecureStorage.getEncryptionKey).toHaveBeenCalledWith(identifier, { requireBiometrics: true })
     })
   })
 
@@ -366,11 +371,13 @@ describe('WalletSetupService', () => {
       // Verify wallets are stored separately
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'encryption-key-1',
-        identifier1
+        identifier1,
+        { requireBiometrics: true }
       )
       expect(mockSecureStorage.setEncryptionKey).toHaveBeenCalledWith(
         'encryption-key-2',
-        identifier2
+        identifier2,
+        { requireBiometrics: true }
       )
 
       // Verify we can load each wallet independently

@@ -47,6 +47,13 @@ export const MAIN_WALLET_NAME = 'Main Wallet'
 export const WALLET_NAME_PREFIX = 'Wallet '
 
 /**
+ * Default wallet identifier
+ * 
+ * Used for single-wallet mode when no specific walletId is provided.
+ */
+export const DEFAULT_WALLET_IDENTIFIER = 'default'
+
+/**
  * Token key for native tokens in balance storage
  */
 export const NATIVE_TOKEN_KEY = 'native'
@@ -94,4 +101,3 @@ export const QUERY_KEY_TAGS = {
   NETWORK: 'network',
   TOKEN: 'token',
 } as const
-

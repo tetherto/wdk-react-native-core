@@ -99,6 +99,7 @@ export interface WorkletState {
   error: string | null
   encryptedSeed: string | null
   encryptionKey: string | null
+  requireBiometrics?: boolean
   // seedPhrase is never stored - we only use encrypted approach
   // encryptedEntropy is stored in secure storage but not in runtime state
   // It's only needed when retrieving mnemonic, so it's loaded from secure storage on demand

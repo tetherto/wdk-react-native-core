@@ -45,12 +45,10 @@
  * - All operations are handled by focused services (AddressService, BalanceService), not the store itself
  */
 
-// External packages
 import { create } from 'zustand'
 import { persist, createJSONStorage, devtools } from 'zustand/middleware'
 import { produce } from 'immer'
 
-// Local imports
 import type {
   WalletAddressesByWallet,
   WalletBalancesByWallet,
@@ -75,8 +73,6 @@ export interface WalletInfo {
   identifier: string
   /** Whether wallet exists in secure storage */
   exists: boolean
-  /** Whether this wallet is currently active/initialized */
-  isActive: boolean
 }
 
 /**
@@ -109,6 +105,7 @@ export interface WalletState {
   // Operation mutex - prevents concurrent wallet operations
   isOperationInProgress: boolean
   currentOperation: string | null // Description of current operation
+  tempWalletId: string | null
 }
 
 export type WalletStore = WalletState
@@ -127,6 +124,7 @@ const initialState: WalletState = {
   walletLoadingState: { type: 'not_loaded' },
   isOperationInProgress: false,
   currentOperation: null,
+  tempWalletId: null
 }
 
 const defaultStorageAdapter = createMMKVStorageAdapter()

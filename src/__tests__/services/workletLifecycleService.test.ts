@@ -7,6 +7,7 @@
 import { WorkletLifecycleService } from '../../services/workletLifecycleService'
 import { getWorkletStore } from '../../store/workletStore'
 import type { WdkConfigs, BundleConfig } from '../../types'
+import HRPC from '@tetherto/pear-wrk-wdk/hrpc'
 
 // Mock dependencies
 const mockWorkletInstance = {
@@ -29,8 +30,11 @@ const mockHRPCInstance = {
   ipc: mockWorkletInstance.IPC,
 }
 
-// Create mock HRPC class for bundleConfig - returns the shared mockHRPCInstance
-const MockHRPC = jest.fn().mockImplementation(() => mockHRPCInstance)
+jest.mock('@tetherto/pear-wrk-wdk/hrpc', () => {
+  return jest.fn().mockImplementation(() => {
+    return mockHRPCInstance
+  })
+})
 
 // Mock bundleConfig that will be passed to startWorklet
 const mockBundleConfig: BundleConfig = {
@@ -169,9 +173,9 @@ describe('WorkletLifecycleService', () => {
     mockWorkletStart.mockClear()
     mockWorkletStart.mockResolvedValue({ status: 'success' })
 
-    // Reset MockHRPC constructor mock
-    MockHRPC.mockClear()
-    MockHRPC.mockImplementation(() => mockHRPCInstance)
+    // Reset HRPC constructor mock
+    ;(HRPC as jest.Mock).mockClear()
+    ;(HRPC as jest.Mock).mockImplementation(() => mockHRPCInstance)
 
     // Setup mock store - get the shared instance
     mockStore = getWorkletStore() as any
@@ -203,10 +207,10 @@ describe('WorkletLifecycleService', () => {
       expect(Worklet).toHaveBeenCalled()
 
       // Verify worklet.start was called with bundle
-      expect(mockWorkletInstance.start).toHaveBeenCalledWith('/wdk-worklet.bundle', 'mock-bundle')
+      expect(mockWorkletInstance.start).toHaveBeenCalledWith('wdk-worklet.bundle', 'mock-bundle')
 
       // Verify HRPC was created from bundleConfig
-      expect(MockHRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
+      expect(HRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
 
       // Verify workletStart was called with serialized config
       expect(mockHRPCInstance.workletStart).toHaveBeenCalledWith({
@@ -239,7 +243,7 @@ describe('WorkletLifecycleService', () => {
       expect(calls.length).toBeGreaterThan(0)
       const workletStartCall = calls[0]
       const configString = (workletStartCall as any)[0].config
-      const parsedConfig = JSON.parse(configString)
+      const parsedConfig = JSON.parse(configString).networks
 
       // Verify all networks are present
       expect(parsedConfig).toHaveProperty('sepolia')
@@ -250,29 +254,29 @@ describe('WorkletLifecycleService', () => {
       expect(parsedConfig).toHaveProperty('spark')
 
       // Verify network properties
-      expect(parsedConfig.ethereum).toMatchObject({
+      expect(parsedConfig.ethereum.blockchain).toBe('ethereum')
+      expect(parsedConfig.ethereum.config).toMatchObject({
         chainId: 1,
-        blockchain: 'ethereum',
         provider: 'https://wallet-ap7ha02ezs.rumble.com/eth',
       })
 
-      expect(parsedConfig.polygon).toMatchObject({
+      expect(parsedConfig.polygon.blockchain).toBe('polygon')
+      expect(parsedConfig.polygon.config).toMatchObject({
         chainId: 137,
-        blockchain: 'polygon',
         provider: 'https://wallet-ap7ha02ezs.rumble.com/pol',
       })
 
-      expect(parsedConfig.arbitrum).toMatchObject({
+      expect(parsedConfig.arbitrum.blockchain).toBe('arbitrum')
+      expect(parsedConfig.arbitrum.config).toMatchObject({
         chainId: 42161,
-        blockchain: 'arbitrum',
         provider: 'https://wallet-ap7ha02ezs.rumble.com/arb',
       })
 
       // Verify extended properties are preserved
-      expect(parsedConfig.ethereum).toHaveProperty('safeModulesVersion', '0.3.0')
-      expect(parsedConfig.ethereum).toHaveProperty('paymasterToken')
-      expect(parsedConfig.ethereum.paymasterToken).toHaveProperty('address')
-      expect(parsedConfig.spark).toHaveProperty('network', 'MAINNET')
+      expect(parsedConfig.ethereum.config).toHaveProperty('safeModulesVersion', '0.3.0')
+      expect(parsedConfig.ethereum.config).toHaveProperty('paymasterToken')
+      expect(parsedConfig.ethereum.config.paymasterToken).toHaveProperty('address')
+      expect(parsedConfig.spark.config).toHaveProperty('network', 'MAINNET')
     })
 
     it('should handle all network types in the configuration', async () => {
@@ -282,17 +286,18 @@ describe('WorkletLifecycleService', () => {
       expect(calls.length).toBeGreaterThan(0)
       const workletStartCall = calls[0]
       const configString = (workletStartCall as any)[0].config
-      const parsedConfig = JSON.parse(configString)
+      const parsedConfig = JSON.parse(configString).networks
 
       // Verify each network has required fields
       const networks = ['sepolia', 'ethereum', 'polygon', 'arbitrum', 'plasma', 'spark']
       
       for (const network of networks) {
         expect(parsedConfig).toHaveProperty(network)
-        expect(parsedConfig[network]).toHaveProperty('chainId')
         expect(parsedConfig[network]).toHaveProperty('blockchain')
-        expect(typeof parsedConfig[network].chainId).toBe('number')
         expect(typeof parsedConfig[network].blockchain).toBe('string')
+        expect(parsedConfig[network]).toHaveProperty('config')
+        expect(parsedConfig[network].config).toHaveProperty('chainId')
+        expect(typeof parsedConfig[network].config.chainId).toBe('number')
       }
     })
 
@@ -303,10 +308,10 @@ describe('WorkletLifecycleService', () => {
       expect(calls.length).toBeGreaterThan(0)
       const workletStartCall = calls[0]
       const configString = (workletStartCall as any)[0].config
-      const parsedConfig = JSON.parse(configString)
+      const parsedConfig = JSON.parse(configString).networks
 
       // Verify optional fields are preserved for networks that have them
-      const ethereumConfig = parsedConfig.ethereum
+      const ethereumConfig = parsedConfig.ethereum.config
       expect(ethereumConfig).toHaveProperty('bundlerUrl')
       expect(ethereumConfig).toHaveProperty('paymasterUrl')
       expect(ethereumConfig).toHaveProperty('paymasterAddress')
@@ -316,7 +321,7 @@ describe('WorkletLifecycleService', () => {
       expect(ethereumConfig).toHaveProperty('paymasterToken')
 
       // Verify spark has its network field
-      expect(parsedConfig.spark).toHaveProperty('network', 'MAINNET')
+      expect(parsedConfig.spark.config).toHaveProperty('network', 'MAINNET')
     })
 
     it('should not start worklet if already started', async () => {
@@ -476,11 +481,11 @@ describe('WorkletLifecycleService', () => {
       const workletStartCall = calls[0]
       expect(workletStartCall).toBeDefined()
       const configString = (workletStartCall as any)[0].config
-      const parsedConfig = JSON.parse(configString)
+      const parsedConfig = JSON.parse(configString).networks
 
-      expect(parsedConfig.ethereum).toMatchObject({
+      expect(parsedConfig.ethereum.blockchain).toBe('ethereum')
+      expect(parsedConfig.ethereum.config).toMatchObject({
         chainId: 1,
-        blockchain: 'ethereum',
       })
     })
 
@@ -510,11 +515,11 @@ describe('WorkletLifecycleService', () => {
       const workletStartCall = calls[0]
       expect(workletStartCall).toBeDefined()
       const configString = (workletStartCall as any)[0].config
-      const parsedConfig = JSON.parse(configString)
+      const parsedConfig = JSON.parse(configString).networks
 
-      expect(parsedConfig.testnet).toMatchObject({
+      expect(parsedConfig.testnet.blockchain).toBe('testnet')
+      expect(parsedConfig.testnet.config).toMatchObject({
         chainId: 12345,
-        blockchain: 'testnet',
         provider: 'https://testnet.example.com',
         bundlerUrl: 'https://bundler.example.com',
         paymasterUrl: 'https://paymaster.example.com',

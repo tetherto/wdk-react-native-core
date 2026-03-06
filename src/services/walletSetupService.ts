@@ -8,7 +8,7 @@ import {
   type CachedCredentials
 } from '../store/workletStore'
 import { WorkletLifecycleService } from './workletLifecycleService'
-import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
+import { DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_WALLET_IDENTIFIER } from '../utils/constants'
 import { log, logError } from '../utils/logger'
 
 /**
@@ -57,7 +57,7 @@ export class WalletSetupService {
    * Get cache key for walletId
    */
   private static getCacheKey(walletId?: string): string {
-    return walletId || 'default'
+    return walletId || DEFAULT_WALLET_IDENTIFIER
   }
 
   /**
@@ -171,6 +171,11 @@ export class WalletSetupService {
       }
     }
   }
+  
+  static setRequireBiometrics(requireBiometrics: boolean) {
+    const store = getWorkletStore()
+    store.setState({ requireBiometrics })
+  }
 
   /**
    * Create a new wallet
@@ -184,11 +189,14 @@ export class WalletSetupService {
     encryptedSeed: string
   }> {
     const secureStorage = this.getSecureStorage()
+    const workletStore = getWorkletStore()
+    const requireBiometrics = workletStore.getState().requireBiometrics ?? true
 
-    // Require biometric authentication
-    const authenticated = await secureStorage.authenticate()
-    if (!authenticated) {
-      throw new Error('Biometric authentication required to create wallet')
+    if (requireBiometrics) {
+      const authenticated = await secureStorage.authenticate()
+      if (!authenticated) {
+        throw new Error('Biometric authentication required to create wallet')
+      }
     }
 
     // Ensure worklet is started (WdkAppProvider must be mounted)
@@ -212,9 +220,8 @@ export class WalletSetupService {
       throw error
     }
 
-    // Store credentials securely
     try {
-      await secureStorage.setEncryptionKey(result.encryptionKey, walletId)
+      await secureStorage.setEncryptionKey(result.encryptionKey, walletId, { requireBiometrics })
       await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, walletId)
       await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, walletId)
     } catch (error) {
@@ -252,6 +259,7 @@ export class WalletSetupService {
     const secureStorage = this.getSecureStorage()
     const cacheKey = this.getCacheKey(walletId)
     const cached = getCachedCredentials(cacheKey)
+    const requireBiometrics = getWorkletStore().getState().requireBiometrics ?? true
 
     // Return from cache if available
     if (cached?.encryptionKey && cached?.encryptedSeed) {
@@ -261,9 +269,8 @@ export class WalletSetupService {
       }
     }
 
-    // Get credentials from secureStorage (triggers biometrics for encryption key)
     const encryptedSeed = await secureStorage.getEncryptedSeed(walletId)
-    const encryptionKey = await secureStorage.getEncryptionKey(walletId)
+    const encryptionKey = await secureStorage.getEncryptionKey(walletId, { requireBiometrics })
 
     if (!encryptionKey) {
       throw new Error('Encryption key not found. Authentication may have failed or wallet does not exist.')
@@ -303,20 +310,19 @@ export class WalletSetupService {
     encryptedEntropy: string
   }> {
     const secureStorage = this.getSecureStorage()
+    const requireBiometrics = getWorkletStore().getState().requireBiometrics ?? true
 
-    // Require biometric authentication
-    const authenticated = await secureStorage.authenticate()
-    if (!authenticated) {
-      throw new Error('Biometric authentication required to import wallet')
+    if (requireBiometrics) {
+      const authenticated = await secureStorage.authenticate()
+      if (!authenticated) {
+        throw new Error('Biometric authentication required to import wallet')
+      }
     }
 
-    // Ensure worklet is started (WdkAppProvider must be mounted)
     WorkletLifecycleService.ensureWorkletStarted()
 
-    // Get seed and entropy from mnemonic
     const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(mnemonic)
 
-    // Validate encryption compatibility before saving to keychain
     log('🔍 Validating encryption compatibility before saving to keychain...')
     try {
       await this.validateEncryptionCompatibility(
@@ -326,14 +332,12 @@ export class WalletSetupService {
       )
     } catch (error) {
       log('❌ Encryption validation failed - aborting wallet import', error)
-      // Reset worklet state on validation failure
       WorkletLifecycleService.reset()
       throw error
     }
 
-    // Store credentials securely
     try {
-      await secureStorage.setEncryptionKey(result.encryptionKey, walletId)
+      await secureStorage.setEncryptionKey(result.encryptionKey, walletId, { requireBiometrics })
       await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, walletId)
       await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, walletId)
     } catch (error) {
@@ -352,7 +356,6 @@ export class WalletSetupService {
       result.encryptedEntropyBuffer
     )
 
-    // Initialize WDK
     await WorkletLifecycleService.initializeWDK({
       encryptionKey: result.encryptionKey,
       encryptedSeed: result.encryptedSeedBuffer,
@@ -416,10 +419,11 @@ export class WalletSetupService {
    */
   static async getEncryptionKey(walletId?: string): Promise<string | null> {
     const secureStorage = this.getSecureStorage()
+    const requireBiometrics = getWorkletStore().getState().requireBiometrics ?? true
     return this.getCredential(
       walletId,
       'encryptionKey',
-      (id) => secureStorage.getEncryptionKey(id),
+      (id) => secureStorage.getEncryptionKey(id, { requireBiometrics }),
       'encryptionKey'
     )
   }

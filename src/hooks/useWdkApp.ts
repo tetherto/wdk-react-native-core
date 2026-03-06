@@ -1,58 +1,36 @@
 /**
  * useWdkApp Hook
  *
- * Hook to access WdkAppProvider context for app-level initialization state.
+ * Hook to access the WDK's top-level initialization state.
+ * It provides a simple state object to determine if the WDK is ready, loading, locked, etc.
  * Must be used within WdkAppProvider.
  *
- * Purpose: Check if the app is ready and get initialization status.
- * - Use this to check: "Is the app ready? What's the initialization status?"
- * - For wallet operations (addresses, account methods): Use useWallet()
- * - For wallet lifecycle (create, load, import, delete): Use useWalletManager()
- *
  * @example
- * Simple usage (most common):
  * ```tsx
- * import { AppStatus } from '@tetherto/wdk-react-native-core'
+ * import { useWdkApp } from '@tetherto/wdk-react-native-core'
  * 
- * function MyComponent() {
- *   const { status, isReady, activeWalletId, error } = useWdkApp()
+ * function App() {
+ *   const { state, retry } = useWdkApp()
  *
- *   if (isReady) {
- *     return <AppContent walletId={activeWalletId} />
+ *   switch (state.status) {
+ *     case 'INITIALIZING':
+ *       return <LoadingScreen message="Initializing WDK..." />
+ *
+ *     case 'LOCKED':
+ *       return <UnlockScreen walletId={state.walletId} />
+ *
+ *     case 'NO_WALLET':
+ *       return <CreateOrRestoreWalletScreen />
+ *
+ *     case 'READY':
+ *       return <AppContent walletId={state.walletId} />
+ *
+ *     case 'ERROR':
+ *       return <ErrorScreen error={state.error} onRetry={retry} />
+ *
+ *     default:
+ *       return <LoadingScreen />
  *   }
- *
- *   if (status === AppStatus.ERROR) {
- *     return <ErrorScreen error={error} />
- *   }
- *
- *   return <LoadingScreen />
- * }
- * ```
- *
- * @example
- * Advanced usage (granular control):
- * ```tsx
- * function MyComponent() {
- *   const { workletState, walletState, activeWalletId } = useWdkApp()
- *
- *   // Show different UI based on specific states
- *   if (workletState.isReady && walletState.status === 'not_loaded') {
- *     return <SelectWalletScreen />
- *   }
- *
- *   if (workletState.error) {
- *     return <WorkletErrorScreen error={workletState.error} />
- *   }
- *
- *   if (walletState.error) {
- *     return <WalletErrorScreen error={walletState.error} />
- *   }
- *
- *   if (walletState.status === 'ready') {
- *     return <AppContent walletId={activeWalletId} />
- *   }
- *
- *   return <LoadingScreen />
  * }
  * ```
  */

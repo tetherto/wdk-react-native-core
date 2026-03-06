@@ -1,59 +1,63 @@
 /**
  * Tests for useWdkApp hook
- * 
- * Tests hook logic without DOM rendering
  */
-
-import type { WdkAppContextValue } from '../../provider/WdkAppProvider'
-import { AppStatus, InitializationStatus } from '../../utils/initializationState'
+import type { WdkAppContextValue, WdkAppState } from '../../provider/WdkAppProvider'
 
 describe('useWdkApp', () => {
-  it('should have correct error message when context is null', () => {
-    const errorMessage = 'useWdkApp must be used within WdkAppProvider'
-    expect(errorMessage).toBe('useWdkApp must be used within WdkAppProvider')
-  })
-
-  it('should validate context value structure', () => {
+  it('should have the correct structure for the INITIALIZING state', () => {
+    const mockState: WdkAppState = { status: 'INITIALIZING' }
     const mockContextValue: WdkAppContextValue = {
-      status: AppStatus.READY,
-      workletStatus: InitializationStatus.WORKLET_READY,
-      workletState: {
-        isReady: true,
-        isLoading: false,
-        error: null,
-      },
-      walletState: {
-        status: 'ready',
-        identifier: 'test-wallet',
-        error: null,
-      },
-      isInitializing: false,
-      isReady: true,
-      activeWalletId: 'test-wallet',
-      loadingWalletId: null,
-      walletExists: true,
-      error: null,
+      state: mockState,
       retry: jest.fn(),
     }
 
-    // Validate structure
-    expect(mockContextValue).toHaveProperty('status')
-    expect(mockContextValue).toHaveProperty('workletStatus')
-    expect(mockContextValue).toHaveProperty('workletState')
-    expect(mockContextValue).toHaveProperty('walletState')
-    expect(mockContextValue).toHaveProperty('isInitializing')
-    expect(mockContextValue).toHaveProperty('isReady')
-    expect(mockContextValue).toHaveProperty('activeWalletId')
-    expect(mockContextValue).toHaveProperty('loadingWalletId')
-    expect(mockContextValue).toHaveProperty('walletExists')
-    expect(mockContextValue).toHaveProperty('error')
+    expect(mockContextValue).toHaveProperty('state')
     expect(mockContextValue).toHaveProperty('retry')
+    expect(mockContextValue.state.status).toBe('INITIALIZING')
+  })
+
+  it('should have the correct structure for the LOCKED state', () => {
+    const mockState: WdkAppState = { status: 'LOCKED', walletId: 'test-wallet' }
+    const mockContextValue: WdkAppContextValue = {
+      state: mockState,
+      retry: jest.fn(),
+    }
+
+    expect(mockContextValue.state.status).toBe('LOCKED')
+    expect((mockContextValue.state as any).walletId).toBe('test-wallet')
+  })
+
+  it('should have the correct structure for the NO_WALLET state', () => {
+    const mockState: WdkAppState = { status: 'NO_WALLET' }
+    const mockContextValue: WdkAppContextValue = {
+      state: mockState,
+      retry: jest.fn(),
+    }
+    
+    expect(mockContextValue.state.status).toBe('NO_WALLET')
+  })
+
+  it('should have the correct structure for the READY state', () => {
+    const mockState: WdkAppState = { status: 'READY', walletId: 'test-wallet' }
+    const mockContextValue: WdkAppContextValue = {
+      state: mockState,
+      retry: jest.fn(),
+    }
+
+    expect(mockContextValue.state.status).toBe('READY')
+    expect((mockContextValue.state as any).walletId).toBe('test-wallet')
     expect(typeof mockContextValue.retry).toBe('function')
-    expect(mockContextValue.status).toBe(AppStatus.READY)
-    expect(mockContextValue.workletStatus).toBe(InitializationStatus.WORKLET_READY)
-    expect(mockContextValue.isReady).toBe(true)
-    expect(mockContextValue.workletState.isReady).toBe(true)
-    expect(mockContextValue.walletState.status).toBe('ready')
-    expect(mockContextValue.activeWalletId).toBe('test-wallet')
+  })
+
+  it('should have the correct structure for the ERROR state', () => {
+    const testError = new Error('Test error')
+    const mockState: WdkAppState = { status: 'ERROR', error: testError }
+    const mockContextValue: WdkAppContextValue = {
+      state: mockState,
+      retry: jest.fn(),
+    }
+
+    expect(mockContextValue.state.status).toBe('ERROR')
+    expect((mockContextValue.state as any).error).toBe(testError)
   })
 })
