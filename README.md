@@ -35,38 +35,35 @@ Getting started involves three main steps:
 
 ## Installation
 
-### Step 1: Install Dependencies
-
+### 1. Install the Core Library
 ```bash
 npm install @tetherto/wdk-react-native-core
-npm install @tetherto/wdk-react-native-secure-storage
-npm install react@">=18.0.0" react-native@">=0.70.0"
 ```
 
-### Step 2: Install from GitHub (if using source)
+### 2. Install the Worklet Bundler
+You need the bundler to generate the bundle file. You can install it globally or as a dev dependency in your project.
 
+**Global Install (Recommended for easy access):**
 ```bash
-npm install https://github.com/tetherto/wdk-react-native-core.git
+npm install -g @tetherto/wdk-worklet-bundler
 ```
 
-Or add to your `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@tetherto/wdk-react-native-core": "github:tetherto/wdk-react-native-core",
-    "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage"
-  }
-}
+**Or, as a Dev Dependency:**
+```bash
+npm install --save-dev @tetherto/wdk-worklet-bundler
 ```
 
 ## Bundle Configuration
 
-The `WdkAppProvider` requires a **bundle** prop containing the worklet bundle. You have two options for obtaining this bundle:
+A key part of this library's architecture is the **Worklet Bundle**.
 
-### Option A: Generate a Custom Bundle (Recommended)
+**What is the Worklet Bundle?**
+The bundle is a separate JavaScript file (`bundle.js`) that contains all the core cryptographic and blockchain logic. This code runs on a dedicated, high-performance thread, completely separate from the React Native UI thread.
 
-Use the `@tetherto/wdk-worklet-bundler` CLI to generate a bundle with only the blockchain modules you need:
+**Why is it necessary?**
+Running wallet operations in a separate thread is crucial for performance. It ensures that intensive tasks like signing transactions or deriving keys do not slow down or freeze your app's user interface, resulting in a smooth and responsive experience. The bundling step also allows you to create a small, optimized bundle with only the blockchain modules you actually need.
+
+To get the bundle, use the `@tetherto/wdk-worklet-bundler` CLI to generate one with only the blockchain modules you need:
 
 ```bash
 # 1. Install the bundler CLI
@@ -109,30 +106,10 @@ module.exports = {
 }
 ```
 
-After running `wdk-worklet-bundler generate`, import and use the bundle:
+After running `wdk-worklet-bundler generate`, import and use the bundle in `WdkAppProvider`:
 
 ```typescript
 import { bundle } from './.wdk'
-
-const wdkConfigs = {
-  // Your runtime configurations matching wdk.config.js networks
-  networks: {
-    ethereum: {
-      blockchain: 'ethereum',
-      config: {
-        chainId: 1,
-        provider: 'https://eth.drpc.org'
-      }
-    },
-    polygon: {
-      blockchain: 'polygon',
-      config: {
-        chainId: 137,
-        provider: 'https://polygon.drpc.org'
-      }
-    }
-  }
-}
 
 <WdkAppProvider
   bundle={{ bundle }}
@@ -143,27 +120,6 @@ const wdkConfigs = {
 ```
 
 For full bundler documentation, see [wdk-worklet-bundler](https://github.com/tetherto/wdk-worklet-bundler).
-
-### Option B: Use Pre-built Bundle (pear-wrk-wdk)
-
-For quick prototyping, you can use the pre-built `pear-wrk-wdk` package which includes all blockchain modules:
-
-```bash
-npm install pear-wrk-wdk
-```
-
-```typescript
-import { bundle } from 'pear-wrk-wdk'
-
-<WdkAppProvider
-  bundle={{ bundle }}
-  wdkConfigs={wdkConfigs}
->
-  <App />
-</WdkAppProvider>
-```
-
-> **Note**: The pre-built bundle includes all blockchain modules, resulting in a larger bundle size. For production apps, we recommend generating a custom bundle with only the modules you need.
 
 ### TypeScript Configuration
 
