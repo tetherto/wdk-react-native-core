@@ -354,7 +354,7 @@ export function useWalletOrchestrator({
       return { status: 'NO_WALLET' }
     }
 
-    if (activeWalletId) {
+    if (isWorkletStarted && activeWalletId) {
       return { status: 'LOCKED', walletId: activeWalletId }
     }
 

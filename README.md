@@ -1,727 +1,207 @@
 # @tetherto/wdk-react-native-core
 
-Core functionality for React Native wallets - wallet management, balance fetching, and worklet operations.
+Core functionality for React Native wallets, providing wallet management, balance fetching, and more.
+
+This library uses a unique **worklet bundle** to run intensive cryptographic operations on a separate thread, ensuring your app's UI remains fast and responsive.
+
+## Features
+
+- **⛓️ Multi-Chain Support:** Manage wallets across different EVM-based networks.
+- **🧩 Extensible Architecture:** Add support for new blockchains and account types via worklets.
+- **🔐 Secure Storage:** Automatic encryption and secure keychain storage for sensitive data.
+- **⚛️ Modern React Hooks:** A simple, powerful API for integrating wallet features into your React Native app.
+- **📦 Lightweight & Modular:** Generate optimized bundles with only the chains you need.
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
+- [Features](#features)
 - [Installation](#installation)
 - [Bundle Configuration](#bundle-configuration)
-- [Core Concepts](#core-concepts)
-- [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
+- [Quick Start](#quick-start)
+- [Guide to Hooks](#guide-to-hooks)
+- [Best Practices](#best-practices)
 - [Architecture](#architecture)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
-
-## Quick Start
-
-```typescript
-import { WdkAppProvider, useWdkApp, useWallet, useBalance, BaseAsset } from '@tetherto/wdk-react-native-core'
-// Import bundle from your generated .wdk folder (see Bundle Configuration)
-import { bundle } from './.wdk'
-
-function App() {
-  const wdkConfigs = {
-    networks: {
-      ethereum: {
-        blockchain: 'ethereum',
-        // Network-specific configurations go inside config
-        config: {
-          chainId: 1,
-          provider: 'https://eth.drpc.org'
-        }
-      }
-    }
-  }
-
-  return (
-    <WdkAppProvider
-      bundle={{ bundle }}
-      wdkConfigs={wdkConfigs}
-    >
-      <WalletScreen />
-    </WdkAppProvider>
-  )
-}
-
-// Define your assets
-const ethAsset = new BaseAsset({
-  id: 'eth',
-  network: 'ethereum',
-  symbol: 'ETH',
-  name: 'Ethereum',
-  decimals: 18,
-  isNative: true,
-  address: null
-})
-
-function WalletScreen() {
-  const { status, isReady } = useWdkApp()
-  const { addresses } = useWallet()
-  
-  // Use the asset object for balance fetching
-  const { data: balance, isLoading } = useBalance(
-    'ethereum', // network
-    0,          // accountIndex
-    ethAsset    // asset
-  )
-
-  if (!isReady) return <Text>Loading...</Text>
-
-  return (
-    <View>
-      <Text>Address: {addresses.ethereum?.[0]}</Text>
-      <Text>Balance: {balance?.balance || '0'}</Text>
-      {isLoading && <Text>Updating...</Text>}
-    </View>
-  )
-}
-```
+- [License](#license)
 
 ## Installation
 
-### Step 1: Install Dependencies
-
+### 1. Install the Core Library
 ```bash
 npm install @tetherto/wdk-react-native-core
-npm install @tetherto/wdk-react-native-secure-storage
-npm install react@">=18.0.0" react-native@">=0.70.0"
 ```
 
-### Step 2: Install from GitHub (if using source)
+### 2. Install the Worklet Bundler
+You need the bundler to generate the bundle file. You can install it globally or as a dev dependency in your project.
 
+**Global Install (Recommended for easy access):**
 ```bash
-npm install https://github.com/tetherto/wdk-react-native-core.git
+npm install -g @tetherto/wdk-worklet-bundler
 ```
 
-Or add to your `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@tetherto/wdk-react-native-core": "github:tetherto/wdk-react-native-core",
-    "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage"
-  }
-}
+**Or, as a Dev Dependency:**
+```bash
+npm install --save-dev @tetherto/wdk-worklet-bundler
 ```
 
 ## Bundle Configuration
 
-The `WdkAppProvider` requires a **bundle** prop containing the worklet bundle. You have two options for obtaining this bundle:
+A key part of this library's architecture is the **Worklet Bundle**.
 
-### Option A: Generate a Custom Bundle (Recommended)
+**What is the Worklet Bundle?**
+The bundle is a separate JavaScript file (`bundle.js`) that contains all the core cryptographic and blockchain logic. This code runs on a dedicated, high-performance thread, completely separate from the React Native UI thread.
 
-Use the `@tetherto/wdk-worklet-bundler` CLI to generate a bundle with only the blockchain modules you need:
+**Why is it necessary?**
+Running wallet operations in a separate thread is crucial for performance. It ensures that intensive tasks like signing transactions or deriving keys do not slow down or freeze your app's user interface, resulting in a smooth and responsive experience. The bundling step also allows you to create a small, optimized bundle with only the blockchain modules you actually need.
+
+To get the bundle, use the `@tetherto/wdk-worklet-bundler` CLI to generate one with only the blockchain modules you need:
 
 ```bash
-# 1. Install the bundler CLI
-npm install -g @tetherto/wdk-worklet-bundler
-
-# 2. Initialize configuration in your React Native project
+# 1. Initialize configuration in your React Native project
 wdk-worklet-bundler init
 
-# 3. Edit wdk.config.js to configure your networks (see example below)
+# 2. Edit wdk.config.js to configure your networks (see example below)
 
-# 4. Install required WDK modules
-npm install @tetherto/wdk @tetherto/wdk-wallet-evm-erc-4337
-
-# 5. Generate the bundle
+# 3. Generate the bundle
 wdk-worklet-bundler generate
 ```
 
 Example `wdk.config.js`:
-
 ```javascript
+// wdk.config.js
 module.exports = {
-  modules: {
-    core: '@tetherto/wdk',
-    erc4337: '@tetherto/wdk-wallet-evm-erc-4337',
-  },
+  // Define the networks you want to support and their corresponding packages.
   networks: {
     ethereum: {
-      module: 'erc4337',
-      chainId: 1,
-      blockchain: 'ethereum',
-      provider: 'https://eth.drpc.org',
+      package: '@tetherto/wdk-wallet-evm-erc-4337'
     },
-    polygon: {
-      module: 'erc4337',
-      chainId: 137,
-      blockchain: 'polygon',
-      provider: 'https://polygon.drpc.org',
-    },
-  },
-}
-```
-
-After running `wdk-worklet-bundler generate`, import and use the bundle:
-
-```typescript
-import { bundle } from './.wdk'
-
-const wdkConfigs = {
-  // Your runtime configurations matching wdk.config.js networks
-  networks: {
-    ethereum: {
-      blockchain: 'ethereum',
-      config: {
-        chainId: 1,
-        provider: 'https://eth.drpc.org'
-      }
-    },
-    polygon: {
-      blockchain: 'polygon',
-      config: {
-        chainId: 137,
-        provider: 'https://polygon.drpc.org'
-      }
+    bitcoin: {
+      package: '@tetherto/wdk-wallet-btc'
     }
   }
-}
-
-<WdkAppProvider
-  bundle={{ bundle }}
-  wdkConfigs={wdkConfigs}
->
-  <App />
-</WdkAppProvider>
+};
 ```
 
-For full bundler documentation, see [wdk-worklet-bundler](https://github.com/tetherto/wdk-worklet-bundler).
+After running `wdk-worklet-bundler generate`, you will see the bundle in the directory `.wdk`.
 
-### Option B: Use Pre-built Bundle (pear-wrk-wdk)
+For the full bundler documentation, see [wdk-worklet-bundler](https://github.com/tetherto/wdk-worklet-bundler).
 
-For quick prototyping, you can use the pre-built `pear-wrk-wdk` package which includes all blockchain modules:
+## Quick Start
 
-```bash
-npm install pear-wrk-wdk
-```
+Getting started involves three main steps:
 
-```typescript
-import { bundle } from 'pear-wrk-wdk'
+1.  **Configuration:** Define your networks and generate the worklet bundle.
+2.  **Provider Setup:** Wrap your application in `WdkAppProvider` and pass it your configuration.
+3.  **Use the Hooks:** Use hooks like `useWalletManager` and `useAddresses` to manage the wallet and access its data.
 
-<WdkAppProvider
-  bundle={{ bundle }}
-  wdkConfigs={wdkConfigs}
->
-  <App />
-</WdkAppProvider>
-```
+➡️ **For a complete example, see the [Full Quick Start Guide](docs/quick-start.md).**
 
-> **Note**: The pre-built bundle includes all blockchain modules, resulting in a larger bundle size. For production apps, we recommend generating a custom bundle with only the modules you need.
+## Guide to Hooks
 
-### TypeScript Configuration
+The library's functionality is exposed through a set of React hooks. They are designed to separate concerns, giving you specific tools for managing the app state, wallet lifecycle, and account interactions.
 
-If using a generated bundle, add the `.wdk` folder to your TypeScript includes:
+### `useWdkApp`
+*   **Design Rationale:** Provides a global, top-level view of the library's state. It's the single source of truth for whether the underlying engine is ready, allowing your app to react safely.
+*   **Standard Use Case:** Displaying a loading screen while the WDK initializes.
+*   **Snippet:**
+    ```typescript
+    import { useWdkApp } from '@tetherto/wdk-react-native-core';
 
-```json
-{
-  "include": ["**/*.ts", "**/*.tsx", ".wdk/**/*"]
-}
-```
-
-## Core Concepts
-
-### WdkAppProvider
-
-The root provider that manages wallet initialization and worklet lifecycle. Wrap your app with it:
-
-```typescript
-import { bundle } from './.wdk'
-
-<WdkAppProvider
-  bundle={{ bundle }}
-  wdkConfigs={wdkConfigs}
->
-  {children}
-</WdkAppProvider>
-```
-
-### Hooks
-
-- **`useWdkApp()`** - App-level initialization state (is app ready? what's the status?)
-- **`useWallet()`** - Wallet operations (addresses, account methods) - use AFTER initialization
-- **`useBalance()`** - Fetch and manage balances (uses TanStack Query)
-- **`useWalletManager()`** - Wallet lifecycle (create, load, import, delete) - use BEFORE operations
-- **`useWorklet()`** - Worklet state and operations (advanced use cases)
-
-## Which Hook Should I Use?
-
-### App Initialization State
-Use `useWdkApp()` to check if the app is ready:
-```typescript
-const { status, isReady, error } = useWdkApp()
-if (!isReady) return <LoadingScreen />
-```
-
-### Wallet Lifecycle (Create, Load, Import, Delete)
-Use `useWalletManager()` for wallet setup - this is the ONLY hook for wallet lifecycle:
-```typescript
-const { createWallet, loadWallet, importWallet, hasWallet, deleteWallet } = useWalletManager()
-```
-
-### Wallet Operations (After Initialization)
-Use `useWallet()` for wallet data and operations:
-```typescript
-const { addresses, getAddress, callAccountMethod } = useWallet()
-```
-
-### Balance Fetching
-Use `useBalance()` for balances:
-```typescript
-const { data: balance, isLoading } = useBalance(
-  'ethereum', // network
-  0,          // accountIndex
-  ethAsset    // asset object
-)
-```
-
-### State Management
-
-- **Zustand Stores**: `workletStore` (worklet lifecycle), `walletStore` (wallet data)
-- **TanStack Query**: Balance fetching with automatic caching and refetching
-- **React State**: Component-level state via hooks
-
-## Usage Examples
-
-### Basic Wallet Setup
-
-```typescript
-import { WdkAppProvider, useWdkApp, useWalletManager } from '@tetherto/wdk-react-native-core'
-import { bundle } from './.wdk'
-
-function App() {
-  const wdkConfigs = { /* ... */ }
-
-  return (
-    <WdkAppProvider
-      bundle={{ bundle }}
-      wdkConfigs={wdkConfigs}
-    >
-      <WalletSetup />
-    </WdkAppProvider>
-  )
-}
-
-function WalletSetup() {
-  const { status, isReady } = useWdkApp()
-  const { createWallet, loadWallet, hasWallet } = useWalletManager()
-
-  useEffect(() => {
-    const init = async () => {
-      const exists = await hasWallet()
-      if (exists) {
-        await loadWallet()
-      } else {
-        await createWallet()
-      }
+    const { isReady, error } = useWdkApp();
+    if (!isReady) {
+      // Show a loading or splash screen while the worklet starts
     }
-    if (isReady) init()
-  }, [isReady])
+    ```
 
-  if (!isReady) return <LoadingScreen />
+### `useWalletManager`
+*   **Design Rationale:** Exclusively handles "heavy" lifecycle actions that affect the entire wallet (create, load, import). Separating these ensures they are used deliberately, typically during app startup or in a settings screen.
+*   **Standard Use Case:** Checking if a wallet exists on startup, creating or loading a wallet.
+*   **Snippet:**
+    ```typescript
+    import { useWdkApp, useWalletManager } from '@tetherto/wdk-react-native-core';
 
-  return <WalletApp />
-}
-```
-
-### Fetching Balances
-
-```typescript
-import { useBalance, useBalancesForWallet, BaseAsset } from '@tetherto/wdk-react-native-core'
-
-// Define assets
-const eth = new BaseAsset({
-  id: 'eth',
-  network: 'ethereum',
-  symbol: 'ETH',
-  name: 'Ethereum',
-  decimals: 18,
-  isNative: true,
-  address: null
-})
-
-const usdt = new BaseAsset({
-  id: 'usdt',
-  network: 'ethereum',
-  symbol: 'USDT',
-  name: 'Tether',
-  decimals: 6,
-  isNative: false,
-  address: '0x...'
-})
-
-function BalanceDisplay() {
-  // Single balance
-  const { data: balance, isLoading, error } = useBalance(
-    'ethereum',
-    0,
-    eth
-  )
-
-  // All balances for a wallet
-  const { data: allBalances } = useBalancesForWallet(
-    0, // accountIndex
-    [eth, usdt] // array of assets to fetch
-  )
-
-  return (
-    <View>
-      <Text>ETH Balance: {balance?.balance || '0'}</Text>
-      {isLoading && <Text>Loading...</Text>}
-      {error && <Text>Error: {error.message}</Text>}
-    </View>
-  )
-}
-```
-
-### Using Account Methods
-
-```typescript
-import { useWallet } from '@tetherto/wdk-react-native-core'
-
-function AccountOperations() {
-  const { callAccountMethod, isInitialized } = useWallet()
-
-  const handleGetBalance = async () => {
-    try {
-      const balance = await callAccountMethod(
-        'ethereum',
-        0,
-        'getBalance',
-        null
-      )
-      console.log('Balance:', balance)
-    } catch (error) {
-      console.error('Failed:', error)
-    }
-  }
-
-  const handleSignMessage = async (message: string) => {
-    try {
-      const signature = await callAccountMethod(
-        'ethereum',
-        0,
-        'signMessage',
-        { message }
-      )
-      console.log('Signature:', signature)
-    } catch (error) {
-      console.error('Failed:', error)
-    }
-  }
-
-  // Multi-argument methods: pass array to spread as positional arguments
-  const handleTransfer = async (to: string, amount: string) => {
-    try {
-      const result = await callAccountMethod(
-        'ethereum',
-        0,
-        'transfer',
-        [
-          { to, amount },                    // 1st arg: options
-          { paymasterToken: '0x...', transferMaxFee: '100' }  // 2nd arg: config
-        ]
-      )
-      console.log('Transfer result:', result)
-    } catch (error) {
-      console.error('Failed:', error)
-    }
-  }
-
-  if (!isInitialized) return <Text>Not initialized</Text>
-
-  return (
-    <View>
-      <Button onPress={handleGetBalance}>Get Balance</Button>
-      <Button onPress={() => handleSignMessage('Hello')}>Sign Message</Button>
-    </View>
-  )
-}
-```
-
-### Multiple Wallets
-
-```typescript
-import { useWallet } from '@tetherto/wdk-react-native-core'
-
-function MultiWalletApp() {
-  const wallet1 = useWallet({ identifier: 'wallet-1' })
-  const wallet2 = useWallet({ identifier: 'wallet-2' })
-
-  return (
-    <View>
-      <Text>Wallet 1: {wallet1.addresses.ethereum?.[0]}</Text>
-      <Text>Wallet 2: {wallet2.addresses.ethereum?.[0]}</Text>
-    </View>
-  )
-}
-```
-
-### Refreshing Balances
-
-```typescript
-import { useRefreshBalance } from '@tetherto/wdk-react-native-core'
-
-function RefreshButton() {
-  const { mutate: refreshBalance } = useRefreshBalance()
-
-  const handleRefresh = () => {
-    refreshBalance({
-      network: 'ethereum',
-      accountIndex: 0,
-      assetId: 'eth' // refresh specific asset
-    })
+    const { isReady } = useWdkApp();
+    const { createWallet, loadWallet } = useWalletManager();
     
-    // OR refresh all balances for account
-    // refreshBalance({ accountIndex: 0, type: 'wallet' })
-  }
+    useEffect(() => {
+      if (isReady) {
+        const setup = async () => {
+          await createWallet();
+        };
+        setup();
+      }
+    }, [isReady, hasWallet, createWallet, loadWallet]);
+    ```
 
-  return <Button onPress={handleRefresh}>Refresh Balance</Button>
-}
-```
+### `useAddresses`
+*   **Design Rationale:** Decouples the loading and management of addresses from other account operations. This provides a focused way to get a list of addresses for the active wallet.
+*   **Standard Use Case:** Loading the addresses for the active wallet to display them.
+*   **Snippet:**
+    ```typescript
+    import { useAddresses } from '@tetherto/wdk-react-native-core';
 
-## API Reference
+    const { addresses, loadAddresses } = useAddresses();
 
-### WdkAppProvider
+    // After a wallet is loaded (e.g. in another useEffect), load addresses.
+    useEffect(() => {
+      if (walletIsActive) { // Replace with your app's state logic
+        loadAddresses([0, 1]); // Load addresses for account 0 and 1
+      }
+    }, [walletIsActive, loadAddresses]);
+    ```
 
-```typescript
-interface WdkAppProviderProps {
-  /** Worklet bundle configuration */
-  bundle: {
-    bundle: string      // The worklet bundle code
-  }
-  /** Network & protocol configurations */
-  wdkConfigs: WdkConfigs
-  /** Enable automatic wallet initialization on app restart (default: true) */
-  enableAutoInitialization?: boolean
-  /** Current user's identifier for wallet association */
-  currentUserId?: string | null
-  /** Clear sensitive data on app background (default: false) */
-  clearSensitiveDataOnBackground?: boolean
-  children: React.ReactNode
-}
-```
+### `useAccount`
+*   **Design Rationale:** Provides the actual "actor" for a specific account (e.g., account #0 on Ethereum). This is where you find methods for *doing things* like signing transactions or messages.
+*   **Standard Use Case:** Getting the `account` object to call `signMessage` when a user clicks a button.
+*   **Snippet:**
+    ```typescript
+    import { useAccount } from '@tetherto/wdk-react-native-core';
 
-### useWdkApp()
+    const { account } = useAccount({ network: 'ethereum', accountIndex: 0 });
 
-App-level initialization state. Use this to check if the app is ready.
+    const handleSignPress = async () => {
+      const signature = await account?.signMessage('Hello WDK');
+      console.log(signature);
+    };
+    ```
 
-```typescript
-interface WdkAppContextValue {
-  status: AppStatus
-  isInitializing: boolean
-  isReady: boolean
-  workletStatus: InitializationStatus
-  workletState: { isReady: boolean; isLoading: boolean; error: string | null }
-  walletState: { status: string; identifier: string | null; error: Error | null }
-  activeWalletId: string | null
-  loadingWalletId: string | null
-  walletExists: boolean | null
-  error: Error | null
-  retry: () => void
-  // Note: Wallet lifecycle operations (create, load, import, delete) are available via useWalletManager()
-}
-```
+### `useBalance`
+*   **Design Rationale:** Isolates the logic for fetching balances. It uses TanStack Query internally to automatically handle caching, refetching, and loading states, saving you from writing boilerplate.
+*   **Standard Use Case:** Getting the balance for a native asset (like ETH). You must define your assets first.
+*   **Snippet:**
+    ```typescript
+    import { useBalance } from '@tetherto/wdk-react-native-core';
+    
+    // Assume 'ethAsset' is an asset object you've defined elsewhere
+    const { data } = useBalance({ 
+      accountIndex: 0, 
+      asset: ethAsset 
+    });
 
-### useWallet()
+    const balanceString = data?.balance; // e.g., '1000000000000000000'
+    ```
 
-```typescript
-interface UseWalletResult {
-  addresses: WalletAddresses
-  isInitialized: boolean
-  isSwitchingWallet: boolean
-  switchWalletError: Error | null
-  isTemporaryWallet: boolean
-  getAddress: (network: string, accountIndex: number) => Promise<string>
-  callAccountMethod: <T = unknown>(
-    network: string,
-    accountIndex: number,
-    methodName: string,
-    args?: unknown
-  ) => Promise<T>
-}
-```
+## Best Practices
 
-### useBalance()
-
-```typescript
-function useBalance(
-  network: string,
-  accountIndex: number,
-  asset: IAsset,
-  options?: BalanceQueryOptions
-): {
-  data: BalanceFetchResult | undefined
-  isLoading: boolean
-  error: Error | null
-  refetch: () => void
-}
-```
-
-### useWalletManager()
-
-```typescript
-interface UseWalletManagerResult {
-  createWallet: (identifier?: string) => Promise<void>
-  loadWallet: (identifier?: string) => Promise<void>
-  importWallet: (mnemonic: string, identifier?: string) => Promise<void>
-  deleteWallet: (identifier: string) => Promise<void>
-  hasWallet: (identifier?: string) => Promise<boolean>
-  getWalletList: () => Wallet[]
-  activeWalletId: string | null
-}
-```
-
-### Allowed Account Methods
-
-For security, only these methods can be called via `callAccountMethod`:
-
-- `getAddress` - Get wallet address
-- `getBalance` - Get native token balance
-- `getTokenBalance` - Get ERC20 token balance
-- `signMessage` - Sign a message
-- `signTransaction` - Sign a transaction
-- `sendTransaction` - Send a transaction
+See [Best Practices](docs/best-practices.md) for important patterns and recommendations for building robust apps.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────┐
-│         App Layer (Hooks)           │
-│  useWallet, useBalance, useWdkApp   │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Provider Layer                  │
-│      WdkAppProvider                  │
-│  (Consolidated state sync effect)    │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Service Layer                    │
-│  WorkletLifecycleService              │
-│  AddressService                       │
-│  AccountService                       │
-│  BalanceService                       │
-│  WalletSetupService                   │
-│  WalletSwitchingService               │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      State Management                 │
-│  WorkletStore (Zustand)               │
-│  WalletStore (Zustand)                │
-│  TanStack Query (Balances)            │
-│  Operation Mutex (Race prevention)    │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Storage Layer                   │
-│  MMKV (non-sensitive)                │
-│  SecureStorage (sensitive)           │
-└─────────────────────────────────────┘
-```
-
-### State Synchronization
-
-The `WdkAppProvider` uses a **consolidated effect** for wallet state synchronization to prevent race conditions. Multiple interdependent state changes (activeWalletId, addresses, loadingState, errors) must be evaluated atomically in a single effect. See [WALLET_STATE_MACHINE.md](src/store/WALLET_STATE_MACHINE.md) for detailed state machine documentation.
-
-### Key Services
-
-- **WorkletLifecycleService**: Manages worklet lifecycle (start, initialize, cleanup)
-- **AddressService**: Handles address retrieval and caching
-- **AccountService**: Handles account method calls with whitelist validation
-- **BalanceService**: Manages balance operations
-- **WalletSetupService**: Handles wallet creation, import, and credential management
+See [Architecture](docs/architecture.md) for details on the internal design.
 
 ## Security
 
-### Storage Encryption
-
-- **MMKV Storage**: Uses cryptographic key derivation for non-sensitive data
-- **Secure Storage**: Uses device keychain with biometric authentication for sensitive data
-- **Memory Management**: Sensitive data is automatically cleared when app is backgrounded
-
-### Security Features
-
-- ✅ Method whitelist validation (only approved methods can be called)
-- ✅ Input validation and sanitization
-- ✅ Error message sanitization (prevents information leakage)
-- ✅ Automatic credential cache expiration (TTL: 5 minutes, LRU eviction at 15 entries)
-- ✅ Safe JSON stringification (prevents prototype pollution)
-- ✅ Runtime type validation with Zod schemas
-- ✅ Operation mutex with timeout protection (prevents stuck operations)
-- ✅ Automatic sensitive data cleanup on app background
-
-### Best Practices
-
-1. Always use `WdkAppProvider` at app root
-2. Validate inputs before use (use provided validation utilities)
-3. Never log sensitive data
-4. Use error boundaries to handle errors gracefully
-5. Sensitive data is automatically cleared on app background
+See [Security](docs/security.md) for details on security features and best practices.
 
 ## Troubleshooting
 
-### Wallet Initialization Fails
-
-**Symptoms**: `status` is `ERROR`, `error` is set
-
-**Solutions**:
-1. Check that `wdkConfigs` are valid (use `validateWdkConfigs()`)
-2. Check console logs for detailed error messages
-3. Try calling `retry()` method from context
-
-**Common Errors**:
-- "WDK not initialized" → Worklet failed to start, check network configs
-- "Biometric authentication required" → User cancelled or device doesn't support biometrics
-- "Encryption key not found" → Secure storage issue, may need to recreate wallet
-
-### Balance Fetching Issues
-
-**Symptoms**: Balances not updating, `isLoading` stuck true
-
-**Solutions**:
-1. Verify `asset` properties are correct (especially address and network)
-2. Check network connectivity and RPC endpoint availability
-3. Ensure wallet is initialized (`status === 'READY'`)
-4. Check token addresses are valid Ethereum addresses
-
-### Type Validation Errors
-
-**Symptoms**: Runtime errors about invalid types
-
-**Solutions**:
-1. Use `validateWdkConfigs()` before passing to provider
-2. Ensure token addresses match Ethereum address format
-3. Verify account indices are non-negative integers
-4. Use type guards from exports for runtime validation
+See [Troubleshooting](docs/troubleshooting.md) for common issues and solutions.
 
 ## Development
 
-### Building
-
-```bash
-npm run build
-npm run build:strict  # Strict mode (fails on errors)
-```
-
-### Testing
-
-```bash
-npm test
-npm run test:coverage  # 100% coverage required
-npm run test:watch
-```
-
-### Type Checking
-
-```bash
-npm run typecheck
-```
+See the [Contributing Guide](CONTRIBUTING.md) for details on how to build, test, and contribute to this project.
 
 ## License
 

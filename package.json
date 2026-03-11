@@ -46,7 +46,7 @@
     "blockchain",
     "balance"
   ],
-  "author": "Tetherto",
+  "author": "Tether",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@tetherto/wdk-react-native-secure-storage": "github:tetherto/wdk-react-native-secure-storage#5977ef5ddac299eda0a1990d422dc3e9bcd86f3e",
-    "@tetherto/pear-wrk-wdk": "github:tetherto/pear-wrk-wdk#v2",
+    "@tetherto/pear-wrk-wdk": "github:tetherto/pear-wrk-wdk#fe29bb000d2a319e01808ec8dcd551a845366ad5",
     "@tanstack/react-query": "^5.0.0",
     "expo-crypto": "^15.0.8",
     "immer": "^11.1.3",
