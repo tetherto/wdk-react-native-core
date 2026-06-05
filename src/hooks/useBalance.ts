@@ -432,7 +432,20 @@ export function useBalancesForWallets(
     queryKey: balanceQueryKeys.byTokensAndIndices(walletId || '', accountIndices, assetConfigs.map((asset) => asset.getId())),
     queryFn: async () => {
       const concurrency = options?.concurrencyLimit ?? 2;
-      const tasks = accountIndices.map((accountIndex) => () => fetchBalances(accountIndex, assetConfigs));
+      const tasks = accountIndices.map((accountIndex) => async (): Promise<BalanceFetchResult[]> => {
+        try {
+          return await fetchBalances(accountIndex, assetConfigs);
+        } catch (error) {
+          return assetConfigs.map((asset) => ({
+            success: false,
+            network: asset.getNetwork(),
+            accountIndex,
+            assetId: asset.getId(),
+            balance: null,
+            error: error instanceof Error ? error.message : String(error),
+          }));
+        }
+      });
       const results = await promisePool(tasks, concurrency);
       return results.flat();
     },
