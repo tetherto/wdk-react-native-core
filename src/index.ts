@@ -41,6 +41,9 @@ export type { UseAddressesReturn } from './hooks/useAddresses'
 export { useAccount } from './hooks/useAccount'
 export type { UseAccountParams, UseAccountReturn, UseAccountResponse, TransactionParams, TransactionResult } from './hooks/useAccount'
 
+export { useProtocol } from './hooks/useProtocol'
+export type { UseProtocolParams } from './hooks/useProtocol'
+
 export type { UseWdkAppResult } from './hooks/useWdkApp'
 
 export { useWalletManager } from './hooks/useWalletManager'
