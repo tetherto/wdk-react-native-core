@@ -127,6 +127,15 @@ export function validateNetworkName(network: string): void {
   }
 }
 
+/**
+ * Validate a module name
+ */
+export function validateModuleName(moduleName: string): void {
+  if (typeof moduleName !== 'string' || moduleName.trim().length === 0) {
+    throw new Error('moduleName must be a non-empty string')
+  }
+}
+
 export function validateAssetId(assetId: string): void {
   try {
     assetIdSchema.parse(assetId)

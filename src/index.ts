@@ -61,3 +61,8 @@ export type { BalanceQueryOptions } from './hooks/useBalance'
 export type { AccountInfo } from './store/walletStore'
 
 export { validateMnemonic } from './utils/mnemonicUtils'
+
+export { useModule } from './hooks/useModule'
+export type { UseModuleProxy } from './hooks/useModule'
+export { ModuleService } from './services/moduleService'
+export type { ModuleEventListener } from './services/moduleService'
