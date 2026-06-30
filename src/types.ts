@@ -63,6 +63,9 @@ export interface WdkConfigs<
   protocols?: {
     [protocolName: string]: WdkProtocolConfig<TProtocol>
   }
+  modules?: {
+    [moduleName: string]: Record<string, unknown>
+  }
 }
 
 /**
