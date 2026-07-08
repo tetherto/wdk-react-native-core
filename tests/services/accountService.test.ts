@@ -304,7 +304,7 @@ describe('AccountService', () => {
     it('should validate account index', async () => {
       await expect(
         AccountService.callAccountMethod('ethereum', -1, 'getBalance')
-      ).rejects.toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      ).rejects.toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
 
     it('should throw error if WDK not initialized', async () => {
@@ -345,7 +345,7 @@ describe('AccountService', () => {
 
       await expect(
         AccountService.callAccountMethod('ethereum', 0, 'getBalance')
-      ).rejects.toThrow(/Method getBalance returned no result|Expected string/)
+      ).rejects.toThrow(/Method getBalance returned no result|expected string/i)
     })
 
     it('should throw error if result is null', async () => {

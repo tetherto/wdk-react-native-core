@@ -17,10 +17,10 @@
  * Module-agnostic: it only forwards callModule/lifecycle/events by name.
  */
 
-import { ModuleService } from '../../services/moduleService'
-import { requireInitialized } from '../../utils/storeHelpers'
+import { ModuleService } from '../../src/services/moduleService'
+import { requireInitialized } from '../../src/utils/storeHelpers'
 
-jest.mock('../../utils/storeHelpers', () => ({
+jest.mock('../../src/utils/storeHelpers', () => ({
   requireInitialized: jest.fn(),
 }))
 

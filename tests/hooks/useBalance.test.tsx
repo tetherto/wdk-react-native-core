@@ -39,13 +39,13 @@ jest.mock('@tanstack/react-query');
 jest.mock('../../src/services/accountService', () => ({
   AccountService: { callAccountMethod: jest.fn() },
 }));
-jest.mock('../../src/services/balanceService', () => ({
-  BalanceService: {
-    updateBalance: jest.fn(),
-    updateLastBalanceUpdate: jest.fn(),
-    getBalance: jest.fn(),
-  },
-}));
+jest.mock('../../src/services/balanceService', () => {
+  const actual = jest.requireActual('../../src/services/balanceService');
+  actual.BalanceService.updateBalance = jest.fn();
+  actual.BalanceService.updateLastBalanceUpdate = jest.fn();
+  actual.BalanceService.getBalance = jest.fn();
+  return actual;
+});
 jest.mock('../../src/store/walletStore', () => ({
   getWalletStore: jest.fn(),
   updateWalletLoadingState: jest.fn((currentState, nextWalletLoadingState) => ({
@@ -336,7 +336,7 @@ describe('useBalancesForWallet', () => {
 
     expect(mockUseMultiAddressLoader).toHaveBeenCalledWith({
       networks: ['ethereum', 'polygon'],
-      accountIndex: mockAccountIndex,
+      accountIndices: [mockAccountIndex],
       enabled: true,
     });
     expect(mockUseQuery).toHaveBeenCalledTimes(1);

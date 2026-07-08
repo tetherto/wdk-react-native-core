@@ -244,7 +244,7 @@ describe('AddressService', () => {
 
     it('should validate account index', async () => {
       await expect(AddressService.getAddress('ethereum', -1)).rejects.toThrow(
-        /accountIndex.*non-negative|Number must be greater than or equal to 0/
+        /accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i
       )
     })
 

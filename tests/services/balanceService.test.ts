@@ -108,7 +108,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.updateBalance(-1, 'ethereum', MOCK_NATIVE_TOKEN_ID, '100')
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
 
     it('should validate balance', () => {
@@ -175,7 +175,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getBalance(-1, 'ethereum', MOCK_NATIVE_TOKEN_ID)
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 
@@ -221,7 +221,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getBalancesForWallet(-1, 'ethereum')
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 
@@ -274,7 +274,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.setBalanceLoading('ethereum', -1, MOCK_NATIVE_TOKEN_ID, true)
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 
@@ -312,7 +312,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.isBalanceLoading('ethereum', -1, MOCK_NATIVE_TOKEN_ID)
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 
@@ -362,7 +362,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.updateLastBalanceUpdate('ethereum', -1)
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 
@@ -402,7 +402,7 @@ describe('BalanceService', () => {
     it('should validate account index', () => {
       expect(() => {
         BalanceService.getLastBalanceUpdate('ethereum', -1)
-      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0/)
+      }).toThrow(/accountIndex.*non-negative|Number must be greater than or equal to 0|expected number to be ?>=0/i)
     })
   })
 

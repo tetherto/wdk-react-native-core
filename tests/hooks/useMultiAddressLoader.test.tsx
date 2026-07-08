@@ -15,11 +15,11 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { create, StoreApi } from 'zustand';
 import { useMultiAddressLoader } from '../../src/hooks/useMultiAddressLoader';
-import { AccountService } from '../../src/services/accountService';
+import { AddressService } from '../../src/services/addressService';
 import { getWalletStore } from '../../src/store/walletStore';
 import { logError } from '../../src/utils/logger';
 
-jest.mock('../../src/services/accountService');
+jest.mock('../../src/services/addressService');
 jest.mock('../../src/store/walletStore');
 jest.mock('../../src/utils/logger', () => ({
     log: jest.fn(),
@@ -27,14 +27,14 @@ jest.mock('../../src/utils/logger', () => ({
     logWarn: jest.fn(),
 }));
 
-const mockCallAccountMethod = AccountService.callAccountMethod as jest.Mock;
+const mockGetAddresses = AddressService.getAddresses as jest.Mock;
 const mockGetWalletStore = getWalletStore as jest.Mock;
 const mockLogError = logError as jest.Mock;
 
 describe('useMultiAddressLoader', () => {
     let mockWalletStore: StoreApi<{ activeWalletId: string | null }>;
     const walletId = 'wallet1';
-    
+
     beforeEach(() => {
         jest.clearAllMocks();
         mockWalletStore = create(() => ({ activeWalletId: walletId }));
@@ -42,30 +42,31 @@ describe('useMultiAddressLoader', () => {
     });
 
     it('should not fetch if enabled is false', () => {
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndex: 0, enabled: false }));
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndices: [0], enabled: false }));
         expect(result.current).toEqual({ addresses: null, isLoading: false, error: null });
-        expect(mockCallAccountMethod).not.toHaveBeenCalled();
+        expect(mockGetAddresses).not.toHaveBeenCalled();
     });
 
     it('should not fetch if networks array is empty', () => {
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: [], accountIndex: 0 }));
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: [], accountIndices: [0] }));
         expect(result.current).toEqual({ addresses: null, isLoading: false, error: null });
-        expect(mockCallAccountMethod).not.toHaveBeenCalled();
+        expect(mockGetAddresses).not.toHaveBeenCalled();
     });
 
     it('should not fetch if activeWalletId is null', () => {
         mockWalletStore.setState({ activeWalletId: null });
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndex: 0 }));
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndices: [0] }));
         expect(result.current).toEqual({ addresses: null, isLoading: false, error: null });
-        expect(mockCallAccountMethod).not.toHaveBeenCalled();
+        expect(mockGetAddresses).not.toHaveBeenCalled();
     });
-    
+
     it('should set loading state and fetch addresses successfully', async () => {
-        mockCallAccountMethod.mockImplementation(async (network) => {
-            return `${network}-address`;
-        });
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1', 'net2'], accountIndex: 0 }));
-        
+        mockGetAddresses.mockResolvedValue([
+            { network: 'net1', accountIndex: 0, success: true, address: 'net1-address' },
+            { network: 'net2', accountIndex: 0, success: true, address: 'net2-address' },
+        ]);
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1', 'net2'], accountIndices: [0] }));
+
         expect(result.current.isLoading).toBe(true);
         expect(result.current.addresses).toBe(null);
         expect(result.current.error).toBe(null);
@@ -74,87 +75,83 @@ describe('useMultiAddressLoader', () => {
             expect(result.current.isLoading).toBe(false);
         });
 
-        expect(mockCallAccountMethod).toHaveBeenCalledTimes(2);
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net1', 0, 'getAddress');
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net2', 0, 'getAddress');
+        expect(mockGetAddresses).toHaveBeenCalledWith([0], ['net1', 'net2']);
         expect(result.current.addresses).toEqual([
-            { network: 'net1', address: 'net1-address' },
-            { network: 'net2', address: 'net2-address' },
+            { network: 'net1', accountIndex: 0, address: 'net1-address' },
+            { network: 'net2', accountIndex: 0, address: 'net2-address' },
         ]);
         expect(result.current.error).toBe(null);
     });
 
-    it('should handle duplicate networks and preserve original order', async () => {
-        mockCallAccountMethod.mockImplementation(async (network) => `${network}-address`);
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net2', 'net1', 'net2'], accountIndex: 0 }));
+    it('should map failed lookups to a null address', async () => {
+        mockGetAddresses.mockResolvedValue([
+            { network: 'net1', accountIndex: 0, success: true, address: 'net1-address' },
+            { network: 'net2', accountIndex: 0, success: false, reason: new Error('lookup failed') },
+        ]);
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1', 'net2'], accountIndices: [0] }));
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
-        
-        expect(mockCallAccountMethod).toHaveBeenCalledTimes(2);
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net1', 0, 'getAddress');
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net2', 0, 'getAddress');
 
         expect(result.current.addresses).toEqual([
-            { network: 'net2', address: 'net2-address' },
-            { network: 'net1', address: 'net1-address' },
-            { network: 'net2', address: 'net2-address' }
+            { network: 'net1', accountIndex: 0, address: 'net1-address' },
+            { network: 'net2', accountIndex: 0, address: null },
         ]);
     });
 
     it('should handle errors from the service', async () => {
         const error = new Error('Service Error');
-        mockCallAccountMethod.mockRejectedValue(error);
-        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndex: 0 }));
+        mockGetAddresses.mockRejectedValue(error);
+        const { result } = renderHook(() => useMultiAddressLoader({ networks: ['net1'], accountIndices: [0] }));
 
         expect(result.current.isLoading).toBe(true);
 
         await waitFor(() => {
             expect(result.current.isLoading).toBe(false);
         });
-        
+
         expect(result.current.error).toBe(error);
         expect(result.current.addresses).toBe(null);
         expect(mockLogError).toHaveBeenCalledWith('useMultiAddressLoader failed:', error);
     });
 
     it('should re-fetch when dependencies change', async () => {
-        mockCallAccountMethod.mockResolvedValue('address-1');
+        mockGetAddresses.mockResolvedValue([{ network: 'net1', accountIndex: 0, success: true, address: 'address-1' }]);
         const { rerender } = renderHook(
             (props) => useMultiAddressLoader(props),
-            { initialProps: { networks: ['net1'], accountIndex: 0 } }
+            { initialProps: { networks: ['net1'], accountIndices: [0] } }
         );
 
-        await waitFor(() => expect(mockCallAccountMethod).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(mockGetAddresses).toHaveBeenCalledTimes(1));
 
-        mockCallAccountMethod.mockResolvedValue('address-2');
-        rerender({ networks: ['net1'], accountIndex: 1 });
-        await waitFor(() => expect(mockCallAccountMethod).toHaveBeenCalledTimes(2));
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net1', 1, 'getAddress');
+        mockGetAddresses.mockResolvedValue([{ network: 'net1', accountIndex: 1, success: true, address: 'address-2' }]);
+        rerender({ networks: ['net1'], accountIndices: [1] });
+        await waitFor(() => expect(mockGetAddresses).toHaveBeenCalledTimes(2));
+        expect(mockGetAddresses).toHaveBeenCalledWith([1], ['net1']);
 
-        mockCallAccountMethod.mockResolvedValue('address-3');
-        rerender({ networks: ['net2'], accountIndex: 1 });
-        await waitFor(() => expect(mockCallAccountMethod).toHaveBeenCalledTimes(3));
-        expect(mockCallAccountMethod).toHaveBeenCalledWith('net2', 1, 'getAddress');
-        
-        mockCallAccountMethod.mockResolvedValue('address-4');
+        mockGetAddresses.mockResolvedValue([{ network: 'net2', accountIndex: 1, success: true, address: 'address-3' }]);
+        rerender({ networks: ['net2'], accountIndices: [1] });
+        await waitFor(() => expect(mockGetAddresses).toHaveBeenCalledTimes(3));
+        expect(mockGetAddresses).toHaveBeenCalledWith([1], ['net2']);
+
+        mockGetAddresses.mockResolvedValue([{ network: 'net2', accountIndex: 1, success: true, address: 'address-4' }]);
         act(() => {
           mockWalletStore.setState({ activeWalletId: 'wallet2' });
         });
-        await waitFor(() => expect(mockCallAccountMethod).toHaveBeenCalledTimes(4));
+        await waitFor(() => expect(mockGetAddresses).toHaveBeenCalledTimes(4));
     });
 
     it('should reset state when disabled', async () => {
-        mockCallAccountMethod.mockResolvedValue('address-1');
+        mockGetAddresses.mockResolvedValue([{ network: 'net1', accountIndex: 0, success: true, address: 'address-1' }]);
         const { result, rerender } = renderHook(
             (props) => useMultiAddressLoader(props),
-            { initialProps: { networks: ['net1'], accountIndex: 0, enabled: true } }
+            { initialProps: { networks: ['net1'], accountIndices: [0], enabled: true } }
         );
 
         await waitFor(() => expect(result.current.addresses).not.toBeNull());
 
-        rerender({ networks: ['net1'], accountIndex: 0, enabled: false });
+        rerender({ networks: ['net1'], accountIndices: [0], enabled: false });
 
         expect(result.current).toEqual({ addresses: null, isLoading: false, error: null });
-        expect(mockCallAccountMethod).toHaveBeenCalledTimes(1);
+        expect(mockGetAddresses).toHaveBeenCalledTimes(1);
     });
 });
