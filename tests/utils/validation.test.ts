@@ -22,7 +22,6 @@ import {
   validateRequiredMethods,
   validateAccountIndex,
   validateNetworkName,
-  validateTokenAddress,
   validateBalance,
 } from '../../src/utils/validation'
 import type { WdkConfigs } from '../../src/types'
@@ -110,21 +109,6 @@ describe('validation', () => {
       expect(() => validateNetworkName('  ')).toThrow()
       expect(() => validateNetworkName('network with spaces')).toThrow()
       expect(() => validateNetworkName('network@invalid')).toThrow()
-    })
-  })
-
-  describe('validateTokenAddress', () => {
-    it('should not throw for valid token addresses', () => {
-      expect(() => validateTokenAddress(null)).not.toThrow()
-      expect(() => validateTokenAddress('0x1234567890123456789012345678901234567890')).not.toThrow()
-      expect(() => validateTokenAddress('0xABCDEFabcdef1234567890123456789012345678')).not.toThrow()
-    })
-
-    it('should throw for invalid token addresses', () => {
-      expect(() => validateTokenAddress('invalid')).toThrow()
-      expect(() => validateTokenAddress('0x123')).toThrow()
-      expect(() => validateTokenAddress('0x123456789012345678901234567890123456789')).toThrow()
-      expect(() => validateTokenAddress('')).toThrow()
     })
   })
 

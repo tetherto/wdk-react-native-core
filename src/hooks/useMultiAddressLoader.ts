@@ -13,18 +13,19 @@
 // limitations under the License.
 
 import { useState, useEffect } from 'react';
-import { AccountService } from '../services/accountService';
 import { getWalletStore } from '../store/walletStore';
 import { logError } from '../utils/logger';
+import { AddressService } from '../services/addressService';
 
 export interface AddressResult {
   network: string;
-  address: string;
+  address: string | null;
+  accountIndex: number;
 }
 
 interface UseMultiAddressLoaderParams {
   networks: string[];
-  accountIndex: number;
+  accountIndices: number[];
   enabled?: boolean;
 }
 
@@ -42,7 +43,7 @@ interface UseMultiAddressLoaderResult {
  */
 export function useMultiAddressLoader({
   networks,
-  accountIndex,
+  accountIndices,
   enabled = true,
 }: UseMultiAddressLoaderParams): UseMultiAddressLoaderResult {
   const [addresses, setAddresses] = useState<AddressResult[] | null>(null);
@@ -51,13 +52,18 @@ export function useMultiAddressLoader({
   const activeWalletId = getWalletStore()((state) => state.activeWalletId);
 
   const networksKey = JSON.stringify([...networks].sort());
+  const activeIndices = JSON.stringify([...accountIndices].sort());
 
   useEffect(() => {
+    let isStale = false;
+
     const loadAddresses = async () => {
       if (!enabled || networks.length === 0 || !activeWalletId) {
-        setIsLoading(false);
-        setError(null);
-        setAddresses(null);
+        if (!isStale) {
+          setIsLoading(false);
+          setError(null);
+          setAddresses(null);
+        }
         return;
       }
 
@@ -66,40 +72,46 @@ export function useMultiAddressLoader({
       setAddresses(null);
 
       try {
-        const uniqueNetworks = [...new Set(networks)];
-        const addressPromises = uniqueNetworks.map((network) =>
-          AccountService.callAccountMethod<'getAddress'>(
-            network,
-            accountIndex,
-            'getAddress'
-          ),
-        );
+        const addressesResult = await AddressService.getAddresses(accountIndices, networks)
 
-        const loadedAddresses = await Promise.all(addressPromises);
+        if (isStale) return;
 
-        const addressMap = new Map<string, string>();
-        uniqueNetworks.forEach((network, index) => {
-          addressMap.set(network, loadedAddresses[index] as string);
-        });
-
-        const finalAddresses = networks.map((network) => ({
-          network,
-          address: addressMap.get(network)!,
-        }));
+        const finalAddresses: AddressResult[] = addressesResult.map((addressInfo) => {
+          if (addressInfo.success === true) {
+            return {
+              network: addressInfo.network,
+              accountIndex: addressInfo.accountIndex,
+              address: addressInfo.address
+            }
+          } else {
+            return {
+              network: addressInfo.network,
+              accountIndex: addressInfo.accountIndex,
+              address: null
+            }
+          }
+        })
 
         setAddresses(finalAddresses);
       } catch (e) {
+        if (isStale) return;
         const err = e instanceof Error ? e : new Error('Failed to load addresses');
         logError('useMultiAddressLoader failed:', err);
         setError(err);
       } finally {
-        setIsLoading(false);
+        if (!isStale) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadAddresses();
+
+    return () => {
+      isStale = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networksKey, accountIndex, enabled, activeWalletId]);
+  }, [networksKey, activeIndices, enabled, activeWalletId]);
 
   return { addresses, isLoading, error };
 }

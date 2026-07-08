@@ -14,10 +14,10 @@
 
 import { useCallback, useMemo } from 'react'
 import { AccountService } from '../services/accountService'
+import { fetchBalances } from '../services/balanceService'
 import { getWalletStore } from '../store/walletStore'
 import type { IAsset } from '../types'
 import { BalanceFetchResult } from '../types'
-import { convertBalanceToString } from '../utils/balanceUtils'
 import { useAddressLoader } from './useAddressLoader'
 import { requireInitialized } from '../utils/storeHelpers'
 
@@ -146,100 +146,8 @@ export function useAccount<T extends object>(
       if (!tokens || tokens.length === 0) {
         return []
       }
-      
-      const nativeTokenPromises = tokens.filter(asset => asset.isNative()).map(async (asset) => {
-        try {
-          const balanceResult = await AccountService.callAccountMethod<
-            'getBalance'
-          >(account.network, account.accountIndex, 'getBalance')
-          const balance = convertBalanceToString(balanceResult)
 
-          return {
-            success: true,
-            network: account.network,
-            accountIndex: account.accountIndex,
-            assetId: asset.getId(),
-            balance,
-          }
-        } catch (err) {
-          return {
-            success: false,
-            network: account.network,
-            accountIndex: account.accountIndex,
-            assetId: asset.getId(),
-            balance: null,
-            error: err instanceof Error ? err.message : String(err),
-          }
-        }
-      })
-      
-      const nonNativeTokens = tokens.filter(asset => !asset.isNative());
-      const nonNativeResultsPromise = (async () => {
-        if (nonNativeTokens.length === 0) {
-          return [];
-        }
-
-        try {
-          const nonNativeTokenAddresses = nonNativeTokens.map((asset) => {
-            const address = asset.getContractAddress();
-            if (!address) {
-              throw new Error(`Asset ${asset.getId()} is non-native but has no contract address.`);
-            }
-            return address;
-          });
-
-          const balanceMap = await AccountService.callAccountMethod<
-            'getTokenBalances'
-          >(
-            account.network,
-            account.accountIndex,
-            'getTokenBalances',
-            nonNativeTokenAddresses,
-          );
-
-          return nonNativeTokens.map((asset) => {
-            const address = asset.getContractAddress()!;
-            const balanceResult = balanceMap[address];
-
-            if (balanceResult === undefined) {
-              return {
-                success: false,
-                network: account.network,
-                accountIndex: account.accountIndex,
-                assetId: asset.getId(),
-                balance: null,
-                error: 'Balance not returned from service.',
-              };
-            }
-
-            const balance = convertBalanceToString(balanceResult);
-
-            return {
-              success: true,
-              network: account.network,
-              accountIndex: account.accountIndex,
-              assetId: asset.getId(),
-              balance,
-            };
-          });
-        } catch (err) {
-          return nonNativeTokens.map(asset => ({
-            success: false,
-            network: account.network,
-            accountIndex: account.accountIndex,
-            assetId: asset.getId(),
-            balance: null,
-            error: err instanceof Error ? err.message : String(err),
-          }));
-        }
-      })();
-
-      const results = await Promise.all([
-        ...nativeTokenPromises,
-        nonNativeResultsPromise,
-      ]);
-
-      return results.flat();
+      return await fetchBalances(account.accountIndex, tokens)
     },
     [account, accountParams.network, accountParams.accountIndex],
   )

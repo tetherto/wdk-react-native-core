@@ -66,10 +66,12 @@ export function handleServiceError(
   error: unknown,
   component: string,
   operation: string,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown> & { silent?: boolean }
 ): never {
   const normalized = normalizeError(error, false, { component, operation, ...context })
-  logError(`[${component}] ${operation} failed:`, normalized)
+  if (!context?.silent) {
+    logError(`[${component}] ${operation} failed:`, normalized)
+  }
   throw normalized
 }
 

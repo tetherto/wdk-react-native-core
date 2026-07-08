@@ -49,6 +49,10 @@ import { produce } from 'immer'
 import { getWalletStore } from '../store/walletStore'
 import { resolveWalletId, updateBalanceInState, getNestedState } from '../utils/storeHelpers'
 import { validateBalance, validateWalletParams } from '../utils/validation'
+import { BalanceFetchResult, IAsset } from '../types'
+import { AccountService } from './accountService'
+import { convertBalanceToString } from '../utils/balanceUtils'
+import { log, logError, logWarn } from '../utils/logger'
 
 /**
  * Balance Service
@@ -282,4 +286,255 @@ export class BalanceService {
       lastBalanceUpdate: {},
     })
   }
+}
+
+type FetchBalancesResult =
+  | { success: true; asset: IAsset; balance: string }
+  | { success: false; asset: IAsset; error: unknown };
+
+const BATCH_NOT_SUPPORTED = 'Batch balance fetching is not supported';
+
+async function fetchNonNativeBalancesInBatch(network: string, accountIndex: number, nonNativeAssets: IAsset[]): Promise<FetchBalancesResult[]> {
+  try {
+    const tokenAddresses = nonNativeAssets
+      .filter((asset) => asset.getContractAddress() !== null)
+      .map((asset) => {
+        return asset.getContractAddress()!;
+      });
+  
+    const balanceMap = await AccountService.callAccountMethod(
+      network,
+      accountIndex,
+      'getTokenBalances',
+      tokenAddresses,
+    );
+  
+    return nonNativeAssets.map((asset) => {
+      const address = asset.getContractAddress();
+      if (!address) {
+        return { success: false, asset, error: new Error(`Token ${asset.getId()} has no address`)}
+      }
+  
+      const balance = (balanceMap as Record<string, string>)[address];
+      if (balance === undefined) {
+        return { success: false, asset, error: new Error('Balance not in map') };
+      }
+  
+      return { success: true, asset, balance: convertBalanceToString(balance) };
+    });
+  } catch (error) {
+    if ((error as Error).message.includes('not found on account for network')) {
+      return nonNativeAssets.map((asset) => ({ success: false, asset, error: new Error(BATCH_NOT_SUPPORTED) }));
+    }
+
+    return nonNativeAssets.map((asset) => ({ success: false, asset, error }));
+  }
+}
+
+async function fetchNonNativeBalances(network: string, accountIndex: number, nonNativeAssets: IAsset[]): Promise<FetchBalancesResult[]> {
+  return await Promise.all(
+    nonNativeAssets.map(async (asset) => {
+      const address = asset.getContractAddress();
+      if (!address) {
+        return { success: false, asset, error: Error(`Token ${asset.getId()} has no address`) };
+      }
+
+      try {
+        const balanceResult = await AccountService.callAccountMethod(
+          network,
+          accountIndex,
+          "getTokenBalance",
+          address,
+        );
+  
+        const balance = convertBalanceToString(balanceResult);
+        return { success: true, asset, balance };
+      } catch (error) {
+        return { success: false, asset, error };
+      }
+    })
+  );
+}
+
+async function fetchBalancesForNetwork(accountIndex: number, networkAssets: IAsset[]): Promise<FetchBalancesResult[]> {
+  if (networkAssets.length === 0) {
+    return [];
+  }
+
+  const uniqueNetworks = new Set(networkAssets.map(asset => asset.getNetwork()));
+  if (uniqueNetworks.size !== 1) {
+    throw new Error('Asset group must belong to only one network.');
+  }
+
+  const network = networkAssets[0]!.getNetwork();
+  const nativeAssets = networkAssets.filter((asset) => asset.isNative());
+  const nonNativeAssets = networkAssets.filter((asset) => !asset.isNative());
+
+  const nativePromises: Promise<FetchBalancesResult>[] = nativeAssets.map(
+    (asset) =>
+      (async () => {
+        try {
+          const balanceResult = await AccountService.callAccountMethod(
+            network,
+            accountIndex,
+            "getBalance",
+          );
+          const balance = convertBalanceToString(balanceResult);
+          return { success: true, asset, balance } as FetchBalancesResult;
+        } catch (error) {
+          return { success: false, asset, error } as FetchBalancesResult;
+        }
+      })(),
+  );
+
+  const nonNativePromise: Promise<FetchBalancesResult[]> = (async () => {
+    if (nonNativeAssets.length === 0) {
+      return [];
+    }
+
+    const balances = await fetchNonNativeBalancesInBatch(network, accountIndex, nonNativeAssets);
+
+    if (balances.length > 0) {
+      const firstBalance = balances[0]!;
+      if (firstBalance.success === false && (firstBalance.error as Error).message.includes(BATCH_NOT_SUPPORTED)) {
+        return await fetchNonNativeBalances(network, accountIndex, nonNativeAssets);
+      }
+    }
+
+    return balances;
+  })();
+
+  const [nativeResults, nonNativeResults] = await Promise.all([
+    Promise.all(nativePromises),
+    nonNativePromise,
+  ]);
+  return [...nativeResults, ...nonNativeResults];
+}
+
+export async function fetchBalances(
+  accountIndex: number,
+  assets: IAsset[],
+  networkTimeoutMs: number = 15_000,
+): Promise<BalanceFetchResult[]> {
+  const assetsByNetwork = new Map<string, IAsset[]>();
+  assets.forEach(asset => {
+    const network = asset.getNetwork();
+    if (!assetsByNetwork.has(network)) {
+      assetsByNetwork.set(network, []);
+    }
+    assetsByNetwork.get(network)!.push(asset);
+  });
+
+  const allNetworkPromises = Array.from(assetsByNetwork.entries()).map(
+    async ([network, networkAssets]) => {
+      let timedOut = false;
+      let timeoutId: ReturnType<typeof setTimeout>
+      const timeout = new Promise<FetchBalancesResult[]>(resolve => {
+        timeoutId = setTimeout(() => {
+          timedOut = true;
+          const error = new Error(`Network ${network} timed out after ${networkTimeoutMs}ms`);
+          logWarn(`[fetchBalances] ${error.message}`);
+          resolve(networkAssets.map(asset => ({ success: false, asset, error })));
+        }, networkTimeoutMs);
+      });
+
+      const networkResults = await Promise.race([
+        fetchBalancesForNetwork(accountIndex, networkAssets),
+        timeout
+      ]);
+      clearTimeout(timeoutId!);
+
+      if (!timedOut) {
+        let hasSuccessfulUpdate = false;
+        for (const result of networkResults) {
+          if (!result.success) {
+            continue;
+          }
+          hasSuccessfulUpdate = true;
+          BalanceService.updateBalance(
+            accountIndex,
+            network,
+            result.asset.getId(),
+            result.balance,
+          );
+        }
+
+        if (hasSuccessfulUpdate) {
+          BalanceService.updateLastBalanceUpdate(network, accountIndex);
+          log(`[fetchBalances] Fetched balances for network ${network}:${accountIndex}`);
+        }
+      }
+
+      return networkResults;
+    },
+  );
+
+  const allResults = (await Promise.all(allNetworkPromises)).flat();
+
+  return allResults.map(result => {
+    const { asset } = result;
+    const network = asset.getNetwork();
+    const assetId = asset.getId();
+    if (result.success) {
+      return {
+        success: true,
+        network,
+        accountIndex,
+        assetId,
+        balance: result.balance,
+      };
+    }
+    const errorMessage =
+      result.error instanceof Error ? result.error.message : String(result.error);
+    logError(
+      `Failed to fetch balance for ${network}:${accountIndex}:${assetId}:`,
+      result.error,
+    );
+    return {
+      success: false,
+      network,
+      accountIndex,
+      assetId,
+      balance: null,
+      error: errorMessage,
+    };
+  });
+}
+
+/**
+ * Fetch balance for a specific asset
+ *
+ * @param accountIndex - Account index
+ * @param asset - Asset entity (contains ID and contract details)
+ * @param walletId - Optional wallet identifier (defaults to activeWalletId)
+ * @returns Promise with balance fetch result
+ */
+export async function fetchBalance(accountIndex: number, asset: IAsset): Promise<BalanceFetchResult> {
+  const results = await fetchBalancesForNetwork(accountIndex, [asset]);
+  const result = results[0]!;
+
+  if (result.success) {
+    BalanceService.updateBalance(accountIndex, result.asset.getNetwork(), result.asset.getId(), result.balance);
+    BalanceService.updateLastBalanceUpdate(result.asset.getNetwork(), accountIndex);
+
+    return {
+      success: true,
+      network: result.asset.getNetwork(),
+      accountIndex,
+      assetId: result.asset.getId(),
+      balance: result.balance,
+    };
+  }
+
+  const errorMessage = result.error instanceof Error ? result.error.message : String(result.error);
+  logError(`Failed to fetch balance for ${result.asset.getNetwork()}:${accountIndex}:${result.asset.getId()}:`, result.error);
+
+  return {
+    success: false,
+    network: result.asset.getNetwork(),
+    accountIndex,
+    assetId: result.asset.getId(),
+    balance: null,
+    error: errorMessage,
+  };
 }

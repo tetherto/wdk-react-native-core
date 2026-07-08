@@ -112,7 +112,73 @@ export class AccountService {
           network,
           accountIndex,
           methodName,
+          silent: methodName === 'getTokenBalances'
         },
+      )
+    }
+  }
+
+  static async callProtocolMethod(
+    network: string,
+    accountIndex: number,
+    methodName: string,
+    protocolType: string,
+    protocolName: string,
+    ...args: unknown[]
+  ): Promise<unknown> {
+    if (typeof methodName !== 'string' || methodName.trim().length === 0) {
+      throw new Error('methodName must be a non-empty string')
+    }
+
+    validateNetworkName(network)
+    validateAccountIndex(accountIndex)
+
+    const hrpc = await requireInitialized()
+
+    let argsString: string | undefined = undefined
+    if (args !== undefined && args !== null) {
+      argsString = safeStringify(args)
+    }
+
+    const optionsString = safeStringify({ protocolType, protocolName })
+
+    try {
+      const response = await hrpc.callMethod({
+        methodName: String(methodName),
+        network,
+        accountIndex,
+        args: argsString,
+        options: optionsString,
+      })
+
+      const validatedResponse = workletResponseSchema.parse(response)
+
+      if (!validatedResponse.result) {
+        throw new Error(`Protocol method ${methodName} returned no result`)
+      }
+
+      let parsed
+      try {
+        parsed = JSON.parse(validatedResponse.result)
+        if (parsed === null || parsed === undefined) {
+          throw new Error('Parsed result is null or undefined')
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Parsed result is null')) {
+          throw error
+        }
+        throw new Error(
+          `Failed to parse result from ${methodName}: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+
+      return convertBigIntToString(parsed)
+    } catch (error) {
+      handleServiceError(
+        error,
+        'AccountService',
+        `callProtocolMethod:${String(methodName)}`,
+        { network, accountIndex, methodName },
       )
     }
   }

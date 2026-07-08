@@ -41,6 +41,9 @@ export type { UseAddressesReturn } from './hooks/useAddresses'
 export { useAccount } from './hooks/useAccount'
 export type { UseAccountParams, UseAccountReturn, UseAccountResponse, TransactionParams, TransactionResult } from './hooks/useAccount'
 
+export { useProtocol } from './hooks/useProtocol'
+export type { UseProtocolParams } from './hooks/useProtocol'
+
 export type { UseWdkAppResult } from './hooks/useWdkApp'
 
 export { useWalletManager } from './hooks/useWalletManager'
@@ -48,6 +51,7 @@ export type { UseWalletManagerResult, WalletInfo } from './hooks/useWalletManage
 export {
   useBalance,
   useBalancesForWallet,
+  useBalancesForWallets,
   useRefreshBalance,
   balanceQueryKeys,
 } from './hooks/useBalance'
@@ -57,3 +61,8 @@ export type { BalanceQueryOptions } from './hooks/useBalance'
 export type { AccountInfo } from './store/walletStore'
 
 export { validateMnemonic } from './utils/mnemonicUtils'
+
+export { useModule } from './hooks/useModule'
+export type { UseModuleProxy } from './hooks/useModule'
+export { ModuleService } from './services/moduleService'
+export type { ModuleEventListener } from './services/moduleService'

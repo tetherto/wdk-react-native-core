@@ -61,17 +61,14 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query'
 
-import { AccountService } from '../services/accountService'
-import { BalanceService } from '../services/balanceService'
+import { BalanceService, fetchBalance, fetchBalances } from '../services/balanceService'
 import { getWalletStore } from '../store/walletStore'
 import { resolveWalletId } from '../utils/storeHelpers'
-import { convertBalanceToString } from '../utils/balanceUtils'
 import {
   DEFAULT_QUERY_STALE_TIME_MS,
   DEFAULT_QUERY_GC_TIME_MS,
   QUERY_KEY_TAGS,
 } from '../utils/constants'
-import { log, logError, logWarn } from '../utils/logger'
 import { useAddressLoader } from './useAddressLoader';
 import { useMultiAddressLoader } from './useMultiAddressLoader';
 import type { BalanceFetchResult, IAsset } from '../types'
@@ -158,6 +155,48 @@ export const balanceQueryKeys = {
       QUERY_KEY_TAGS.TOKEN,
       assetId,
     ] as const,
+  byTokensAndIndices: (walletId: string, accountIndices: number[], assetIds: string[]) => {
+    const sortedIndices = [...accountIndices].sort((a, b) => a - b)
+    const sortedAssetIds = [...assetIds].sort()
+
+    return [
+      QUERY_KEY_TAGS.BALANCES,
+      QUERY_KEY_TAGS.WALLET,
+      walletId,
+      sortedIndices,
+      sortedAssetIds,
+      'multi'
+    ]
+  }
+}
+
+async function promisePool<T>(
+  promiseFns: (() => Promise<T>)[],
+  concurrency = 2
+): Promise<T[]> {
+  const results: T[] = new Array(promiseFns.length)
+  let index = 0
+
+  const runNext = async (): Promise<void> => {
+    if (index >= promiseFns.length) {
+      return
+    }
+
+    const currentIndex = index++
+    const promiseFn = promiseFns[currentIndex]!
+
+    results[currentIndex] = await promiseFn()
+
+    await runNext()
+  }
+
+  const workers = Array(Math.min(concurrency, promiseFns.length))
+    .fill(null)
+    .map(() => runNext())
+
+  await Promise.all(workers)
+
+  return results
 }
 
 /**
@@ -169,80 +208,6 @@ function isQueryEnabled(
   additionalCondition: boolean = true,
 ): boolean {
   return enabledOption !== false && isInitialized && additionalCondition
-}
-
-/**
- * Fetch balance for a specific asset
- *
- * @param accountIndex - Account index
- * @param asset - Asset entity (contains ID and contract details)
- * @param walletId - Optional wallet identifier (defaults to activeWalletId)
- * @returns Promise with balance fetch result
- */
-async function fetchBalance(
-  accountIndex: number,
-  asset: IAsset,
-): Promise<BalanceFetchResult> {
-  const assetId = asset.getId()
-  const network = asset.getNetwork()
-
-  try {
-    let balanceResult: string
-
-    if (asset.isNative()) {
-      balanceResult = await AccountService.callAccountMethod<'getBalance'>(
-        network,
-        accountIndex,
-        'getBalance',
-      )
-    } else {
-      const tokenAddress = asset.getContractAddress()
-
-      if (!tokenAddress) {
-        throw new Error('Token address cannot be null')
-      }
-
-      balanceResult = await AccountService.callAccountMethod<'getTokenBalance'>(
-        network,
-        accountIndex,
-        'getTokenBalance',
-        tokenAddress,
-      )
-    }
-
-    const balance = convertBalanceToString(balanceResult)
-
-    BalanceService.updateBalance(
-      accountIndex,
-      network,
-      assetId,
-      balance,
-    )
-    BalanceService.updateLastBalanceUpdate(network, accountIndex)
-
-    return {
-      success: true,
-      network,
-      accountIndex,
-      assetId,
-      balance,
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    logError(
-      `Failed to fetch balance for ${network}:${accountIndex}:${assetId}:`,
-      error,
-    )
-
-    return {
-      success: false,
-      network,
-      accountIndex,
-      assetId,
-      balance: null,
-      error: errorMessage,
-    }
-  }
 }
 
 /**
@@ -334,165 +299,6 @@ export function useBalance(
   return { ...query, isLoading, error }
 }
 
-type FetchBalancesResult =
-  | { success: true; asset: IAsset; balance: string }
-  | { success: false; asset: IAsset; error: unknown };
-
-async function fetchBalances(
-  accountIndex: number,
-  assets: IAsset[],
-  networkTimeoutMs: number = 15_000,
-): Promise<BalanceFetchResult[]> {
-  const assetsByNetwork = new Map<string, IAsset[]>();
-  assets.forEach(asset => {
-    const network = asset.getNetwork();
-    if (!assetsByNetwork.has(network)) {
-      assetsByNetwork.set(network, []);
-    }
-    assetsByNetwork.get(network)!.push(asset);
-  });
-
-  const allNetworkPromises = Array.from(assetsByNetwork.entries()).map(
-    async ([network, networkAssets]) => {
-      const fetchNetwork = async (): Promise<FetchBalancesResult[]> => {
-        const nativeAssets = networkAssets.filter(asset => asset.isNative());
-        const nonNativeAssets = networkAssets.filter(asset => !asset.isNative());
-
-        const nativePromises: Promise<FetchBalancesResult>[] = nativeAssets.map(asset =>
-          (async () => {
-            try {
-              const balanceResult = await AccountService.callAccountMethod(
-                network,
-                accountIndex,
-                'getBalance',
-              );
-              const balance = convertBalanceToString(balanceResult);
-              return { success: true, asset, balance } as FetchBalancesResult;
-            } catch (error) {
-              return { success: false, asset, error } as FetchBalancesResult;
-            }
-          })(),
-        );
-
-        const nonNativePromise: Promise<FetchBalancesResult[]> = (async () => {
-          if (nonNativeAssets.length === 0) {
-            return [];
-          }
-
-          try {
-            const tokenAddresses = nonNativeAssets.map(asset => {
-              const address = asset.getContractAddress();
-              if (!address) {
-                throw new Error(`Token ${asset.getId()} has no address`);
-              }
-              return address;
-            });
-            const balanceMap = await AccountService.callAccountMethod(
-              network,
-              accountIndex,
-              'getTokenBalances',
-              tokenAddresses,
-            );
-
-            return nonNativeAssets.map(asset => {
-              const address = asset.getContractAddress()!;
-              const balance = (balanceMap as Record<string, string>)[address];
-              if (balance === undefined) {
-                return {
-                  success: false,
-                  asset,
-                  error: new Error('Balance not in map'),
-                };
-              }
-              return {
-                success: true,
-                asset,
-                balance: convertBalanceToString(balance),
-              };
-            });
-          } catch (error) {
-            return nonNativeAssets.map(asset => ({ success: false, asset, error }));
-          }
-        })();
-
-        const [nativeResults, nonNativeResults] = await Promise.all([
-          Promise.all(nativePromises),
-          nonNativePromise,
-        ]);
-        return [...nativeResults, ...nonNativeResults];
-      };
-
-      let timedOut = false;
-      let timeoutId: ReturnType<typeof setTimeout>
-      const timeout = new Promise<FetchBalancesResult[]>(resolve => {
-        timeoutId = setTimeout(() => {
-          timedOut = true;
-          const error = new Error(`Network ${network} timed out after ${networkTimeoutMs}ms`);
-          logWarn(`[fetchBalances] ${error.message}`);
-          resolve(networkAssets.map(asset => ({ success: false, asset, error })));
-        }, networkTimeoutMs);
-      });
-
-      const networkResults = await Promise.race([fetchNetwork(), timeout]);
-      clearTimeout(timeoutId!);
-
-      if (!timedOut) {
-        let hasSuccessfulUpdate = false;
-        for (const result of networkResults) {
-          if (!result.success) {
-            continue;
-          }
-          hasSuccessfulUpdate = true;
-          BalanceService.updateBalance(
-            accountIndex,
-            network,
-            result.asset.getId(),
-            result.balance,
-          );
-        }
-
-        if (hasSuccessfulUpdate) {
-          BalanceService.updateLastBalanceUpdate(network, accountIndex);
-          log(`[fetchBalances] Fetched balances for network ${network}:${accountIndex}`);
-        }
-      }
-
-      return networkResults;
-    },
-  );
-
-  const allResults = (await Promise.all(allNetworkPromises)).flat();
-
-  return allResults.map(result => {
-    const { asset } = result;
-    const network = asset.getNetwork();
-    const assetId = asset.getId();
-    if (result.success) {
-      return {
-        success: true,
-        network,
-        accountIndex,
-        assetId,
-        balance: result.balance,
-      };
-    }
-    const errorMessage =
-      result.error instanceof Error ? result.error.message : String(result.error);
-    logError(
-      `Failed to fetch balance for ${network}:${accountIndex}:${assetId}:`,
-      result.error,
-    );
-    return {
-      success: false,
-      network,
-      accountIndex,
-      assetId,
-      balance: null,
-      error: errorMessage,
-    };
-  });
-}
-
 export type UseBalancesForWalletResult = Omit<
   UseQueryResult<BalanceFetchResult[], Error>,
   'isLoading' | 'error'
@@ -519,7 +325,7 @@ export function useBalancesForWallet(
     error: addressesError,
   } = useMultiAddressLoader({
     networks: uniqueNetworks,
-    accountIndex,
+    accountIndices: [accountIndex],
     enabled: options?.enabled,
   });
 
@@ -552,6 +358,97 @@ export function useBalancesForWallet(
   const query = useQuery({
     queryKey,
     queryFn: () => fetchBalances(accountIndex, assetConfigs),
+    enabled: isQueryEnabled(
+      options?.enabled,
+      !!walletId && !areAddressesLoading && assetConfigs.length > 0,
+    ),
+    refetchInterval: options?.refetchInterval,
+    staleTime: options?.staleTime ?? DEFAULT_QUERY_STALE_TIME_MS,
+    gcTime: DEFAULT_QUERY_GC_TIME_MS,
+    initialData,
+  });
+
+  const isLoading = areAddressesLoading || query.isLoading;
+  const error = addressesError || query.error;
+
+  return { ...query, isLoading, error: error as Error | null };
+}
+
+export type UseBalancesForWalletsResult = Omit<
+  UseQueryResult<BalanceFetchResult[], Error>,
+  'isLoading' | 'error'
+> & {
+  isLoading: boolean;
+  error: Error | null;
+};
+
+export function useBalancesForWallets(
+  accountIndices: number[],
+  assetConfigs: IAsset[],
+  options?: BalanceQueryOptions & { concurrencyLimit?: number }
+): UseBalancesForWalletsResult {
+  const uniqueNetworks = useMemo(
+    () => [...new Set(assetConfigs.map((asset) => asset.getNetwork()))],
+    [assetConfigs],
+  );
+
+  const {
+    isLoading: areAddressesLoading,
+    error: addressesError,
+  } = useMultiAddressLoader({
+    networks: uniqueNetworks,
+    accountIndices: accountIndices,
+    enabled: options?.enabled,
+  });
+
+  const walletId = getWalletStore()((state) => state.activeWalletId);
+
+  const initialData: BalanceFetchResult[] | undefined = (() => {
+    if (!walletId || assetConfigs.length === 0) {
+      return undefined;
+    }
+
+    return accountIndices.flatMap((accountIndex) => {
+      return assetConfigs.map((asset) => {
+        const balance = BalanceService.getBalance(
+          accountIndex,
+          asset.getNetwork(),
+          asset.getId(),
+          walletId,
+        );
+  
+        return {
+          success: true,
+          network: asset.getNetwork(),
+          accountIndex: accountIndex,
+          assetId: asset.getId(),
+          balance,
+        };
+      })
+    });
+  })();
+
+  const query = useQuery({
+    queryKey: balanceQueryKeys.byTokensAndIndices(walletId || '', accountIndices, assetConfigs.map((asset) => asset.getId())),
+    queryFn: async () => {
+      const concurrency = options?.concurrencyLimit ?? 2;
+      const tasks = accountIndices.map((accountIndex) => async (): Promise<BalanceFetchResult[]> => {
+        try {
+          return await fetchBalances(accountIndex, assetConfigs);
+        } catch (error) {
+          return assetConfigs.map((asset) => ({
+            success: false,
+            network: asset.getNetwork(),
+            accountIndex,
+            assetId: asset.getId(),
+            balance: null,
+            error: error instanceof Error ? error.message : String(error),
+          }));
+        }
+      });
+      const results = await promisePool(tasks, concurrency);
+      return results.flat();
+    },
     enabled: isQueryEnabled(
       options?.enabled,
       !!walletId && !areAddressesLoading && assetConfigs.length > 0,
