@@ -608,6 +608,7 @@ export function useWalletManager(): UseWalletManagerResult {
   const createWallet = useCallback(
     async (walletId: string) => {
       clearTemporaryWallet()
+      await WorkletLifecycleService.ensureWorkletStarted()
 
       try {
         walletStore.setState((prev) =>

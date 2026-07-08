@@ -38,8 +38,7 @@
  *
  * These stores are intentionally separate to:
  * 1. Prevent cross-contamination of lifecycle and data concerns
- * 2. Allow independent persistence strategies
- * 3. Enable clear boundaries for testing and debugging
+ * 2. Enable clear boundaries for testing and debugging
  *
  * ## Important Notes
  *

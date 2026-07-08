@@ -9,8 +9,7 @@ export default [
     ignores: [
       'dist/',
       'node_modules/',
-      'src/__mocks__/',
-      'src/__tests__/',
+      'tests',
     ],
   },
   pluginJs.configs.recommended,

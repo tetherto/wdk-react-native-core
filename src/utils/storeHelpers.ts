@@ -24,6 +24,7 @@ import { getWalletStore } from '../store/walletStore'
 import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 import { produce } from 'immer'
+import { logWarn } from './logger'
 
 /**
  * Require that worklet is initialized and return HRPC instance
@@ -42,8 +43,13 @@ export async function requireInitialized(): Promise<HRPC> {
 
   // Wait for both promises to ensure full initialization.
   // The worklet must start before the WDK can be initialized.
-  await store.getState().isWorkletStartedPromise.promise
-  await store.getState().isWorkletInitializedPromise.promise
+  try {
+    await store.getState().isWorkletStartedPromise.promise
+    await store.getState().isWorkletInitializedPromise.promise
+  } catch (e) {
+    logWarn(e)
+    throw new Error('WDK not initialized')
+  }
 
   const latestState = store.getState()
   // After promises resolve, check for all required state properties.

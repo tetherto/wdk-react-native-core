@@ -1,0 +1,197 @@
+// Copyright 2026 Tether Operations Limited
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Tests for type guard utilities
+ */
+
+import {
+  isWdkConfig,
+  isWdkConfigs,
+  isWalletAddresses,
+  isWalletBalances,
+  isAssetConfig,
+  isValidAccountIndex,
+  isValidNetworkName,
+  isValidBalanceString,
+} from '../../src/utils/typeGuards'
+import type { WdkConfigs, WdkNetworkConfig } from '../../src/types'
+
+describe('typeGuards', () => {
+  describe('isNetworkConfig', () => {
+    it('should return true for valid network config', () => {
+      const valid: WdkNetworkConfig = {
+        blockchain: 'ethereum',
+        config: {
+          chainId: 1,
+        },
+      }
+      expect(isWdkConfig(valid)).toBe(true)
+    })
+
+    it('should return false for invalid network config', () => {
+      expect(isWdkConfig(null)).toBe(false)
+      expect(isWdkConfig({})).toBe(false)
+      expect(isWdkConfig({ chainId: 1 })).toBe(false)
+    })
+  })
+
+  describe('isNetworkConfigs', () => {
+    it('should return true for valid network configs', () => {
+      const valid: WdkConfigs = {
+        networks: {
+          ethereum: {
+            blockchain: 'ethereum',
+            config: {
+              chainId: 1,
+            },
+          },
+        },
+      }
+      expect(isWdkConfigs(valid)).toBe(true)
+    })
+
+    it('should return false for invalid network configs', () => {
+      expect(isWdkConfigs(null)).toBe(false)
+      expect(isWdkConfigs({})).toBe(false)
+      expect(isWdkConfigs([])).toBe(false)
+      expect(isWdkConfigs({ ethereum: null })).toBe(false)
+    })
+  })
+
+  describe('isAssetConfig', () => {
+    it('should return true for valid asset config', () => {
+      const valid = {
+        id: 'eth-native',
+        network: 'ethereum',
+        symbol: 'ETH',
+        name: 'Ethereum',
+        decimals: 18,
+        isNative: true,
+        address: null,
+      }
+      expect(isAssetConfig(valid)).toBe(true)
+
+      const validWithAddress = {
+        id: 'usdt',
+        network: 'ethereum',
+        symbol: 'USDT',
+        name: 'Tether',
+        decimals: 6,
+        isNative: false,
+        address: '0x1234567890123456789012345678901234567890',
+      }
+      expect(isAssetConfig(validWithAddress)).toBe(true)
+    })
+
+    it('should return false for invalid asset config', () => {
+      expect(isAssetConfig(null)).toBe(false)
+      expect(isAssetConfig({})).toBe(false)
+      expect(isAssetConfig({ symbol: 'ETH' })).toBe(false)
+      expect(isAssetConfig({ 
+        id: 'eth',
+        symbol: 'ETH', 
+        name: 'Ethereum', 
+        decimals: '18' // Invalid type
+      })).toBe(false)
+    })
+  })
+
+  describe('isWalletAddresses', () => {
+    it('should return true for valid wallet addresses', () => {
+      const valid = {
+        ethereum: {
+          0: '0x1234567890123456789012345678901234567890',
+          1: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        },
+      }
+      expect(isWalletAddresses(valid)).toBe(true)
+    })
+
+    it('should return false for invalid wallet addresses', () => {
+      expect(isWalletAddresses(null)).toBe(false)
+      expect(isWalletAddresses({})).toBe(true) // Empty object is valid
+      expect(isWalletAddresses([])).toBe(false)
+      expect(isWalletAddresses({ ethereum: 'invalid' })).toBe(false)
+    })
+  })
+
+  describe('isWalletBalances', () => {
+    it('should return true for valid wallet balances', () => {
+      const valid = {
+        ethereum: {
+          0: {
+            '0x0000000000000000000000000000000000000000': '1000000000000000000',
+            '0x1234567890123456789012345678901234567890': '2000000000000000000',
+          },
+        },
+      }
+      expect(isWalletBalances(valid)).toBe(true)
+    })
+
+    it('should return false for invalid wallet balances', () => {
+      expect(isWalletBalances(null)).toBe(false)
+      expect(isWalletBalances({})).toBe(true) // Empty object is valid
+      expect(isWalletBalances([])).toBe(false)
+      expect(isWalletBalances({ ethereum: { 0: 'invalid' } })).toBe(false)
+    })
+  })
+
+  describe('isValidAccountIndex', () => {
+    it('should return true for valid account indices', () => {
+      expect(isValidAccountIndex(0)).toBe(true)
+      expect(isValidAccountIndex(1)).toBe(true)
+      expect(isValidAccountIndex(100)).toBe(true)
+    })
+
+    it('should return false for invalid account indices', () => {
+      expect(isValidAccountIndex(-1)).toBe(false)
+      expect(isValidAccountIndex(1.5)).toBe(false)
+      expect(isValidAccountIndex(NaN)).toBe(false)
+      expect(isValidAccountIndex(Infinity)).toBe(false)
+    })
+  })
+
+  describe('isValidNetworkName', () => {
+    it('should return true for valid network names', () => {
+      expect(isValidNetworkName('ethereum')).toBe(true)
+      expect(isValidNetworkName('polygon-mainnet')).toBe(true)
+      expect(isValidNetworkName('network_1')).toBe(true)
+    })
+
+    it('should return false for invalid network names', () => {
+      expect(isValidNetworkName('')).toBe(false)
+      expect(isValidNetworkName('  ')).toBe(false)
+      expect(isValidNetworkName('network with spaces')).toBe(false)
+      expect(isValidNetworkName('network@invalid')).toBe(false)
+    })
+  })
+
+  describe('isValidBalanceString', () => {
+    it('should return true for valid balance strings', () => {
+      expect(isValidBalanceString('0')).toBe(true)
+      expect(isValidBalanceString('100')).toBe(true)
+      expect(isValidBalanceString('100.5')).toBe(true)
+      expect(isValidBalanceString('-100')).toBe(true)
+    })
+
+    it('should return false for invalid balance strings', () => {
+      expect(isValidBalanceString('')).toBe(false)
+      expect(isValidBalanceString('abc')).toBe(false)
+      expect(isValidBalanceString('100.5.5')).toBe(false)
+      expect(isValidBalanceString('100a')).toBe(false)
+    })
+  })
+})
+

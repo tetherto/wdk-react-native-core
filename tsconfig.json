@@ -19,6 +19,6 @@
     "noUnusedParameters": false,
     "sourceMap": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/store", "tests/*", "tests/provider/WdkAppProvider.test.tsx", "tests/hooks/useWorklet.test.tsx", "tests/hooks/useWdkApp.test.tsx", "tests/hooks/useWalletManager.test.tsx", "tests/hooks/useBalance.test.tsx"],
   "exclude": ["node_modules", "dist"]
 }
