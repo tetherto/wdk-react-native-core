@@ -33,9 +33,6 @@ jest.mock('../../src/hooks/internal/useWorkletInitializer', () => ({
     error: null,
   }),
 }));
-jest.mock('../../src/hooks/internal/useAppLifecycle', () => ({
-  useAppLifecycle: jest.fn(),
-}));
 
 const mockUseWalletOrchestrator = useWalletOrchestrator as jest.Mock;
 

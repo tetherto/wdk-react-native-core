@@ -16,7 +16,6 @@ import React, { createContext, useMemo, useRef, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createSecureStorage } from '@tetherto/wdk-react-native-secure-storage'
 
-import { useAppLifecycle } from '../hooks/internal/useAppLifecycle'
 import { useWalletOrchestrator } from '../hooks/internal/useWalletOrchestrator'
 import { useWorkletInitializer } from '../hooks/internal/useWorkletInitializer'
 
@@ -50,9 +49,6 @@ export interface WdkAppProviderProps<
 > {
   bundle: BundleConfig
   wdkConfigs: WdkConfigs<TNetwork, TProtocol>
-  enableAutoInitialization?: boolean
-  currentUserId?: string | null
-  clearSensitiveDataOnBackground?: boolean
   children: React.ReactNode
 }
 
@@ -72,9 +68,6 @@ export function WdkAppProvider<
 >({
   bundle: bundleConfig,
   wdkConfigs,
-  enableAutoInitialization = true,
-  currentUserId,
-  clearSensitiveDataOnBackground = false,
   children,
 }: WdkAppProviderProps<TNetwork, TProtocol>) {
   // Synchronous service setup (must run before child effects)
@@ -109,11 +102,7 @@ export function WdkAppProvider<
     wdkConfigs,
   })
 
-  useAppLifecycle({ clearSensitiveDataOnBackground })
-
   const { state } = useWalletOrchestrator({
-    enableAutoInitialization,
-    currentUserId,
     isWorkletStarted,
     isWorkletInitialized,
     isWdkReinitialized,
