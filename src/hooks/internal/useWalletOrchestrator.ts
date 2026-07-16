@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getWalletIdFromLoadingState,
   getWalletStore,
-  isWalletErrorState,
   isWalletLoadingState,
   updateWalletLoadingState,
   WalletLoadingState,
@@ -333,21 +332,6 @@ export function useWalletOrchestrator({
     walletStore
   ])
 
-  const retry = useCallback(() => {
-    log('[useWalletOrchestrator] Retrying initialization...')
-    if (authErrorRef.current) {
-      log(
-        '[useWalletOrchestrator] Clearing authentication error flag for retry',
-      )
-      authErrorRef.current = null
-    }
-    if (isWalletErrorState(walletLoadingState)) {
-      walletStore.setState((prev) =>
-        updateWalletLoadingState(prev, { type: 'not_loaded' }),
-      )
-    }
-  }, [walletLoadingState, walletStore])
-
   const state = useMemo((): WdkAppState => {
     const walletError =
       walletLoadingState.type === 'error' ? walletLoadingState.error : null
@@ -385,6 +369,5 @@ export function useWalletOrchestrator({
 
   return {
     state,
-    retry,
   }
 }

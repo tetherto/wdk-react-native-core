@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import React from 'react';
-import { View, Text, Button } from 'react-native';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { View, Text } from 'react-native';
+import { render, screen } from '@testing-library/react-native';
 import { WdkAppProvider } from '../../src/provider/WdkAppProvider';
 import { useWdkApp } from '../../src/hooks/useWdkApp';
 import { useWalletOrchestrator } from '../../src/hooks/internal/useWalletOrchestrator';
@@ -40,7 +40,7 @@ jest.mock('../../src/hooks/internal/useAppLifecycle', () => ({
 const mockUseWalletOrchestrator = useWalletOrchestrator as jest.Mock;
 
 const DummyConsumer = () => {
-  const { state, retry } = useWdkApp();
+  const { state } = useWdkApp();
 
   return (
     <View>
@@ -48,7 +48,6 @@ const DummyConsumer = () => {
       {state.status === 'ERROR' && (
         <Text testID="error-message">{state.error.message}</Text>
       )}
-      <Button testID="retry-button" title="Retry" onPress={retry} />
     </View>
   );
 };
@@ -85,7 +84,6 @@ describe('WdkAppProvider', () => {
     it('provides the INITIALIZING state', () => {
       mockUseWalletOrchestrator.mockReturnValue({
         state: { status: 'INITIALIZING' },
-        retry: jest.fn(),
       });
 
       render(
@@ -100,7 +98,6 @@ describe('WdkAppProvider', () => {
     it('provides the READY state', () => {
       mockUseWalletOrchestrator.mockReturnValue({
         state: { status: 'READY', walletId: 'test-wallet' },
-        retry: jest.fn(),
       });
 
       render(
@@ -116,35 +113,16 @@ describe('WdkAppProvider', () => {
         const errorMessage = 'Something went wrong';
         mockUseWalletOrchestrator.mockReturnValue({
           state: { status: 'ERROR', error: new Error(errorMessage) },
-          retry: jest.fn(),
         });
-  
+
         render(
           <WdkAppProvider {...minimalProps}>
             <DummyConsumer />
           </WdkAppProvider>
         );
-  
+
         expect(screen.getByTestId('status-text').props.children).toBe('ERROR');
         expect(screen.getByTestId('error-message').props.children).toBe(errorMessage);
-    });
-
-    it('allows a child to call the retry function', () => {
-        const retryMock = jest.fn();
-        mockUseWalletOrchestrator.mockReturnValue({
-          state: { status: 'ERROR', error: new Error('Needs retry') },
-          retry: retryMock,
-        });
-  
-        render(
-          <WdkAppProvider {...minimalProps}>
-            <DummyConsumer />
-          </WdkAppProvider>
-        );
-  
-        fireEvent.press(screen.getByTestId('retry-button'));
-  
-        expect(retryMock).toHaveBeenCalledTimes(1);
     });
   });
 

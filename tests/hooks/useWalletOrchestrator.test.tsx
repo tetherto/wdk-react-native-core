@@ -160,35 +160,6 @@ describe('useWalletOrchestrator', () => {
     expect(mockUnlock).toHaveBeenCalledTimes(1);
   });
 
-  it('should retry initialization when retry() is called', async () => {
-    const error = new Error('some error');
-    mockWalletStore.setState({ 
-        activeWalletId: 'user1',
-        walletLoadingState: { type: 'error', error } as WalletLoadingState
-    });
-    (WalletSetupService.hasWallet as jest.Mock).mockResolvedValue(true);
-
-    const { result, rerender } = renderHook((props) => useWalletOrchestrator(props), { initialProps });
-
-    expect(mockUnlock).not.toHaveBeenCalled();
-
-    rerender(initialProps);
-
-    expect(mockUnlock).not.toHaveBeenCalled();
-
-    act(() => {
-        result.current.retry();
-    });
-
-    expect(mockWalletStore.getState().walletLoadingState.type).toBe('not_loaded');
-
-    rerender(initialProps);
-
-    await waitFor(() => {
-        expect(mockUnlock).toHaveBeenCalledWith('user1');
-    });
-  });
-
   it('should return correct WdkAppState', async () => {
     const { result, rerender } = renderHook((props) => useWalletOrchestrator(props), {
         initialProps: { ...initialProps, isWorkletStarted: false }

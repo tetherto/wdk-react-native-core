@@ -40,7 +40,6 @@ export type WdkAppState =
 
 export interface WdkAppContextValue {
   state: WdkAppState;
-  retry: () => void;
 }
 
 const WdkAppContext = createContext<WdkAppContextValue | null>(null)
@@ -112,7 +111,7 @@ export function WdkAppProvider<
 
   useAppLifecycle({ clearSensitiveDataOnBackground })
 
-  const { state, retry } = useWalletOrchestrator({
+  const { state } = useWalletOrchestrator({
     enableAutoInitialization,
     currentUserId,
     isWorkletStarted,
@@ -124,9 +123,8 @@ export function WdkAppProvider<
   const contextValue: WdkAppContextValue = useMemo(
     () => ({
       state,
-      retry,
     }),
-    [state, retry],
+    [state],
   )
 
   return (

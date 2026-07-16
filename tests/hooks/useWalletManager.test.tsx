@@ -114,7 +114,6 @@ beforeEach(() => {
 
   mockUseWdkApp.mockReturnValue({
     state: { status: 'READY', walletId: 'mock-wdk-ready' },
-    retry: jest.fn(),
     reinitializeWdk: jest.fn(),
     resetWallets: jest.fn(),
   });
@@ -131,7 +130,6 @@ beforeEach(() => {
 const ContextWrapper = ({ children }: PropsWithChildren) => {
   const mockWdkAppValue: WdkAppContextValue = {
     state: { status: 'READY', walletId: 'mock-wdk-ready' },
-    retry: jest.fn(),
   };
   mockUseWdkApp.mockReturnValue(mockWdkAppValue);
 

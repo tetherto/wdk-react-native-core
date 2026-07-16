@@ -32,10 +32,8 @@ jest.spyOn(operationMutex, 'withOperationMutex').mockImplementation((_, fn) => f
 
 describe('useWdkApp', () => {
   let mockStore: StoreApi<WorkletStore>;
-  const mockRetry = jest.fn();
   const mockContextValue: WdkAppContextValue = {
     state: { status: 'INITIALIZING' },
-    retry: mockRetry,
   };
 
   // Create a wrapper component that provides the mock context
@@ -64,7 +62,6 @@ describe('useWdkApp', () => {
     const { result } = renderHook(() => useWdkApp(), { wrapper });
 
     expect(result.current.state.status).toBe('INITIALIZING');
-    expect(result.current.retry).toBe(mockRetry);
   });
 
   describe('reinitializeWdk', () => {
