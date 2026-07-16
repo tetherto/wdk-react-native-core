@@ -24,7 +24,7 @@
  * import { useWdkApp } from '@tetherto/wdk-react-native-core'
  * 
  * function App() {
- *   const { state, retry } = useWdkApp()
+ *   const { state } = useWdkApp()
  *
  *   switch (state.status) {
  *     case 'INITIALIZING':
@@ -40,7 +40,7 @@
  *       return <AppContent walletId={state.walletId} />
  *
  *     case 'ERROR':
- *       return <ErrorScreen error={state.error} onRetry={retry} />
+ *       return <ErrorScreen error={state.error} />
  *
  *     default:
  *       return <LoadingScreen />
