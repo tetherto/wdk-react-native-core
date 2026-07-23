@@ -21,13 +21,13 @@ import { requireInitialized } from '../utils/storeHelpers'
 export type UseProtocolParams = {
   accountIndex: number
   network: string
-  protocolType: 'bridge' | 'swap' | 'lending' | 'fiat'
+  protocolType: 'bridge' | 'swap' | 'swidge' | 'lending' | 'fiat'
   protocolName: string
 }
 
 /**
  * Returns a typed proxied interface for calling protocol methods
- * (bridge, swap, lending, fiat) on a WDK account.
+ * (bridge, swap, swidge, lending, fiat) on a WDK account.
  *
  * @example
  * const usdt0Bridge = useProtocol<Usdt0ProtocolEvm>({
