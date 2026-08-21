@@ -37,6 +37,7 @@ const mockWorkletStart = jest.fn(() => Promise.resolve({ status: 'success' }))
 const mockInitializeWDK = jest.fn(() => Promise.resolve({ status: 'success' }))
 const mockHRPCInstance = {
   workletStart: mockWorkletStart,
+  onModuleEvent: jest.fn(),
   ipc: mockWorkletInstance.IPC,
   initializeWDK: mockInitializeWDK,
 }
@@ -210,9 +211,12 @@ describe('WorkletLifecycleService', () => {
 
       expect(HRPC).toHaveBeenCalledWith(mockWorkletInstance.IPC)
 
+      expect(mockHRPCInstance.onModuleEvent).toHaveBeenCalledTimes(1)
       expect(mockHRPCInstance.workletStart).toHaveBeenCalledWith({
         config: JSON.stringify(defaultNetworkConfigs),
       })
+      expect(mockHRPCInstance.onModuleEvent.mock.invocationCallOrder[0])
+        .toBeLessThan(mockHRPCInstance.workletStart.mock.invocationCallOrder[0])
 
       expect(mockStore.setState).toHaveBeenCalled()
       

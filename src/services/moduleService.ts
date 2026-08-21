@@ -42,11 +42,12 @@ function listenerKey (moduleName: string, event: string): string {
   return `${moduleName}::${event}`
 }
 
-function ensureEventDispatcher (rpc: ModuleRpc): void {
-  if (wiredInstances.has(rpc as object)) {
+export function attachModuleEventDispatcher (rpcInstance: object): void {
+  if (wiredInstances.has(rpcInstance)) {
     return
   }
-  wiredInstances.add(rpc as object)
+  wiredInstances.add(rpcInstance)
+  const rpc = rpcInstance as ModuleRpc
   rpc.onModuleEvent(({ module, event, payload }) => {
     const set = listeners.get(listenerKey(module, event))
     if (set === undefined || set.size === 0) {
@@ -105,7 +106,7 @@ export class ModuleService {
     set.add(listener)
 
     void requireInitialized()
-      .then((rpc) => { ensureEventDispatcher(rpc as unknown as ModuleRpc) })
+      .then((rpc) => { attachModuleEventDispatcher(rpc as unknown as object) })
       .catch(() => { /* worklet not ready yet; init will attach the dispatcher */ })
 
     return () => {

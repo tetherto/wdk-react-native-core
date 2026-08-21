@@ -17,7 +17,7 @@
  * Module-agnostic: it only forwards callModule/lifecycle/events by name.
  */
 
-import { ModuleService } from '../../src/services/moduleService'
+import { attachModuleEventDispatcher, ModuleService } from '../../src/services/moduleService'
 import { requireInitialized } from '../../src/utils/storeHelpers'
 
 jest.mock('../../src/utils/storeHelpers', () => ({
@@ -72,6 +72,13 @@ describe('ModuleService', () => {
   })
 
   describe('onModuleEvent', () => {
+    it('attaches eagerly without requiring an application listener', () => {
+      attachModuleEventDispatcher(mockHRPC)
+      attachModuleEventDispatcher(mockHRPC)
+
+      expect(mockHRPC.onModuleEvent).toHaveBeenCalledTimes(1)
+    })
+
     it('fans out worklet events to subscribers and stops after unsubscribe', async () => {
       let dispatch: ((evt: { module: string, event: string, payload?: string | null }) => void) | undefined
       mockHRPC.onModuleEvent.mockImplementation((cb: typeof dispatch) => { dispatch = cb })
