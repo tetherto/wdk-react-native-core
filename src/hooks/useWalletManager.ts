@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Buffer } from 'buffer'
 import { produce } from 'immer'
 import { useMemo, useCallback } from 'react'
 import { WalletSetupService } from '../services/walletSetupService'
@@ -24,6 +25,7 @@ import {
 } from '../store/walletStore'
 import { getWorkletStore } from '../store/workletStore'
 import { log, logError } from '../utils/logger'
+import { memzero } from '../utils/memzero'
 import { withOperationMutex } from '../utils/operationMutex'
 import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_WALLET_IDENTIFIER } from '../utils/constants'
@@ -357,6 +359,8 @@ export function useWalletManager(): UseWalletManagerResult {
           throw new Error(`A wallet with the ID "${walletId}" already exists.`)
         }
 
+        let restoreResult: { encryptionKey: Buffer; encryptedSeed: Buffer; encryptedEntropy: Buffer } | undefined
+
         try {
           walletStore.setState((prev) =>
             updateWalletLoadingState(prev, {
@@ -366,7 +370,7 @@ export function useWalletManager(): UseWalletManagerResult {
             }),
           )
 
-          await WalletSetupService.initializeFromMnemonic(mnemonic, walletId)
+          restoreResult = await WalletSetupService.initializeFromMnemonic(mnemonic, walletId)
 
           // Refresh the main wallet list so the UI updates
           await refreshWalletList([walletId])
@@ -392,48 +396,53 @@ export function useWalletManager(): UseWalletManagerResult {
             }),
           )
           throw err
+        } finally {
+          memzero(restoreResult?.encryptionKey)
+          memzero(restoreResult?.encryptedSeed)
+          memzero(restoreResult?.encryptedEntropy)
         }
       }),
     [refreshWalletList, walletStore, clearTemporaryWallet],
   )
 
   const deleteWallet = useCallback(
-    async (walletId: string) => {
-      if (!walletId) {
-        throw new Error('Wallet ID is required for deletion')
-      }
+    (walletId: string) =>
+      withOperationMutex('deleteWallet', async () => {
+        if (!walletId) {
+          throw new Error('Wallet ID is required for deletion')
+        }
 
-      try {
-        await WalletSetupService.deleteWallet(walletId)
+        try {
+          await WalletSetupService.deleteWallet(walletId)
 
-        walletStore.setState((prev) =>
-          produce(prev, (state) => {
-            delete state.addresses[walletId]
-            delete state.balances[walletId]
-            delete state.accountList[walletId]
-            delete state.lastBalanceUpdate[walletId]
-            delete state.walletLoading[walletId]
-            delete state.balanceLoading[walletId]
+          walletStore.setState((prev) =>
+            produce(prev, (state) => {
+              delete state.addresses[walletId]
+              delete state.balances[walletId]
+              delete state.accountList[walletId]
+              delete state.lastBalanceUpdate[walletId]
+              delete state.walletLoading[walletId]
+              delete state.balanceLoading[walletId]
 
-            state.walletList = state.walletList.filter(
-              ({ identifier }) => identifier !== walletId,
-            )
+              state.walletList = state.walletList.filter(
+                ({ identifier }) => identifier !== walletId,
+              )
 
-            if (state.activeWalletId === walletId) {
-              state.activeWalletId = null
-              state.walletLoadingState = { type: 'not_loaded' }
-            }
-          }),
-        )
+              if (state.activeWalletId === walletId) {
+                state.activeWalletId = null
+                state.walletLoadingState = { type: 'not_loaded' }
+              }
+            }),
+          )
 
-        log(
-          `[useWalletManager] Deleted wallet and cleared all data: ${walletId}`,
-        )
-      } catch (err) {
-        logError('Failed to delete wallet:', err)
-        throw err
-      }
-    },
+          log(
+            `[useWalletManager] Deleted wallet and cleared all data: ${walletId}`,
+          )
+        } catch (err) {
+          logError('Failed to delete wallet:', err)
+          throw err
+        }
+      }),
     [walletStore],
   )
 
@@ -518,9 +527,21 @@ export function useWalletManager(): UseWalletManagerResult {
       try {
         await WorkletLifecycleService.ensureWorkletStarted()
 
-        return await WorkletLifecycleService.generateEntropyAndEncrypt(
+        const result = await WorkletLifecycleService.generateEntropyAndEncrypt(
           wordCount,
         )
+
+        try {
+          return {
+            encryptionKey: Buffer.from(result.encryptionKey).toString('base64'),
+            encryptedSeedBuffer: Buffer.from(result.encryptedSeedBuffer).toString('base64'),
+            encryptedEntropyBuffer: Buffer.from(result.encryptedEntropyBuffer).toString('base64'),
+          }
+        } finally {
+          memzero(result.encryptionKey)
+          memzero(result.encryptedSeedBuffer)
+          memzero(result.encryptedEntropyBuffer)
+        }
       } catch (err) {
         logError('Failed to generate entropy:', err)
         throw err
@@ -534,10 +555,18 @@ export function useWalletManager(): UseWalletManagerResult {
       try {
         await WorkletLifecycleService.ensureWorkletStarted()
 
-        return await WorkletLifecycleService.getMnemonicFromEntropy(
-          encryptedEntropy,
-          encryptionKey,
-        )
+        const encryptedEntropyBuffer = Buffer.from(encryptedEntropy, 'base64')
+        const encryptionKeyBuffer = Buffer.from(encryptionKey, 'base64')
+
+        try {
+          return await WorkletLifecycleService.getMnemonicFromEntropy(
+            encryptedEntropyBuffer,
+            encryptionKeyBuffer,
+          )
+        } finally {
+          memzero(encryptedEntropyBuffer)
+          memzero(encryptionKeyBuffer)
+        }
       } catch (err) {
         logError('Failed to get mnemonic from entropy:', err)
         throw err
@@ -551,9 +580,21 @@ export function useWalletManager(): UseWalletManagerResult {
       try {
         await WorkletLifecycleService.ensureWorkletStarted()
 
-        return await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(
+        const result = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(
           mnemonic,
         )
+
+        try {
+          return {
+            encryptionKey: Buffer.from(result.encryptionKey).toString('base64'),
+            encryptedSeedBuffer: Buffer.from(result.encryptedSeedBuffer).toString('base64'),
+            encryptedEntropyBuffer: Buffer.from(result.encryptedEntropyBuffer).toString('base64'),
+          }
+        } finally {
+          memzero(result.encryptionKey)
+          memzero(result.encryptedSeedBuffer)
+          memzero(result.encryptedEntropyBuffer)
+        }
       } catch (err) {
         logError('Failed to get seed from mnemonic:', err)
         throw err
@@ -598,8 +639,8 @@ export function useWalletManager(): UseWalletManagerResult {
         try {
           await WorkletLifecycleService.ensureWorkletStarted()
 
-          let encryptionKey: string
-          let encryptedSeed: string
+          let encryptionKey: Buffer
+          let encryptedSeed: Buffer
 
           if (mnemonic) {
             const result =

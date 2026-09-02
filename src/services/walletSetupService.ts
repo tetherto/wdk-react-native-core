@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Buffer } from 'buffer'
 import type { SecureStorage } from '@tetherto/wdk-react-native-secure-storage'
 
 import { WorkletLifecycleService } from './workletLifecycleService'
 import { DEFAULT_MNEMONIC_WORD_COUNT } from '../utils/constants'
 import { log, logError } from '../utils/logger'
+import { memzero } from '../utils/memzero'
 
 /**
  * Wallet setup service
@@ -62,8 +64,8 @@ export class WalletSetupService {
   static async createNewWallet(
     walletId?: string
   ): Promise<{
-    encryptionKey: string
-    encryptedSeed: string
+    encryptionKey: Buffer
+    encryptedSeed: Buffer
   }> {
     await WorkletLifecycleService.ensureWorkletStarted()
 
@@ -77,6 +79,10 @@ export class WalletSetupService {
         encryptedSeed: result.encryptedSeedBuffer,
       })
     } catch (error) {
+      // No reset() here: if initializeWDK constructed a WDK instance in the
+      // worklet before failing later (e.g. bad network/protocol config),
+      // cleaning that up is pear-wrk-wdk's own responsibility as the
+      // allocator, not ours - see initializeWdkHandler in pear-wrk-wdk.
       const errorMessage = error instanceof Error ? error.message : String(error)
       const isDecryptionError = 
         errorMessage.toLowerCase().includes('decryption failed') ||
@@ -93,9 +99,10 @@ export class WalletSetupService {
     }
 
     try {
-      await secureStorage.setEncryptionKey(result.encryptionKey, walletId, { requireBiometrics: false })
-      await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, walletId)
-      await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, walletId)
+      // Only convert keys to string at the border with the secure storage
+      await secureStorage.setEncryptionKey(Buffer.from(result.encryptionKey).toString('base64'), walletId, { requireBiometrics: false })
+      await secureStorage.setEncryptedSeed(Buffer.from(result.encryptedSeedBuffer).toString('base64'), walletId)
+      await secureStorage.setEncryptedEntropy(Buffer.from(result.encryptedEntropyBuffer).toString('base64'), walletId)
     } catch (error) {
       try {
         await secureStorage.deleteWallet(walletId)
@@ -116,8 +123,8 @@ export class WalletSetupService {
   static async loadExistingWallet(
     walletId?: string
   ): Promise<{
-    encryptionKey: string
-    encryptedSeed: string
+    encryptionKey: Buffer
+    encryptedSeed: Buffer
   }> {
     const secureStorage = this.getSecureStorage()
 
@@ -133,8 +140,8 @@ export class WalletSetupService {
     }
 
     return {
-      encryptionKey,
-      encryptedSeed,
+      encryptionKey: Buffer.from(encryptionKey, 'base64'),
+      encryptedSeed: Buffer.from(encryptedSeed, 'base64'),
     }
   }
 
@@ -145,14 +152,16 @@ export class WalletSetupService {
 
   /**
    * Initialize WDK from an existing mnemonic phrase
+   *
+   * The caller owns the returned buffers - zero them once done with them.
    */
   static async initializeFromMnemonic(
     mnemonic: string,
     walletId?: string
   ): Promise<{
-    encryptionKey: string
-    encryptedSeed: string
-    encryptedEntropy: string
+    encryptionKey: Buffer
+    encryptedSeed: Buffer
+    encryptedEntropy: Buffer
   }> {
     await WorkletLifecycleService.ensureWorkletStarted()
 
@@ -166,6 +175,10 @@ export class WalletSetupService {
         encryptedSeed: result.encryptedSeedBuffer,
       })
     } catch (error) {
+      // No reset() here: if initializeWDK constructed a WDK instance in the
+      // worklet before failing later (e.g. bad network/protocol config),
+      // cleaning that up is pear-wrk-wdk's own responsibility as the
+      // allocator, not ours - see initializeWdkHandler in pear-wrk-wdk.
       const errorMessage = error instanceof Error ? error.message : String(error)
       const isDecryptionError = 
         errorMessage.toLowerCase().includes('decryption failed') ||
@@ -182,23 +195,20 @@ export class WalletSetupService {
     }
 
     try {
-      await secureStorage.setEncryptionKey(result.encryptionKey, walletId, { requireBiometrics: false })
-      await secureStorage.setEncryptedSeed(result.encryptedSeedBuffer, walletId)
-      await secureStorage.setEncryptedEntropy(result.encryptedEntropyBuffer, walletId)
+      await secureStorage.setEncryptionKey(Buffer.from(result.encryptionKey).toString('base64'), walletId, { requireBiometrics: false })
+      await secureStorage.setEncryptedSeed(Buffer.from(result.encryptedSeedBuffer).toString('base64'), walletId)
+      await secureStorage.setEncryptedEntropy(Buffer.from(result.encryptedEntropyBuffer).toString('base64'), walletId)
     } catch (error) {
       try {
         await secureStorage.deleteWallet(walletId)
       } catch (cleanupError) {
         logError('Failed to cleanup partial wallet import:', cleanupError)
+      } finally {
+        WorkletLifecycleService.reset()
       }
       throw error
     }
 
-    await WorkletLifecycleService.initializeWDK({
-      encryptionKey: result.encryptionKey,
-      encryptedSeed: result.encryptedSeedBuffer,
-    })
-    
     return {
       encryptionKey: result.encryptionKey,
       encryptedSeed: result.encryptedSeedBuffer,
@@ -210,8 +220,8 @@ export class WalletSetupService {
    * Initialize WDK with wallet credentials
    */
   static async initializeWDK(credentials: {
-    encryptionKey: string
-    encryptedSeed: string
+    encryptionKey: Buffer
+    encryptedSeed: Buffer
   }): Promise<void> {
     await WorkletLifecycleService.ensureWorkletStarted()
 
@@ -228,7 +238,7 @@ export class WalletSetupService {
       walletId?: string
     }
   ): Promise<void> {
-    let credentials: { encryptionKey: string; encryptedSeed: string }
+    let credentials: { encryptionKey: Buffer; encryptedSeed: Buffer }
 
     if (options.createNew) {
       credentials = await this.createNewWallet(options.walletId)
@@ -236,8 +246,12 @@ export class WalletSetupService {
       credentials = await this.loadExistingWallet(options.walletId)
     }
 
-    // Initialize WDK with credentials
-    await this.initializeWDK(credentials)
+    try {
+      await this.initializeWDK(credentials)
+    } finally {
+      memzero(credentials.encryptionKey)
+      memzero(credentials.encryptedSeed)
+    }
   }
 
   /**
@@ -285,11 +299,19 @@ export class WalletSetupService {
       return null
     }
 
-    const result = await WorkletLifecycleService.getMnemonicFromEntropy(
-      encryptedEntropy,
-      encryptionKey
-    )
-    
-    return result.mnemonic || null
+    const encryptedEntropyBuffer = Buffer.from(encryptedEntropy, 'base64')
+    const encryptionKeyBuffer = Buffer.from(encryptionKey, 'base64')
+
+    try {
+      const result = await WorkletLifecycleService.getMnemonicFromEntropy(
+        encryptedEntropyBuffer,
+        encryptionKeyBuffer
+      )
+
+      return result.mnemonic || null
+    } finally {
+      memzero(encryptedEntropyBuffer)
+      memzero(encryptionKeyBuffer)
+    }
   }
 }

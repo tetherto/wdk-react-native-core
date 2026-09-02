@@ -172,8 +172,8 @@ export class WorkletLifecycleService {
    * Initialize WDK with encrypted seed (ONLY encrypted approach)
    */
   static async initializeWDK(options?: {
-    encryptionKey: string
-    encryptedSeed: string
+    encryptionKey: Buffer
+    encryptedSeed: Buffer
   }): Promise<void> {
     await WorkletLifecycleService.ensureWorkletStarted()
 
@@ -303,9 +303,9 @@ export class WorkletLifecycleService {
   static async generateEntropyAndEncrypt(
     wordCount: 12 | 24 = DEFAULT_MNEMONIC_WORD_COUNT,
   ): Promise<{
-    encryptionKey: string
-    encryptedSeedBuffer: string
-    encryptedEntropyBuffer: string
+    encryptionKey: Buffer
+    encryptedSeedBuffer: Buffer
+    encryptedEntropyBuffer: Buffer
   }> {
     await WorkletLifecycleService.ensureWorkletStarted()
     const store = getWorkletStore()
@@ -338,8 +338,8 @@ export class WorkletLifecycleService {
   }
 
   static async getMnemonicFromEntropy(
-    encryptedEntropy: string,
-    encryptionKey: string,
+    encryptedEntropy: Buffer,
+    encryptionKey: Buffer,
   ): Promise<{
     mnemonic: string
   }> {
@@ -377,9 +377,9 @@ export class WorkletLifecycleService {
   }
 
   static async getSeedAndEntropyFromMnemonic(mnemonic: string): Promise<{
-    encryptionKey: string
-    encryptedSeedBuffer: string
-    encryptedEntropyBuffer: string
+    encryptionKey: Buffer
+    encryptedSeedBuffer: Buffer
+    encryptedEntropyBuffer: Buffer
   }> {
     const store = getWorkletStore()
     const state = store.getState()
@@ -415,24 +415,6 @@ export class WorkletLifecycleService {
         'Failed to get seed and entropy from mnemonic',
       )
     }
-  }
-
-  /**
-   * Initialize both worklet and WDK in one call (convenience method) - ONLY encrypted
-   */
-  static async initializeWorklet(
-    options: {
-      encryptionKey: string
-      encryptedSeed: string
-      networkConfigs: WdkConfigs
-      bundleConfig: BundleConfig
-    }
-  ): Promise<void> {
-    await this.startWorklet(options.networkConfigs, options.bundleConfig)
-    await this.initializeWDK({
-      encryptionKey: options.encryptionKey,
-      encryptedSeed: options.encryptedSeed,
-    })
   }
 
   /**
@@ -521,13 +503,27 @@ export class WorkletLifecycleService {
 
   /**
    * Reset worklet state (synchronous)
-   * Clears only addresses, seed, and WDK instance - does NOT terminate the worklet
-   * The worklet continues running for faster re-initialization
-   * For async cleanup, use cleanup() instead
+   * Disposes the WDK instance held by the worklet (best-effort, fire-and-forget)
+   * and clears local addresses/seed/WDK-init state - does NOT terminate the
+   * worklet, hrpc, or ipc. The worklet continues running for faster re-initialization.
    */
   static reset(): void {
     const workletStore = getWorkletStore()
     const walletStore = getWalletStore()
+
+    // Tell the worklet to dispose the WDK instance so it zeroes the seed it
+    // holds (see pear-wrk-wdk's SECURITY.md). dispose() is a one-way HRPC
+    // event with no response - there's no confirmation it's finished before
+    // reset() returns, so this is best-effort, same as the worklet-side
+    // timing bumpEpoch() below already has to tolerate.
+    const currentState = workletStore.getState()
+    if (currentState.hrpc) {
+      try {
+        currentState.hrpc.dispose({})
+      } catch (error) {
+        logWarn('Error disposing WDK instance during reset:', error)
+      }
+    }
 
     // Clear only sensitive data - addresses, seed, and WDK instance
     // Do NOT terminate worklet, hrpc, or ipc - keep them running

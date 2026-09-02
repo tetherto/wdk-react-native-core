@@ -17,7 +17,7 @@ import type { Worklet } from 'react-native-bare-kit'
 
 import { WorkletLifecycleService } from '../../services/workletLifecycleService'
 import { getWorkletStore } from '../../store/workletStore'
-import type { WdkConfigs, BundleConfig, HRPC, WorkletStartResponse } from '../../types'
+import type { WdkConfigs, HRPC, WorkletStartResponse } from '../../types'
 import type { WorkletStore } from '../../store/workletStore'
 
 /**
@@ -31,15 +31,7 @@ import type { WorkletStore } from '../../store/workletStore'
  * 
  * @example
  * ```tsx
- * const { hrpc, isInitialized, isLoading, initializeWDK, generateEntropyAndEncrypt, error } = useWorklet()
- * 
- * useEffect(() => {
- *   if (isInitialized && !isLoading) {
- *     // Worklet is already started by WdkAppProvider
- *     const { encryptionKey, encryptedSeedBuffer } = await generateEntropyAndEncrypt(12)
- *     await initializeWDK({ encryptionKey, encryptedSeed: encryptedSeedBuffer })
- *   }
- * }, [isInitialized, isLoading])
+ * const { hrpc, isInitialized, isLoading, error } = useWorklet()
  * ```
  */
 export interface UseWorkletResult {
@@ -55,24 +47,6 @@ export interface UseWorkletResult {
   wdkInitResult: { status?: string | null } | null
   networkConfigs: WdkConfigs | null
   // Actions
-  initializeWDK: (options: { encryptionKey: string; encryptedSeed: string }) => Promise<void>
-  generateEntropyAndEncrypt: (wordCount?: 12 | 24) => Promise<{
-    encryptionKey: string
-    encryptedSeedBuffer: string
-    encryptedEntropyBuffer: string
-  }>
-  getMnemonicFromEntropy: (encryptedEntropy: string, encryptionKey: string) => Promise<{ mnemonic: string }>
-  getSeedAndEntropyFromMnemonic: (mnemonic: string) => Promise<{
-    encryptionKey: string
-    encryptedSeedBuffer: string
-    encryptedEntropyBuffer: string
-  }>
-  initializeWorklet: (options: {
-    encryptionKey: string
-    encryptedSeed: string
-    networkConfigs: WdkConfigs
-    bundleConfig: BundleConfig
-  }) => Promise<void>
   reset: () => void
   clearError: () => void
 }
@@ -106,11 +80,6 @@ export function useWorklet(): UseWorkletResult {
     workletStartResult: workletState.workletStartResult,
     wdkInitResult: workletState.wdkInitResult,
     networkConfigs: workletState.networkConfigs,
-    initializeWDK: WorkletLifecycleService.initializeWDK,
-    generateEntropyAndEncrypt: WorkletLifecycleService.generateEntropyAndEncrypt,
-    getMnemonicFromEntropy: WorkletLifecycleService.getMnemonicFromEntropy,
-    getSeedAndEntropyFromMnemonic: WorkletLifecycleService.getSeedAndEntropyFromMnemonic,
-    initializeWorklet: WorkletLifecycleService.initializeWorklet,
     reset: WorkletLifecycleService.reset,
     clearError: WorkletLifecycleService.clearError,
   }
