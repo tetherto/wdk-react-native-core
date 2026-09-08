@@ -32,6 +32,7 @@ import type { WorkletState } from '../store/workletStore'
 import HRPC from '@tetherto/pear-wrk-wdk/hrpc'
 import { createResolvablePromise } from '../utils/promise'
 import { bumpEpoch } from '../utils/workletEpoch'
+import { attachModuleEventDispatcher } from './moduleService'
 
 /**
  * Worklet Lifecycle Service
@@ -120,6 +121,7 @@ export class WorkletLifecycleService {
       }
 
       const hrpcInstance = new HRPC(IPC)
+      attachModuleEventDispatcher(hrpcInstance)
 
       const result = await hrpcInstance.workletStart({
         config: JSON.stringify(wdkConfigs),
