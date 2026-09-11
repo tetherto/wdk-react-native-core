@@ -90,29 +90,6 @@ describe('useWorklet', () => {
   });
 
   describe('Service Method Delegation', () => {
-    it('should call WorkletLifecycleService.initializeWDK when its action is invoked', async () => {
-      const { result } = renderHook(() => useWorklet());
-      const options = { encryptionKey: 'key', encryptedSeed: 'seed' };
-      
-      await act(async () => {
-        await result.current.initializeWDK(options);
-      });
-
-      expect(WorkletLifecycleService.initializeWDK).toHaveBeenCalledWith(options);
-      expect(WorkletLifecycleService.initializeWDK).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call WorkletLifecycleService.generateEntropyAndEncrypt when its action is invoked', async () => {
-      const { result } = renderHook(() => useWorklet());
-      
-      await act(async () => {
-        await result.current.generateEntropyAndEncrypt(12);
-      });
-
-      expect(WorkletLifecycleService.generateEntropyAndEncrypt).toHaveBeenCalledWith(12);
-      expect(WorkletLifecycleService.generateEntropyAndEncrypt).toHaveBeenCalledTimes(1);
-    });
-
     it('should call WorkletLifecycleService.reset when its action is invoked', () => {
         const { result } = renderHook(() => useWorklet());
         

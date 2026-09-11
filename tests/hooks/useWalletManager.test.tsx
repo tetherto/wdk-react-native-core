@@ -109,10 +109,10 @@ beforeEach(() => {
 
   mockWalletSetupService.initializeWallet.mockResolvedValue(undefined);
   mockWalletSetupService.hasWallet.mockResolvedValue(false);
-  mockWalletSetupService.initializeFromMnemonic.mockResolvedValue({ encryptedEntropy: '', encryptedSeed: '', encryptionKey: ''});
+  mockWalletSetupService.initializeFromMnemonic.mockResolvedValue({ encryptedEntropy: Buffer.alloc(0), encryptedSeed: Buffer.alloc(0), encryptionKey: Buffer.alloc(0)});
   mockWalletSetupService.deleteWallet.mockResolvedValue(undefined);
   mockWalletSetupService.getMnemonic.mockResolvedValue(null);
-  mockWalletSetupService.createNewWallet.mockResolvedValue({ encryptedSeed: '', encryptionKey: ''});
+  mockWalletSetupService.createNewWallet.mockResolvedValue({ encryptedSeed: Buffer.alloc(0), encryptionKey: Buffer.alloc(0)});
   mockWorkletLifecycleService.ensureWorkletStarted.mockResolvedValue(undefined);
 });
 
@@ -131,6 +131,26 @@ describe('useWalletManager', () => {
         expect(mockWalletSetupService.hasWallet).toHaveBeenCalledWith(walletId);
         expect(mockWalletSetupService.createNewWallet).toHaveBeenCalledWith(walletId);
         expect(mockWalletSetupService.createNewWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('zeroes the buffers returned by createNewWallet once creation completes', async () => {
+      const walletId = 'new-wallet-zero';
+      mockWalletSetupService.hasWallet.mockResolvedValue(false);
+
+      const createResult = {
+        encryptionKey: Buffer.from('key'),
+        encryptedSeed: Buffer.from('seed'),
+      };
+      mockWalletSetupService.createNewWallet.mockResolvedValueOnce(createResult);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      await act(async () => {
+        await result.current.createWallet(walletId);
+      });
+
+      expect(createResult.encryptionKey).toEqual(Buffer.alloc(createResult.encryptionKey.length));
+      expect(createResult.encryptedSeed).toEqual(Buffer.alloc(createResult.encryptedSeed.length));
     });
 
     it('should not create wallet if it already exists', async () => {
@@ -489,12 +509,63 @@ describe('useWalletManager', () => {
       expect(state.walletList).toEqual([{ identifier: activeWalletId, exists: true }]);
     });
 
+    it('should prevent concurrent deleteWallet calls using mutex', async () => {
+      let resolveDelete: (value: void | PromiseLike<void>) => void;
+      const deletePromise = new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      });
+      mockWalletSetupService.deleteWallet.mockReturnValue(deletePromise);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      let firstDeletePromise: Promise<void>;
+      await act(async () => {
+        firstDeletePromise = result.current.deleteWallet('wallet-1');
+      });
+
+      await expect(act(async () => {
+        await result.current.deleteWallet('wallet-2');
+      })).rejects.toThrow(/Another operation is in progress/);
+
+      await act(async () => {
+        resolveDelete!();
+        await firstDeletePromise!;
+      });
+    });
+
+    it('should prevent an unlock from running concurrently with a deleteWallet of a different wallet', async () => {
+      let resolveDelete: (value: void | PromiseLike<void>) => void;
+      const deletePromise = new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      });
+      mockWalletSetupService.deleteWallet.mockReturnValue(deletePromise);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      let deleteCallPromise: Promise<void>;
+      await act(async () => {
+        deleteCallPromise = result.current.deleteWallet('unrelated-wallet');
+      });
+
+      // Without the mutex, this unlock would run concurrently with the in-flight
+      // delete's WorkletLifecycleService.reset() and could observe a WDK instance
+      // that gets disposed out from under it once the delete resolves.
+      await expect(act(async () => {
+        await result.current.unlock('wallet-to-unlock');
+      })).rejects.toThrow(/Another operation is in progress/);
+
+      await act(async () => {
+        resolveDelete!();
+        await deleteCallPromise!;
+      });
+    });
+
     it('should delegate createTemporaryWallet', async () => {
       const { result } = renderHook(() => useWalletManager());
       mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValue({
-        encryptionKey: '',
-        encryptedEntropyBuffer: '',
-        encryptedSeedBuffer: ''
+        encryptionKey: Buffer.alloc(0),
+        encryptedEntropyBuffer: Buffer.alloc(0),
+        encryptedSeedBuffer: Buffer.alloc(0)
       })
 
       await act(async () => {
@@ -504,11 +575,29 @@ describe('useWalletManager', () => {
       expect(mockWorkletLifecycleService.initializeWDK).toHaveBeenCalledTimes(1);
     });
 
+    it('zeroes the key/seed/entropy buffers from a generated temporary wallet', async () => {
+      const { result } = renderHook(() => useWalletManager());
+      const generatedResult = {
+        encryptionKey: Buffer.from('key-to-zero'),
+        encryptedEntropyBuffer: Buffer.from('entropy-to-zero'),
+        encryptedSeedBuffer: Buffer.from('seed-to-zero'),
+      };
+      mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValueOnce(generatedResult);
+
+      await act(async () => {
+        await result.current.createTemporaryWallet('temp-wallet-zero');
+      });
+
+      expect(generatedResult.encryptionKey).toEqual(Buffer.alloc(generatedResult.encryptionKey.length));
+      expect(generatedResult.encryptedSeedBuffer).toEqual(Buffer.alloc(generatedResult.encryptedSeedBuffer.length));
+      expect(generatedResult.encryptedEntropyBuffer).toEqual(Buffer.alloc(generatedResult.encryptedEntropyBuffer.length));
+    });
+
     it('should clear the previous temporary wallet when creating a new one', async () => {
       mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValue({
-        encryptionKey: '',
-        encryptedEntropyBuffer: '',
-        encryptedSeedBuffer: ''
+        encryptionKey: Buffer.alloc(0),
+        encryptedEntropyBuffer: Buffer.alloc(0),
+        encryptedSeedBuffer: Buffer.alloc(0)
       });
 
       const { result } = renderHook(() => useWalletManager());
@@ -531,9 +620,9 @@ describe('useWalletManager', () => {
 
     it('should mark the temporary wallet as ready so a stale unlock cannot skip past it', async () => {
       mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValue({
-        encryptionKey: '',
-        encryptedEntropyBuffer: '',
-        encryptedSeedBuffer: ''
+        encryptionKey: Buffer.alloc(0),
+        encryptedEntropyBuffer: Buffer.alloc(0),
+        encryptedSeedBuffer: Buffer.alloc(0)
       })
 
       const { result } = renderHook(() => useWalletManager());
@@ -606,6 +695,29 @@ describe('useWalletManager', () => {
       expect(state.walletLoadingState).toEqual({ type: 'ready', identifier: walletId });
     });
 
+    it('zeroes the buffers returned by initializeFromMnemonic once restore completes', async () => {
+      const walletId = 'restored-wallet-zero';
+      const mnemonic = 'test mnemonic';
+      mockWalletSetupService.hasWallet.mockResolvedValue(false);
+
+      const restoreResult = {
+        encryptionKey: Buffer.from('key'),
+        encryptedSeed: Buffer.from('seed'),
+        encryptedEntropy: Buffer.from('entropy'),
+      };
+      mockWalletSetupService.initializeFromMnemonic.mockResolvedValueOnce(restoreResult);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      await act(async () => {
+        await result.current.restoreWallet(mnemonic, walletId);
+      });
+
+      expect(restoreResult.encryptionKey).toEqual(Buffer.alloc(restoreResult.encryptionKey.length));
+      expect(restoreResult.encryptedSeed).toEqual(Buffer.alloc(restoreResult.encryptedSeed.length));
+      expect(restoreResult.encryptedEntropy).toEqual(Buffer.alloc(restoreResult.encryptedEntropy.length));
+    });
+
     it('should throw if a wallet with that id already exists when restoring', async () => {
       const walletId = 'existing-wallet';
       const mnemonic = 'test mnemonic';
@@ -670,8 +782,8 @@ describe('useWalletManager', () => {
     });
 
     it('should reject a concurrent createWallet call while restoreWallet is in flight', async () => {
-      let resolveRestore: (value: { encryptedEntropy: string; encryptedSeed: string; encryptionKey: string } | PromiseLike<{ encryptedEntropy: string; encryptedSeed: string; encryptionKey: string }>) => void;
-      const restorePromise = new Promise<{ encryptedEntropy: string; encryptedSeed: string; encryptionKey: string }>((resolve) => {
+      let resolveRestore: (value: { encryptedEntropy: Buffer; encryptedSeed: Buffer; encryptionKey: Buffer } | PromiseLike<{ encryptedEntropy: Buffer; encryptedSeed: Buffer; encryptionKey: Buffer }>) => void;
+      const restorePromise = new Promise<{ encryptedEntropy: Buffer; encryptedSeed: Buffer; encryptionKey: Buffer }>((resolve) => {
         resolveRestore = resolve;
       });
       mockWalletSetupService.initializeFromMnemonic.mockReturnValue(restorePromise);
@@ -689,7 +801,7 @@ describe('useWalletManager', () => {
       })).rejects.toThrow(/Another operation is in progress/);
 
       await act(async () => {
-        resolveRestore!({ encryptedEntropy: '', encryptedSeed: '', encryptionKey: '' });
+        resolveRestore!({ encryptedEntropy: Buffer.alloc(0), encryptedSeed: Buffer.alloc(0), encryptionKey: Buffer.alloc(0) });
         await restoreWalletPromise!;
       });
 
@@ -836,9 +948,20 @@ describe('useWalletManager', () => {
       const { result } = renderHook(() => useWalletManager());
       
       mockWorkletLifecycleService.getSeedAndEntropyFromMnemonic.mockResolvedValue({
-        encryptionKey: 'key',
-        encryptedSeedBuffer: 'seed',
-        encryptedEntropyBuffer: 'ent'
+        encryptionKey: Buffer.from('key'),
+        encryptedSeedBuffer: Buffer.from('seed'),
+        encryptedEntropyBuffer: Buffer.from('ent')
+      });
+
+      // initializeWDK is called with the real key/seed, but those buffers get
+      // memzero'd right after - snapshot the bytes at call time instead of
+      // asserting on the (by-then-zeroed) recorded call args.
+      let calledWith: { encryptionKey: Buffer; encryptedSeed: Buffer } | undefined;
+      mockWorkletLifecycleService.initializeWDK.mockImplementationOnce(async (args: any) => {
+        calledWith = {
+          encryptionKey: Buffer.from(args.encryptionKey),
+          encryptedSeed: Buffer.from(args.encryptedSeed),
+        };
       });
 
       await act(async () => {
@@ -846,10 +969,30 @@ describe('useWalletManager', () => {
       });
 
       expect(mockWorkletLifecycleService.getSeedAndEntropyFromMnemonic).toHaveBeenCalledWith(mnemonic);
-      expect(mockWorkletLifecycleService.initializeWDK).toHaveBeenCalledWith({
-        encryptionKey: 'key',
-        encryptedSeed: 'seed'
+      expect(calledWith).toEqual({
+        encryptionKey: Buffer.from('key'),
+        encryptedSeed: Buffer.from('seed')
       });
+    });
+
+    it('zeroes the key/seed/entropy buffers from a mnemonic-based temporary wallet', async () => {
+      const mnemonic = 'test mnemonic';
+      const { result } = renderHook(() => useWalletManager());
+
+      const mnemonicResult = {
+        encryptionKey: Buffer.from('key-to-zero'),
+        encryptedSeedBuffer: Buffer.from('seed-to-zero'),
+        encryptedEntropyBuffer: Buffer.from('entropy-to-zero'),
+      };
+      mockWorkletLifecycleService.getSeedAndEntropyFromMnemonic.mockResolvedValueOnce(mnemonicResult);
+
+      await act(async () => {
+        await result.current.createTemporaryWallet('temp', mnemonic);
+      });
+
+      expect(mnemonicResult.encryptionKey).toEqual(Buffer.alloc(mnemonicResult.encryptionKey.length));
+      expect(mnemonicResult.encryptedSeedBuffer).toEqual(Buffer.alloc(mnemonicResult.encryptedSeedBuffer.length));
+      expect(mnemonicResult.encryptedEntropyBuffer).toEqual(Buffer.alloc(mnemonicResult.encryptedEntropyBuffer.length));
     });
 
     it('should throw error if walletId is missing in createTemporaryWallet', async () => {
@@ -870,9 +1013,9 @@ describe('useWalletManager', () => {
 
     it('should generate mnemonic using worklet service', async () => {
         mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValue({
-            encryptionKey: 'key',
-            encryptedSeedBuffer: 'seed',
-            encryptedEntropyBuffer: 'ent'
+            encryptionKey: Buffer.from('key'),
+            encryptedSeedBuffer: Buffer.from('seed'),
+            encryptedEntropyBuffer: Buffer.from('ent')
         });
         mockWorkletLifecycleService.getMnemonicFromEntropy.mockResolvedValue({ mnemonic: 'gen mnemonic' });
         
@@ -880,6 +1023,81 @@ describe('useWalletManager', () => {
         
         const mnem = await result.current.generateMnemonic(12);
         expect(mnem).toBe('gen mnemonic');
+    });
+
+    it('generateEntropyAndEncrypt returns base64 and zeroes the underlying buffers', async () => {
+      const workletResult = {
+        encryptionKey: Buffer.from('key'),
+        encryptedSeedBuffer: Buffer.from('seed'),
+        encryptedEntropyBuffer: Buffer.from('ent'),
+      };
+      mockWorkletLifecycleService.generateEntropyAndEncrypt.mockResolvedValueOnce(workletResult);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      const returned = await result.current.generateEntropyAndEncrypt(12);
+
+      expect(returned).toEqual({
+        encryptionKey: Buffer.from('key').toString('base64'),
+        encryptedSeedBuffer: Buffer.from('seed').toString('base64'),
+        encryptedEntropyBuffer: Buffer.from('ent').toString('base64'),
+      });
+
+      // The buffers behind the returned base64 strings are zeroed once converted
+      expect(workletResult.encryptionKey).toEqual(Buffer.alloc(workletResult.encryptionKey.length));
+      expect(workletResult.encryptedSeedBuffer).toEqual(Buffer.alloc(workletResult.encryptedSeedBuffer.length));
+      expect(workletResult.encryptedEntropyBuffer).toEqual(Buffer.alloc(workletResult.encryptedEntropyBuffer.length));
+    });
+
+    it('getSeedAndEntropyFromMnemonic returns base64 and zeroes the underlying buffers', async () => {
+      const workletResult = {
+        encryptionKey: Buffer.from('key2'),
+        encryptedSeedBuffer: Buffer.from('seed2'),
+        encryptedEntropyBuffer: Buffer.from('ent2'),
+      };
+      mockWorkletLifecycleService.getSeedAndEntropyFromMnemonic.mockResolvedValueOnce(workletResult);
+
+      const { result } = renderHook(() => useWalletManager());
+
+      const returned = await result.current.getSeedAndEntropyFromMnemonic('test mnemonic');
+
+      expect(returned).toEqual({
+        encryptionKey: Buffer.from('key2').toString('base64'),
+        encryptedSeedBuffer: Buffer.from('seed2').toString('base64'),
+        encryptedEntropyBuffer: Buffer.from('ent2').toString('base64'),
+      });
+
+      expect(workletResult.encryptionKey).toEqual(Buffer.alloc(workletResult.encryptionKey.length));
+      expect(workletResult.encryptedSeedBuffer).toEqual(Buffer.alloc(workletResult.encryptedSeedBuffer.length));
+      expect(workletResult.encryptedEntropyBuffer).toEqual(Buffer.alloc(workletResult.encryptedEntropyBuffer.length));
+    });
+
+    it('getMnemonicFromEntropy decodes base64 to Buffer, calls the worklet, and zeroes its own buffers', async () => {
+      const entropyBase64 = Buffer.from('test-entropy').toString('base64');
+      const keyBase64 = Buffer.from('test-key').toString('base64');
+
+      let capturedEntropy: Buffer | undefined;
+      let capturedKey: Buffer | undefined;
+      mockWorkletLifecycleService.getMnemonicFromEntropy.mockImplementationOnce(
+        (entropy: Buffer, key: Buffer) => {
+          capturedEntropy = Buffer.from(entropy);
+          capturedKey = Buffer.from(key);
+          return Promise.resolve({ mnemonic: 'decoded mnemonic' });
+        },
+      );
+
+      const { result } = renderHook(() => useWalletManager());
+
+      const returned = await result.current.getMnemonicFromEntropy(entropyBase64, keyBase64);
+
+      expect(capturedEntropy).toEqual(Buffer.from('test-entropy'));
+      expect(capturedKey).toEqual(Buffer.from('test-key'));
+      expect(returned).toEqual({ mnemonic: 'decoded mnemonic' });
+
+      // The buffers getMnemonicFromEntropy allocated for this call are zeroed once it resolves
+      const [passedEntropy, passedKey] = mockWorkletLifecycleService.getMnemonicFromEntropy.mock.calls[0]!;
+      expect(passedEntropy).toEqual(Buffer.alloc(passedEntropy.length));
+      expect(passedKey).toEqual(Buffer.alloc(passedKey.length));
     });
   });
 
