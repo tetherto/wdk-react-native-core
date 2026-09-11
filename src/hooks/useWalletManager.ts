@@ -636,11 +636,12 @@ export function useWalletManager(): UseWalletManagerResult {
           )
         }
 
+        let encryptionKey: Buffer | undefined
+        let encryptedSeed: Buffer | undefined
+        let encryptedEntropyBuffer: Buffer | undefined
+
         try {
           await WorkletLifecycleService.ensureWorkletStarted()
-
-          let encryptionKey: Buffer
-          let encryptedSeed: Buffer
 
           if (mnemonic) {
             const result =
@@ -649,11 +650,13 @@ export function useWalletManager(): UseWalletManagerResult {
               )
             encryptionKey = result.encryptionKey
             encryptedSeed = result.encryptedSeedBuffer
+            encryptedEntropyBuffer = result.encryptedEntropyBuffer
           } else {
             const result =
               await WorkletLifecycleService.generateEntropyAndEncrypt()
             encryptionKey = result.encryptionKey
             encryptedSeed = result.encryptedSeedBuffer
+            encryptedEntropyBuffer = result.encryptedEntropyBuffer
           }
 
           const tempWalletInfo: WalletInfo = {
@@ -710,6 +713,10 @@ export function useWalletManager(): UseWalletManagerResult {
             }),
           )
           throw err
+        } finally {
+          memzero(encryptionKey)
+          memzero(encryptedSeed)
+          memzero(encryptedEntropyBuffer)
         }
       })
     },
@@ -731,6 +738,8 @@ export function useWalletManager(): UseWalletManagerResult {
         clearTemporaryWallet()
         await WorkletLifecycleService.ensureWorkletStarted()
 
+        let credentials: { encryptionKey: Buffer; encryptedSeed: Buffer } | undefined
+
         try {
           walletStore.setState((prev) =>
             updateWalletLoadingState(prev, {
@@ -745,7 +754,7 @@ export function useWalletManager(): UseWalletManagerResult {
             throw new Error(`Wallet with walletId "${walletId}" already exists`)
           }
 
-          await WalletSetupService.createNewWallet(walletId)
+          credentials = await WalletSetupService.createNewWallet(walletId)
 
           walletStore.setState((prev) =>
             produce(prev, (state) => {
@@ -776,6 +785,9 @@ export function useWalletManager(): UseWalletManagerResult {
             }),
           )
           throw err
+        } finally {
+          memzero(credentials?.encryptionKey)
+          memzero(credentials?.encryptedSeed)
         }
       }),
     [checkWallet, walletStore, clearTemporaryWallet],

@@ -61,6 +61,13 @@ export class WalletSetupService {
     return this.secureStorageInstance !== null
   }
 
+  /**
+   * Create a new wallet, generating a fresh mnemonic
+   *
+   * The caller owns the returned encryptionKey/encryptedSeed - zero them
+   * once done with them. The generated entropy buffer isn't returned; it's
+   * zeroed here once secureStorage has it.
+   */
   static async createNewWallet(
     walletId?: string
   ): Promise<{
@@ -112,6 +119,8 @@ export class WalletSetupService {
         WorkletLifecycleService.reset()
       }
       throw error
+    } finally {
+      memzero(result.encryptedEntropyBuffer)
     }
 
     return {

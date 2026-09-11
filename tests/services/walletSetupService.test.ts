@@ -134,6 +134,25 @@ describe('WalletSetupService', () => {
         identifier
       )
     })
+
+    it('zeroes the entropy buffer once secureStorage has it, but leaves the returned key/seed intact', async () => {
+      const entropyBuffer = Buffer.from('test-entropy-to-zero')
+      const encryptionKeyBuffer = Buffer.from('test-key-to-keep')
+      const encryptedSeedBuffer = Buffer.from('test-seed-to-keep')
+      ;(WorkletLifecycleService.generateEntropyAndEncrypt as jest.Mock).mockResolvedValueOnce({
+        encryptionKey: encryptionKeyBuffer,
+        encryptedSeedBuffer: encryptedSeedBuffer,
+        encryptedEntropyBuffer: entropyBuffer,
+      })
+
+      const result = await WalletSetupService.createNewWallet()
+
+      expect(entropyBuffer).toEqual(Buffer.alloc(entropyBuffer.length))
+      // Compare against fresh buffers, not the same references, so zeroing
+      // the returned key/seed (a bug this guards against) would be caught.
+      expect(result.encryptionKey).toEqual(Buffer.from('test-key-to-keep'))
+      expect(result.encryptedSeed).toEqual(Buffer.from('test-seed-to-keep'))
+    })
   })
 
   describe('loadExistingWallet', () => {
