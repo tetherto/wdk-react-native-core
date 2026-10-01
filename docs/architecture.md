@@ -44,6 +44,6 @@ Identity is caller-owned: `WdkAppProvider` does not auto-create, auto-unlock, or
 
 - **WorkletLifecycleService**: Manages worklet lifecycle (start, initialize, cleanup)
 - **AddressService**: Handles address retrieval and caching
-- **AccountService**: Handles account method calls with whitelist validation
+- **AccountService**: Validates argument shape and forwards calls to the worklet
 - **BalanceService**: Manages balance operations
 - **WalletSetupService**: Handles wallet creation, import, and credential management

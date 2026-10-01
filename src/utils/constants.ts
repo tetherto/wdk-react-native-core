@@ -89,21 +89,6 @@ export const DEFAULT_QUERY_STALE_TIME_MS = 30 * 1000
 export const DEFAULT_QUERY_GC_TIME_MS = 5 * 60 * 1000
 
 /**
- * Allowed account methods whitelist
- * Only these methods can be called through AccountService for security
- */
-export const ALLOWED_ACCOUNT_METHODS = [
-  'getAddress',
-  'getBalance',
-  'getTokenBalance',
-  'signMessage',
-  'signTransaction',
-  'sendTransaction',
-] as const
-
-export type AllowedAccountMethod = typeof ALLOWED_ACCOUNT_METHODS[number]
-
-/**
  * Query Key Tags
  * 
  * Centralized constants for TanStack Query keys to ensure consistency
