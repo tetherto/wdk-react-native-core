@@ -81,11 +81,16 @@ const MAX_VALUE_LENGTH = 10240
  */
 const IDENTIFIER_PATTERN = /^[a-zA-Z0-9._+-]+(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})?$/
 
-type BaseKey = 'wallet_encryption_key' | 'wallet_encrypted_seed' | 'wallet_encrypted_entropy'
+type BaseKey =
+  | 'wallet_encryption_key'
+  | 'wallet_encrypted_seed'
+  | 'wallet_encrypted_entropy'
+  | 'mmkv_encryption_key'
 
 const ENCRYPTION_KEY: BaseKey = 'wallet_encryption_key'
 const ENCRYPTED_SEED: BaseKey = 'wallet_encrypted_seed'
 const ENCRYPTED_ENTROPY: BaseKey = 'wallet_encrypted_entropy'
+const MMKV_ENCRYPTION_KEY: BaseKey = 'mmkv_encryption_key'
 
 /**
  * Sentinel identifier for callers migrating off a predecessor storage module that treated
@@ -214,6 +219,8 @@ export interface SecureStorage {
   getEncryptedSeed(identifier: string): Promise<string | null>
   setEncryptedEntropy(encryptedEntropy: string, identifier: string): Promise<void>
   getEncryptedEntropy(identifier: string): Promise<string | null>
+  setMmkvEncryptionKey(key: string, identifier: string): Promise<void>
+  getMmkvEncryptionKey(identifier: string): Promise<string | null>
   getAllEncrypted(identifier: string): Promise<{
     encryptedSeed: string | null
     encryptedEntropy: string | null
@@ -346,6 +353,14 @@ const secureStorage: SecureStorage = {
 
   async getEncryptedEntropy(identifier) {
     return getSecureValue(ENCRYPTED_ENTROPY, identifier)
+  },
+
+  async setMmkvEncryptionKey(key, identifier) {
+    return setSecureValue(MMKV_ENCRYPTION_KEY, key, identifier, true)
+  },
+
+  async getMmkvEncryptionKey(identifier) {
+    return getSecureValue(MMKV_ENCRYPTION_KEY, identifier)
   },
 
   async getAllEncrypted(identifier) {

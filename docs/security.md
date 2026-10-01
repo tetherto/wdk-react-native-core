@@ -46,6 +46,16 @@ stays on the device that wrote it. Cross-device recovery, if an app wants
 it, is a separate, explicit concern layered on top of this library's public
 API, not something this library performs itself.
 
+### MMKV is a different tier - non-sensitive, local-only
+
+`mmkvStorage`/`mmkvKeyManager` are out of scope for the "wallet secret material" this
+document otherwise covers - they exist for non-sensitive cache data only (addresses,
+balances, account/wallet metadata). Seed, entropy, and the wallet's encryption key never
+touch MMKV; those stay exclusively in `secureStorage`.
+
+MMKV's encryption key is local-only, same as `secureStorage`: no cross-device continuity
+is guaranteed, or intended, for the key or the data it protects.
+
 ### Out of scope
 
 - What a consuming app does with a value once it's handed back through the
