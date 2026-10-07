@@ -72,8 +72,17 @@ export class AccountService {
       // Validate response structure
       const validatedResponse = workletResponseSchema.parse(response)
 
-      if (!validatedResponse.result) {
-        throw new Error(`Method ${methodName} returned no result`)
+      // A worklet method may legitimately return nothing (a void method) or an
+      // explicit null. ModuleService.callModule already treats an absent, null
+      // or empty result as a valid empty value; do the same here so the two
+      // services agree, instead of surfacing a legitimate empty result as an
+      // error to the caller.
+      if (
+        validatedResponse.result === undefined ||
+        validatedResponse.result === null ||
+        validatedResponse.result === ''
+      ) {
+        return null
       }
 
       let parsed
@@ -143,8 +152,15 @@ export class AccountService {
 
       const validatedResponse = workletResponseSchema.parse(response)
 
-      if (!validatedResponse.result) {
-        throw new Error(`Protocol method ${methodName} returned no result`)
+      // See callAccountMethod above: a protocol method may legitimately return
+      // nothing. Match ModuleService.callModule's handling of an absent, null
+      // or empty result rather than raising it as an error.
+      if (
+        validatedResponse.result === undefined ||
+        validatedResponse.result === null ||
+        validatedResponse.result === ''
+      ) {
+        return null
       }
 
       let parsed

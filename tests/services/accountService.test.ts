@@ -368,6 +368,22 @@ describe('AccountService', () => {
       ).resolves.toBeNull()
     })
 
+    it('should resolve to null when a method returns no result at all (void)', async () => {
+      mockHRPC.callMethod.mockResolvedValue({})
+
+      await expect(
+        AccountService.callAccountMethod('bitcoin', 0, 'signMessage')
+      ).resolves.toBeNull()
+    })
+
+    it('should resolve to null when a method returns an empty result string', async () => {
+      mockHRPC.callMethod.mockResolvedValue({ result: '' })
+
+      await expect(
+        AccountService.callAccountMethod('bitcoin', 0, 'signMessage')
+      ).resolves.toBeNull()
+    })
+
     it('should throw error if JSON parsing fails', async () => {
       mockHRPC.callMethod.mockResolvedValue({
         result: 'invalid json',
