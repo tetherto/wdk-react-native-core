@@ -25,6 +25,13 @@ import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 import { produce } from 'immer'
 import { logWarn } from './logger'
+import { RESERVED_OBJECT_KEYS } from './schemas'
+
+function assertStateKey(name: string, value: string): void {
+  if (RESERVED_OBJECT_KEYS.has(value)) {
+    throw new Error(`${name} must not be a reserved object property name`)
+  }
+}
 
 /**
  * Require that worklet is initialized and return HRPC instance
@@ -83,6 +90,9 @@ export function updateBalanceInState(
   tokenKey: string,
   balance: string,
 ) {
+  assertStateKey('walletId', walletId)
+  assertStateKey('network', network)
+
   return produce(prev, (state) => {
     state.balances[walletId] ??= {}
     state.balances[walletId][network] ??= {}
@@ -112,6 +122,9 @@ export function updateAddressInState(
   accountIndex: number,
   address: string,
 ) {
+  assertStateKey('walletId', walletId)
+  assertStateKey('network', network)
+
   return produce(prev, (state) => {
     state.addresses[walletId] ??= {}
     state.addresses[walletId][network] ??= {}

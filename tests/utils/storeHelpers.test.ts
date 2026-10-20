@@ -186,6 +186,32 @@ describe('storeHelpers', () => {
     })
   })
 
+  describe('reserved object keys', () => {
+    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as walletId', (key) => {
+      const prev = { addresses: {}, balances: {} } as any
+
+      expect(() => updateAddressInState(prev, key, 'ethereum', 0, '0xabc')).toThrow(
+        'walletId must not be a reserved object property name'
+      )
+      expect(() => updateBalanceInState(prev, key, 'ethereum', 0, 'asset', '1')).toThrow(
+        'walletId must not be a reserved object property name'
+      )
+      expect(({} as any).ethereum).toBeUndefined()
+    })
+
+    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as network', (key) => {
+      const prev = { addresses: {}, balances: {} } as any
+
+      expect(() => updateAddressInState(prev, 'wallet-1', key, 0, '0xabc')).toThrow(
+        'network must not be a reserved object property name'
+      )
+      expect(() => updateBalanceInState(prev, 'wallet-1', key, 0, 'asset', '1')).toThrow(
+        'network must not be a reserved object property name'
+      )
+      expect(({} as any)[0]).toBeUndefined()
+    })
+  })
+
   describe('updateAddressInState', () => {
     it('should update address in empty state', () => {
       const prev = {

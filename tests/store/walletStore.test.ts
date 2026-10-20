@@ -285,11 +285,25 @@ describe('walletStore', () => {
       expect(stateBeforeRehydration.currentOperation).toEqual(null)
 
       expect(stateBeforeRehydration.tempWalletId).toEqual('temp_w')
-      expect(stateBeforeRehydration.addresses).toEqual(mockState.addresses)
+      expect(stateBeforeRehydration.addresses).toEqual({})
       expect(stateBeforeRehydration.balances).toEqual(mockState.balances)
       expect(stateBeforeRehydration.lastBalanceUpdate).toEqual(mockState.lastBalanceUpdate)
 
       expect(stateBeforeRehydration.activeWalletId).toBeNull()
+    })
+
+    it('should not persist addresses', () => {
+      const storeInstance = createWalletStore()
+      const persistOptions = (storeInstance as any).persist.getOptions()
+
+      const persisted = persistOptions.partialize({
+        ...storeInstance.getState(),
+        addresses: { w1: { ethereum: { 0: '0xabc' } } },
+        balances: { w1: { ethereum: { 0: { asset: '100' } } } },
+      })
+
+      expect(persisted.addresses).toBeUndefined()
+      expect(persisted.balances).toEqual({ w1: { ethereum: { 0: { asset: '100' } } } })
     })
 
     it('should do nothing if state is undefined during rehydration', () => {

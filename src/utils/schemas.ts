@@ -90,11 +90,18 @@ export const assetConfigSchema = z.object({
 export const accountIndexSchema = z.number().int().nonnegative()
 
 /**
+ * Property names that would reach Object.prototype when used as a key of a plain object
+ */
+export const RESERVED_OBJECT_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype'])
+
+/**
  * Network name schema
  */
 export const networkNameSchema = z.string().regex(/^[a-zA-Z0-9_-]+$/, {
   message: 'Network name must contain only alphanumeric characters, hyphens, and underscores',
-}).min(1)
+}).min(1).refine((name) => !RESERVED_OBJECT_KEYS.has(name), {
+  message: 'Network name must not be a reserved object property name',
+})
 
 /**
  * Balance string schema (valid number string)
