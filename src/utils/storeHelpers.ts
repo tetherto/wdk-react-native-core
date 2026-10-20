@@ -27,6 +27,11 @@ import { produce } from 'immer'
 import { logWarn } from './logger'
 import { RESERVED_OBJECT_KEYS } from './schemas'
 
+/**
+ * Reject a key that would reach Object.prototype when used on a plain object
+ *
+ * @throws {Error} If the value is `__proto__`, `constructor` or `prototype`
+ */
 function assertStateKey(name: string, value: string): void {
   if (RESERVED_OBJECT_KEYS.has(value)) {
     throw new Error(`${name} must not be a reserved object property name`)
@@ -81,6 +86,7 @@ export async function requireInitialized(): Promise<HRPC> {
  * @param tokenKey - Token key (address or 'native')
  * @param balance - Balance value
  * @returns The updated state
+ * @throws {Error} If walletId or network is a reserved object property name
  */
 export function updateBalanceInState(
   prev: WalletState,
@@ -114,6 +120,7 @@ export function updateBalanceInState(
  * @param accountIndex - Account index
  * @param address - Address value
  * @returns The updated state
+ * @throws {Error} If walletId or network is a reserved object property name
  */
 export function updateAddressInState(
   prev: WalletState,
@@ -141,6 +148,7 @@ export function updateAddressInState(
  *
  * @param walletId - Optional wallet identifier parameter
  * @returns Resolved wallet identifier (never null)
+ * @throws {Error} If the resolved identifier is a reserved object property name
  *
  * @example
  * ```typescript
@@ -149,14 +157,9 @@ export function updateAddressInState(
  * ```
  */
 export function resolveWalletId(walletId?: string): string {
-  if (walletId) {
-    return walletId
-  }
-
-  const walletStore = getWalletStore()
-  const activeWalletId = walletStore.getState().activeWalletId
-
-  return activeWalletId || '__temporary__'
+  const resolved = walletId || getWalletStore().getState().activeWalletId || '__temporary__'
+  assertStateKey('walletId', resolved)
+  return resolved
 }
 
 /**

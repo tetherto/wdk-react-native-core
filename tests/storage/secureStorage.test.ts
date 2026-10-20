@@ -220,6 +220,14 @@ describe('secureStorage', () => {
     })
   })
 
+  describe('identifier validation', () => {
+    it.each(['__proto__', 'constructor', 'prototype'])('should reject the reserved identifier %s', async (identifier) => {
+      await expect(storage.setEncryptionKey('key-value', identifier)).rejects.toThrow(
+        'Identifier must not be a reserved object property name'
+      )
+    })
+  })
+
   describe('accessible policy', () => {
     it.each(['setEncryptionKey', 'setEncryptedSeed', 'setEncryptedEntropy'] as const)(
       'stores %s as device-only (WHEN_UNLOCKED_THIS_DEVICE_ONLY)',

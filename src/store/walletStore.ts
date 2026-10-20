@@ -49,7 +49,7 @@
  *
  * ## Important Notes
  *
- * - Addresses: Stored in Zustand (derived/computed state, deterministic, no refetching needed)
+ * - Addresses: Stored in Zustand for the session only (derived from the worklet, never persisted)
  * - Balances: Stored in Zustand (single source of truth), use TanStack Query via useBalance() hook for fetching
  *   - Zustand is the single source of truth for balances
  *   - TanStack Query reads from Zustand (initialData) and updates Zustand after fetch
@@ -164,6 +164,7 @@ export function createWalletStore(): WalletStoreInstance {
           name: 'wallet-storage',
           storage: createJSONStorage(() => defaultStorageAdapter),
           partialize: (state: WalletState) => ({
+            // addresses are never persisted: they are re-derived from the worklet each session
             balances: state.balances,
             balanceLoading: {},
             lastBalanceUpdate: state.lastBalanceUpdate,
@@ -175,7 +176,7 @@ export function createWalletStore(): WalletStoreInstance {
             return (state: WalletState | undefined) => {
               if (state) {
                 log('🔄 Rehydrating wallet state - resetting loading states')
-                state.addresses = {}
+                state.addresses = {} // drop addresses persisted by older versions
                 state.walletLoading = {}
                 state.balanceLoading = {}
                 // Reset runtime-only state

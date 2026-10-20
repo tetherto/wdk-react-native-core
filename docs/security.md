@@ -42,7 +42,9 @@ fresh; none of it is retained in memory between calls.
 ### secureStorage is local-only
 
 `secureStorage` never syncs or backs up anything - every value it writes
-stays on the device that wrote it. Cross-device recovery, if an app wants
+stays on the device that wrote it. Wallets created before the encryption key
+became device-only keep the previous accessibility class until the key is
+written again. Cross-device recovery, if an app wants
 it, is a separate, explicit concern layered on top of this library's public
 API, not something this library performs itself.
 
