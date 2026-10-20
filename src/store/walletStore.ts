@@ -164,7 +164,6 @@ export function createWalletStore(): WalletStoreInstance {
           name: 'wallet-storage',
           storage: createJSONStorage(() => defaultStorageAdapter),
           partialize: (state: WalletState) => ({
-            // addresses are never persisted: they are re-derived from the worklet each session
             balances: state.balances,
             balanceLoading: {},
             lastBalanceUpdate: state.lastBalanceUpdate,
@@ -176,7 +175,7 @@ export function createWalletStore(): WalletStoreInstance {
             return (state: WalletState | undefined) => {
               if (state) {
                 log('🔄 Rehydrating wallet state - resetting loading states')
-                state.addresses = {} // drop addresses persisted by older versions
+                state.addresses = {}
                 state.walletLoading = {}
                 state.balanceLoading = {}
                 // Reset runtime-only state
