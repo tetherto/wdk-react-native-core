@@ -25,7 +25,15 @@ const storage: Record<string, {
   encryptionKey: string | null
   encryptedSeed: string | null
   encryptedEntropy: string | null
+  mmkvEncryptionKey: string | null
 }> = {}
+
+function ensureEntry(identifier: string) {
+  if (!storage[identifier]) {
+    storage[identifier] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null, mmkvEncryptionKey: null }
+  }
+  return storage[identifier]
+}
 
 export const mockSecureStorage: jest.Mocked<SecureStorage> = {
   hasWallet: jest.fn((identifier: string) => {
@@ -33,34 +41,32 @@ export const mockSecureStorage: jest.Mocked<SecureStorage> = {
     return Promise.resolve(wallet !== undefined && wallet.encryptionKey !== null)
   }),
   setEncryptionKey: jest.fn((key: string, identifier: string) => {
-    if (!storage[identifier]) {
-      storage[identifier] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
-    }
-    storage[identifier].encryptionKey = key
+    ensureEntry(identifier).encryptionKey = key
     return Promise.resolve()
   }),
   getEncryptionKey: jest.fn((identifier: string) => {
     return Promise.resolve(storage[identifier]?.encryptionKey || null)
   }),
   setEncryptedSeed: jest.fn((seed: string, identifier: string) => {
-    if (!storage[identifier]) {
-      storage[identifier] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
-    }
-    storage[identifier].encryptedSeed = seed
+    ensureEntry(identifier).encryptedSeed = seed
     return Promise.resolve()
   }),
   getEncryptedSeed: jest.fn((identifier: string) => {
     return Promise.resolve(storage[identifier]?.encryptedSeed || null)
   }),
   setEncryptedEntropy: jest.fn((entropy: string, identifier: string) => {
-    if (!storage[identifier]) {
-      storage[identifier] = { encryptionKey: null, encryptedSeed: null, encryptedEntropy: null }
-    }
-    storage[identifier].encryptedEntropy = entropy
+    ensureEntry(identifier).encryptedEntropy = entropy
     return Promise.resolve()
   }),
   getEncryptedEntropy: jest.fn((identifier: string) => {
     return Promise.resolve(storage[identifier]?.encryptedEntropy || null)
+  }),
+  setMmkvEncryptionKey: jest.fn((key: string, identifier: string) => {
+    ensureEntry(identifier).mmkvEncryptionKey = key
+    return Promise.resolve()
+  }),
+  getMmkvEncryptionKey: jest.fn((identifier: string) => {
+    return Promise.resolve(storage[identifier]?.mmkvEncryptionKey || null)
   }),
   getAllEncrypted: jest.fn((identifier: string) => {
     const wallet = storage[identifier]

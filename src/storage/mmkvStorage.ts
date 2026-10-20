@@ -20,7 +20,7 @@ import { logWarn } from '../utils/logger'
  * Storage adapter interface for Zustand persistence
  */
 export interface StorageAdapter {
-  getItem: (name: string) => string | null
+  getItem: (name: string) => Promise<string | null>
   setItem: (name: string, value: string) => void
   removeItem: (name: string) => void
 }
@@ -73,13 +73,9 @@ function evictLRUStorage(): void {
  * 
  * This is for non-sensitive data persistence (wallet metadata, balances, addresses).
  * For sensitive data (encrypted seeds, keys), use secureStorage (src/storage/secureStorage.ts).
- * 
- * The encryption key is derived from a device/app identifier to ensure each app instance
- * has a unique encryption key. If no account identifier is provided, a default app-scoped
- * identifier is used.
- * 
- * @param accountIdentifier - Optional account identifier for per-account encryption keys.
- *                            If not provided, uses a default app-scoped identifier.
+ *
+ * @param accountIdentifier - Optional account identifier, passed through to getMMKVKey. If
+ *                            not provided, uses a default app-scoped identifier.
  * @returns Promise that resolves to MMKV storage instance
  */
 export async function createMMKVStorage(accountIdentifier?: string): Promise<MMKV> {
@@ -105,6 +101,7 @@ export async function createMMKVStorage(accountIdentifier?: string): Promise<MMK
   const storage = createMMKV({
     id: 'wallet-storage',
     encryptionKey,
+    encryptionType: 'AES-256',
   })
   
   // Cache the storage instance
@@ -314,8 +311,7 @@ export function createMMKVStorageAdapter(accountIdentifier?: string): StorageAda
   })
   
   const adapter: StorageAdapter = {
-    getItem: (name: string): string | null => {
-      // If storage is ready, read directly
+    getItem: async (name: string): Promise<string | null> => {
       if (storageInstance && initState === StorageInitState.READY) {
         try {
           const value = storageInstance.getString(name)
@@ -326,31 +322,18 @@ export function createMMKVStorageAdapter(accountIdentifier?: string): StorageAda
           return null
         }
       }
-      
-      // If we're in error state, return null (Zustand will handle gracefully)
-      // The error will be thrown on next write operation
+
       if (initState === StorageInitState.ERROR) {
         return null
       }
-      
-      // LIMITATION: During initialization, we cannot return values synchronously
-      // because storage initialization is async. Zustand's StorageAdapter interface
-      // requires synchronous getItem, so we must return null during initialization.
-      // 
-      // This is expected behavior:
-      // - On first load during initialization: returns null, Zustand uses default state
-      // - After initialization: subsequent getItem calls will work correctly
-      // - Zustand handles null gracefully and will rehydrate on next read after init
-      //
-      // We don't queue get operations because we can't fulfill them synchronously.
-      // Instead, we ensure storage is initializing and return null immediately.
-      ensureStorage().catch(() => {
-        // Errors are handled in ensureStorage and stored in initError
-      })
-      
-      // Return null during initialization - Zustand handles this gracefully
-      // The actual value will be available on next read after initialization completes
-      return null
+
+      try {
+        const storage = await ensureStorage()
+        return storage.getString(name) ?? null
+      } catch (error) {
+        logWarn('[MMKVStorageAdapter] Failed to get item (during init):', error)
+        return null
+      }
     },
     setItem: (name: string, value: string): void => {
       // If storage is ready, write directly

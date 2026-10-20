@@ -59,6 +59,7 @@ describe('mmkvStorage', () => {
       expect(createMMKV).toHaveBeenCalledWith({
         id: 'wallet-storage',
         encryptionKey: 'test-encryption-key',
+        encryptionType: 'AES-256',
       })
       expect(storage).toBe(mockMMKVInstance)
     })
@@ -139,25 +140,21 @@ describe('mmkvStorage', () => {
 
         mockMMKVInstance.getString.mockReturnValue('test-value')
 
-        const adapter = createMMKVStorageAdapter('test-identifier')
+        const adapter = createMMKVStorageAdapter('test-identifier-getitem-ready')
 
         // Wait for storage to initialize (getMMKVKey is async)
         await new Promise((resolve) => setTimeout(resolve, 50))
 
-        const value = adapter.getItem('test-key')
+        const value = await adapter.getItem('test-key')
 
-        // During initialization, getItem may return null, but after init it should return the value
-        // The actual behavior depends on timing, so we check that getItem is callable
-        expect(typeof adapter.getItem).toBe('function')
-        // If storage is ready, it should return the value
-        if (value !== null) {
-          expect(value).toBe('test-value')
-          expect(mockMMKVInstance.getString).toHaveBeenCalledWith('test-key')
-        }
+        expect(value).toBe('test-value')
+        expect(mockMMKVInstance.getString).toHaveBeenCalledWith('test-key')
       })
 
-      it('should return null during initialization', async () => {
+      it('should not lose a read made during initialization - resolves to the real value once ready', async () => {
         const { createMMKVStorageAdapter } = require('../../src/storage/mmkvStorage')
+
+        mockMMKVInstance.getString.mockReturnValue('test-value')
 
         // Delay key resolution to simulate async initialization
         ;(getMMKVKey as jest.Mock).mockImplementation(
@@ -167,12 +164,18 @@ describe('mmkvStorage', () => {
             ),
         )
 
-        const adapter = createMMKVStorageAdapter('test-identifier')
+        const adapter = createMMKVStorageAdapter('test-identifier-getitem-pending')
 
-        // Call immediately before initialization completes
-        const value = adapter.getItem('test-key')
+        // Call immediately, before initialization completes
+        const result = adapter.getItem('test-key')
 
-        expect(value).toBeNull()
+        // Must be a pending Promise, not a synchronous null - this is the regression this
+        // adapter used to have: a read made during init used to be silently lost (returned
+        // null immediately, with no way for the caller to see the real value once ready)
+        expect(result).toBeInstanceOf(Promise)
+
+        const value = await result
+        expect(value).toBe('test-value')
       })
 
       it('should return null on error', async () => {
@@ -182,12 +185,12 @@ describe('mmkvStorage', () => {
           throw new Error('Read error')
         })
 
-        const adapter = createMMKVStorageAdapter('test-identifier')
+        const adapter = createMMKVStorageAdapter('test-identifier-getitem-error')
 
         // Wait for storage to initialize
         await new Promise((resolve) => setTimeout(resolve, 10))
 
-        const value = adapter.getItem('test-key')
+        const value = await adapter.getItem('test-key')
 
         expect(value).toBeNull()
       })
@@ -311,7 +314,7 @@ describe('mmkvStorage', () => {
         await new Promise((resolve) => setTimeout(resolve, 10))
 
         // getItem should return null on error
-        const value = adapter.getItem('test-key')
+        const value = await adapter.getItem('test-key')
         expect(value).toBeNull()
       })
     })
