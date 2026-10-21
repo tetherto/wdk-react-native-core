@@ -46,6 +46,28 @@ stays on the device that wrote it. Cross-device recovery, if an app wants
 it, is a separate, explicit concern layered on top of this library's public
 API, not something this library performs itself.
 
+### Storage test coverage and native validation
+
+The [secureStorage tests](../tests/storage/secureStorage.test.ts) replace
+`react-native-keychain` with an in-memory Map and use Node's SHA-256 for
+`expo-crypto`. They check service-key derivation, the options passed to
+Keychain (including `accessible`), validation, timeouts, error handling,
+and deletion behavior. They do not call the real iOS Keychain or Android
+Keystore.
+
+Passing these tests does not verify the platform's enforcement of
+accessibility/access-control flags, iOS device-only backup restrictions,
+or on-device encryption at rest. Those properties still require manual
+native validation; the Jest suite provides no evidence that those checks
+have been performed. Device-auth gating remains the consuming app's
+responsibility, as described in the two-tier lock model above.
+
+This library has no native app shell. Native checks need a consuming app
+such as [react-native-showcase](https://github.com/tetherto/wdk-examples/tree/main/react-native-showcase)
+on the relevant iOS/Android targets, recording the OS and Keychain library
+versions. An automated native release gate is tracked in
+[#116](https://github.com/tetherto/wdk-react-native-core/issues/116).
+
 ### Out of scope
 
 - What a consuming app does with a value once it's handed back through the
