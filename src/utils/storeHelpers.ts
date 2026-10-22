@@ -25,15 +25,10 @@ import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 import { produce } from 'immer'
 import { logWarn } from './logger'
-import { RESERVED_OBJECT_KEYS } from './schemas'
+import { isReservedObjectKey } from './schemas'
 
-/**
- * Reject a key that would reach Object.prototype when used on a plain object
- *
- * @throws {Error} If the value is `__proto__`, `constructor` or `prototype`
- */
 function assertStateKey(name: string, value: string): void {
-  if (RESERVED_OBJECT_KEYS.has(value)) {
+  if (isReservedObjectKey(value)) {
     throw new Error(`${name} must not be a reserved object property name`)
   }
 }

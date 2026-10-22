@@ -25,11 +25,11 @@ import {
 
 describe('schemas', () => {
   describe('networkNameSchema', () => {
-    it.each(['ethereum', 'arbitrum-one', 'bsc_testnet'])('should accept %s', (name) => {
+    it.each(['ethereum', 'arbitrum-one', 'bsc_testnet', 'toStringify', 'constructorX'])('should accept %s', (name) => {
       expect(networkNameSchema.parse(name)).toBe(name)
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject the reserved key %s', (name) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject the reserved key %s', (name) => {
       expect(() => networkNameSchema.parse(name)).toThrow('Network name must not be a reserved object property name')
     })
   })

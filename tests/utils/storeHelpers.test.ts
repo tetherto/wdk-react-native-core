@@ -185,7 +185,7 @@ describe('storeHelpers', () => {
       expect(result.balances?.['wallet-1']?.ethereum?.[0]?.native).toBe('50')
       expect(result.balances?.['wallet-1']?.ethereum?.[0]?.['0x123']).toBe('1000')
     })
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as walletId', (key) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject %s as walletId', (key) => {
       const prev = { balances: {} } as any
 
       expect(() => updateBalanceInState(prev, key, 'ethereum', 0, 'asset', '1')).toThrow(
@@ -193,7 +193,7 @@ describe('storeHelpers', () => {
       )
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as network', (key) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject %s as network', (key) => {
       const prev = { balances: {} } as any
 
       expect(() => updateBalanceInState(prev, 'wallet-1', key, 0, 'asset', '1')).toThrow(
@@ -303,7 +303,7 @@ describe('storeHelpers', () => {
       )
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as walletId', (key) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject %s as walletId', (key) => {
       const prev = { addresses: {} } as any
 
       expect(() => updateAddressInState(prev, key, 'ethereum', 0, '0xabc')).toThrow(
@@ -311,7 +311,7 @@ describe('storeHelpers', () => {
       )
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s as network', (key) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject %s as network', (key) => {
       const prev = { addresses: {} } as any
 
       expect(() => updateAddressInState(prev, 'wallet-1', key, 0, '0xabc')).toThrow(
@@ -333,7 +333,7 @@ describe('storeHelpers', () => {
       expect(resolveWalletId('wallet-1')).toBe('wallet-1')
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject %s', (key) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject %s', (key) => {
       expect(() => resolveWalletId(key)).toThrow('walletId must not be a reserved object property name')
     })
   })})

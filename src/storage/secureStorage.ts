@@ -31,7 +31,7 @@ import * as Keychain from 'react-native-keychain'
 import * as Crypto from 'expo-crypto'
 
 import { log, logError } from '../utils/logger'
-import { RESERVED_OBJECT_KEYS } from '../utils/schemas'
+import { isReservedObjectKey } from '../utils/schemas'
 
 export class SecureStorageError extends Error {
   constructor(
@@ -116,7 +116,7 @@ function validateIdentifier(identifier: string): void {
       'Identifier contains invalid characters. Allowed: alphanumeric, dots, dashes, underscores, plus signs, and email format'
     )
   }
-  if (RESERVED_OBJECT_KEYS.has(trimmed)) {
+  if (isReservedObjectKey(trimmed)) {
     throw new ValidationError('Identifier must not be a reserved object property name')
   }
 }

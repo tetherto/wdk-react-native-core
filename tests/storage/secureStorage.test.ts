@@ -221,7 +221,7 @@ describe('secureStorage', () => {
   })
 
   describe('identifier validation', () => {
-    it.each(['__proto__', 'constructor', 'prototype'])('should reject the reserved identifier %s', async (identifier) => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject the reserved identifier %s', async (identifier) => {
       await expect(storage.setEncryptionKey('key-value', identifier)).rejects.toThrow(
         'Identifier must not be a reserved object property name'
       )
