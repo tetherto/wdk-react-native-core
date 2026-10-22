@@ -232,6 +232,10 @@ See [Architecture](docs/architecture.md) for details on the internal design.
 
 See [Security](docs/security.md) for details on security features and best practices.
 
+### Method Restriction
+
+Account and protocol method calls are not restricted by this library.Method restriction is opt-in and enforced inside the worklet via the bundler's 'allowedMethods' config. When not configured, all methods are allowed. See the [wdk-worklet-bundler](https://github.com/tetherto/wdk-work-bundler) README for details. 
+
 ## Legacy Secure Storage Compatibility
 
 Affects versions after `v1.0.0-beta.20` (the last release before secure storage was
