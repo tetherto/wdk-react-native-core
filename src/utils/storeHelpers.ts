@@ -25,6 +25,13 @@ import type { HRPC } from '../types'
 import type { WalletState } from '../store/walletStore'
 import { produce } from 'immer'
 import { logWarn } from './logger'
+import { isReservedObjectKey } from './schemas'
+
+function assertStateKey(name: string, value: string): void {
+  if (isReservedObjectKey(value)) {
+    throw new Error(`${name} must not be a reserved object property name`)
+  }
+}
 
 /**
  * Require that worklet is initialized and return HRPC instance
@@ -74,6 +81,7 @@ export async function requireInitialized(): Promise<HRPC> {
  * @param tokenKey - Token key (address or 'native')
  * @param balance - Balance value
  * @returns The updated state
+ * @throws {Error} If walletId or network is a reserved object property name
  */
 export function updateBalanceInState(
   prev: WalletState,
@@ -83,6 +91,9 @@ export function updateBalanceInState(
   tokenKey: string,
   balance: string,
 ) {
+  assertStateKey('walletId', walletId)
+  assertStateKey('network', network)
+
   return produce(prev, (state) => {
     state.balances[walletId] ??= {}
     state.balances[walletId][network] ??= {}
@@ -104,6 +115,7 @@ export function updateBalanceInState(
  * @param accountIndex - Account index
  * @param address - Address value
  * @returns The updated state
+ * @throws {Error} If walletId or network is a reserved object property name
  */
 export function updateAddressInState(
   prev: WalletState,
@@ -112,6 +124,9 @@ export function updateAddressInState(
   accountIndex: number,
   address: string,
 ) {
+  assertStateKey('walletId', walletId)
+  assertStateKey('network', network)
+
   return produce(prev, (state) => {
     state.addresses[walletId] ??= {}
     state.addresses[walletId][network] ??= {}
@@ -128,6 +143,7 @@ export function updateAddressInState(
  *
  * @param walletId - Optional wallet identifier parameter
  * @returns Resolved wallet identifier (never null)
+ * @throws {Error} If the resolved identifier is a reserved object property name
  *
  * @example
  * ```typescript
@@ -136,14 +152,9 @@ export function updateAddressInState(
  * ```
  */
 export function resolveWalletId(walletId?: string): string {
-  if (walletId) {
-    return walletId
-  }
-
-  const walletStore = getWalletStore()
-  const activeWalletId = walletStore.getState().activeWalletId
-
-  return activeWalletId || '__temporary__'
+  const resolved = walletId || getWalletStore().getState().activeWalletId || '__temporary__'
+  assertStateKey('walletId', resolved)
+  return resolved
 }
 
 /**

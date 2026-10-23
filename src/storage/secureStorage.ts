@@ -18,8 +18,8 @@
  * On-device only - this module never syncs or backs up anything anywhere. Thin wrapper
  * around react-native-keychain:
  * - namespaces entries per wallet identifier
- * - marks the encrypted seed/entropy device-only, excluded from ever migrating to a new
- *   device via an encrypted backup restore (iOS-specific; a no-op on Android)
+ * - marks the encryption key and the encrypted seed/entropy device-only, excluded from ever
+ *   migrating to a new device via an encrypted backup restore (iOS-specific; a no-op on Android)
  * - guards against a hung keychain call with a timeout
  * - all values are still encrypted at rest by the OS keychain/keystore
  *
@@ -31,6 +31,7 @@ import * as Keychain from 'react-native-keychain'
 import * as Crypto from 'expo-crypto'
 
 import { log, logError } from '../utils/logger'
+import { isReservedObjectKey } from '../utils/schemas'
 
 export class SecureStorageError extends Error {
   constructor(
@@ -114,6 +115,9 @@ function validateIdentifier(identifier: string): void {
     throw new ValidationError(
       'Identifier contains invalid characters. Allowed: alphanumeric, dots, dashes, underscores, plus signs, and email format'
     )
+  }
+  if (isReservedObjectKey(trimmed)) {
+    throw new ValidationError('Identifier must not be a reserved object property name')
   }
 }
 
@@ -228,17 +232,14 @@ export interface SecureStorage {
 async function setSecureValue(
   baseKey: BaseKey,
   value: string,
-  identifier: string,
-  deviceOnly: boolean
+  identifier: string
 ): Promise<void> {
   validateValue(value, 'value')
   validateIdentifier(identifier)
 
   try {
     const storageKey = await deriveStorageKey(baseKey, identifier)
-    const accessible = deviceOnly
-      ? Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY
-      : Keychain.ACCESSIBLE.WHEN_UNLOCKED
+    const accessible = Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY
 
     const result = await withTimeout(
       Keychain.setGenericPassword(baseKey, value, { service: storageKey, accessible }),
@@ -325,7 +326,7 @@ function throwIfFailed(failedServices: string[]): void {
 
 const secureStorage: SecureStorage = {
   async setEncryptionKey(key, identifier) {
-    return setSecureValue(ENCRYPTION_KEY, key, identifier, false)
+    return setSecureValue(ENCRYPTION_KEY, key, identifier)
   },
 
   async getEncryptionKey(identifier) {
@@ -333,7 +334,7 @@ const secureStorage: SecureStorage = {
   },
 
   async setEncryptedSeed(encryptedSeed, identifier) {
-    return setSecureValue(ENCRYPTED_SEED, encryptedSeed, identifier, true)
+    return setSecureValue(ENCRYPTED_SEED, encryptedSeed, identifier)
   },
 
   async getEncryptedSeed(identifier) {
@@ -341,7 +342,7 @@ const secureStorage: SecureStorage = {
   },
 
   async setEncryptedEntropy(encryptedEntropy, identifier) {
-    return setSecureValue(ENCRYPTED_ENTROPY, encryptedEntropy, identifier, true)
+    return setSecureValue(ENCRYPTED_ENTROPY, encryptedEntropy, identifier)
   },
 
   async getEncryptedEntropy(identifier) {

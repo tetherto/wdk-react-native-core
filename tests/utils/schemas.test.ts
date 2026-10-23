@@ -20,9 +20,20 @@ import {
   workletResponseSchema,
   balanceResponseSchema,
   accountMethodResponseSchema,
+  networkNameSchema,
 } from '../../src/utils/schemas'
 
 describe('schemas', () => {
+  describe('networkNameSchema', () => {
+    it.each(['ethereum', 'arbitrum-one', 'bsc_testnet', 'toStringify', 'constructorX'])('should accept %s', (name) => {
+      expect(networkNameSchema.parse(name)).toBe(name)
+    })
+
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject the reserved key %s', (name) => {
+      expect(() => networkNameSchema.parse(name)).toThrow('Network name must not be a reserved object property name')
+    })
+  })
+
   describe('workletResponseSchema', () => {
     it('should validate valid worklet response', () => {
       const valid = {

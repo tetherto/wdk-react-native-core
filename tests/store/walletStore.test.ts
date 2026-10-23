@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createJSONStorage } from 'zustand/middleware'
 import {
   createWalletStore,
   getWalletStore,
@@ -253,6 +254,41 @@ describe('walletStore', () => {
     })
   })
 
+  describe('persist', () => {
+    it('should not persist addresses', () => {
+      const storeInstance = createWalletStore()
+      const persistOptions = (storeInstance as any).persist.getOptions()
+
+      const persisted = persistOptions.partialize({
+        ...storeInstance.getState(),
+        addresses: { w1: { ethereum: { 0: '0xabc' } } },
+        balances: { w1: { ethereum: { 0: { asset: '100' } } } },
+      })
+
+      expect(persisted.addresses).toBeUndefined()
+      expect(persisted.balances).toEqual({ w1: { ethereum: { 0: { asset: '100' } } } })
+    })
+
+    it('should drop addresses from a persisted blob written by an older version', async () => {
+      const storeInstance = createWalletStore()
+      const legacyBlob = JSON.stringify({
+        state: {
+          addresses: { w1: { ethereum: { 0: '0xATTACKER' } } },
+          balances: { w1: { ethereum: { 0: { asset: '100' } } } },
+        },
+        version: 0,
+      })
+      const legacyStorage = { getItem: async () => legacyBlob, setItem: async () => {}, removeItem: async () => {} }
+      ;(storeInstance as any).persist.setOptions({ storage: createJSONStorage(() => legacyStorage) })
+
+      await (storeInstance as any).persist.rehydrate()
+
+      expect(storeInstance.getState().addresses).toEqual({})
+      expect(storeInstance.getState().balances).toEqual({ w1: { ethereum: { 0: { asset: '100' } } } })
+      storeInstance.setState(mockInitState)
+    })
+  })
+
   describe('onRehydrateStorage logic', () => {
     it('should reset runtime-only states during rehydration', () => {
       const mockState: WalletState = {
@@ -285,7 +321,7 @@ describe('walletStore', () => {
       expect(stateBeforeRehydration.currentOperation).toEqual(null)
 
       expect(stateBeforeRehydration.tempWalletId).toEqual('temp_w')
-      expect(stateBeforeRehydration.addresses).toEqual(mockState.addresses)
+      expect(stateBeforeRehydration.addresses).toEqual({})
       expect(stateBeforeRehydration.balances).toEqual(mockState.balances)
       expect(stateBeforeRehydration.lastBalanceUpdate).toEqual(mockState.lastBalanceUpdate)
 

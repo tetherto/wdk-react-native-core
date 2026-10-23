@@ -220,18 +220,16 @@ describe('secureStorage', () => {
     })
   })
 
-  describe('accessible policy', () => {
-    it('stores the encryption key without a device-only restriction (WHEN_UNLOCKED)', async () => {
-      await storage.setEncryptionKey('key-value', TEST_ID)
-
-      expect(Keychain.setGenericPassword).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({ accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED })
+  describe('identifier validation', () => {
+    it.each(['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'])('should reject the reserved identifier %s', async (identifier) => {
+      await expect(storage.setEncryptionKey('key-value', identifier)).rejects.toThrow(
+        'Identifier must not be a reserved object property name'
       )
     })
+  })
 
-    it.each(['setEncryptedSeed', 'setEncryptedEntropy'] as const)(
+  describe('accessible policy', () => {
+    it.each(['setEncryptionKey', 'setEncryptedSeed', 'setEncryptedEntropy'] as const)(
       'stores %s as device-only (WHEN_UNLOCKED_THIS_DEVICE_ONLY)',
       async (method) => {
         await storage[method]('value', TEST_ID)
