@@ -337,15 +337,12 @@ describe('AccountService', () => {
       ).rejects.toThrow('WDK not initialized')
     })
 
-    it('should throw error if method returns no result', async () => {
-      // workletResponseSchema requires result to be a string, so we need to mock a response that fails schema validation
-      mockHRPC.callMethod.mockResolvedValue({
-        result: null,
-      })
+    it.each([null, undefined, ''])('should resolve a void account result (%p) as undefined', async (result) => {
+      mockHRPC.callMethod.mockResolvedValue({ result })
 
       await expect(
-        AccountService.callAccountMethod('ethereum', 0, 'getBalance')
-      ).rejects.toThrow(/Method getBalance returned no result|expected string/i)
+        AccountService.callAccountMethod('spark', 0, 'syncWalletBalance')
+      ).resolves.toBeUndefined()
     })
 
     it('should throw invalid balance format if getBalance result is null', async () => {
@@ -396,6 +393,14 @@ describe('AccountService', () => {
       await expect(
         AccountService.callProtocolMethod('bitcoin', 0, 'getTransactionBlockHeight', 'lending', 'aave', 'txid')
       ).resolves.toBeNull()
+    })
+
+    it.each([null, undefined, ''])('should resolve a void protocol result (%p) as undefined', async (result) => {
+      mockHRPC.callMethod.mockResolvedValue({ result })
+
+      await expect(
+        AccountService.callProtocolMethod('bitcoin', 0, 'getTransactionBlockHeight', 'lending', 'aave', 'txid')
+      ).resolves.toBeUndefined()
     })
 
     it('should throw error if JSON parsing fails', async () => {

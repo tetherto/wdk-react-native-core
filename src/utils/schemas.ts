@@ -177,7 +177,7 @@ export const walletSchema = z.object({
  * Worklet response schemas for runtime validation
  */
 export const workletResponseSchema = z.object({
-  result: z.string(),
+  result: z.string().nullish(),
   error: z.string().optional(),
 })
 
