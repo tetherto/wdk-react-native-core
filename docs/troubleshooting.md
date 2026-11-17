@@ -14,6 +14,15 @@
 - "Encryption key not found" → Secure storage issue, may need to recreate wallet
 - An auth error before `unlock`/`createWallet`/`restoreWallet` is called → that's your app's own biometric/passcode gate, not this library (see `docs/security.md`)
 
+### Worklet Aborts With `CANNOT_LOAD` or `UNSUPPORTED_ENGINE`
+
+**Symptoms**: the native log (`bare` tag) shows `AddonError: CANNOT_LOAD: Cannot load addon 'linked:...'` or `ModuleResolveError: UNSUPPORTED_ENGINE: Package not compatible with engine 'bare' ...`
+
+**Solutions**:
+1. On `react-native-bare-kit` 0.16 or later, link the native addons: set `options.linkAddons` and `output.addons` in `wdk.config.js` and regenerate the bundle (see [Using react-native-bare-kit 0.16](react-native-bare-kit.md))
+2. Regenerate the bundle after every reinstall: the addon folders live in `node_modules`
+3. For `UNSUPPORTED_ENGINE`, pin `bare-module`, `bare-realm` and `bare-type` to versions the embedded Bare accepts (same page)
+
 ### Balance Fetching Issues
 
 **Symptoms**: Balances not updating, `isLoading` stuck true
