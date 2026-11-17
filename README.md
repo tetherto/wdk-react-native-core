@@ -53,6 +53,10 @@ npm install -g @tetherto/wdk-worklet-bundler
 npm install --save-dev @tetherto/wdk-worklet-bundler
 ```
 
+### 3. Link Native Addons (react-native-bare-kit 0.16 and later)
+
+From `react-native-bare-kit` 0.16, the native addons the worklet uses are no longer linked automatically, and the embedded Bare (1.33.4) is older than some of the newest Bare modules require. Turn on `linkAddons` in `wdk.config.js`, point the addon output at `react-native-bare-kit`'s addon folders, and pin three Bare modules. See [Using react-native-bare-kit 0.16](docs/react-native-bare-kit.md).
+
 ## Bundle Configuration
 
 A key part of this library's architecture is the **Worklet Bundle**.
