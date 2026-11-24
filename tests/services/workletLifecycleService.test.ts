@@ -597,6 +597,54 @@ describe('WorkletLifecycleService', () => {
     })
   })
 
+  describe('error sanitization', () => {
+    const validationMessage =
+      'mnemonic contains invalid words: "Abandon" at position 1, "Ability" at position 2'
+
+    it('redacts mnemonic words from worklet validation errors before they are thrown', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      mockSharedStore.getState = jest.fn(() => ({
+        isWorkletStarted: true,
+        hrpc: {
+          getSeedAndEntropyFromMnemonic: jest.fn(() => Promise.reject(new Error(validationMessage))),
+        },
+      }))
+
+      const thrown = await WorkletLifecycleService.getSeedAndEntropyFromMnemonic(
+        'Abandon Ability',
+      ).catch((error: Error) => error)
+
+      expect(thrown).toBeInstanceOf(Error)
+      expect((thrown as Error).message).toBe('mnemonic contains invalid words: [mnemonic phrase]')
+      expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toMatch(/Abandon|Ability/)
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('redacts mnemonic words from errors stored in worklet state', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      mockHRPCInstance.workletStart.mockRejectedValueOnce(new Error(validationMessage))
+
+      void mockStore
+        .getState()
+        .isWorkletStartedPromise.promise.catch(() => {
+          /* startWorklet rejects this promise before rethrowing via handleErrorWithStateUpdate */
+        })
+
+      await expect(
+        WorkletLifecycleService.startWorklet(defaultNetworkConfigs, mockBundleConfig),
+      ).rejects.toThrow('mnemonic contains invalid words: [mnemonic phrase]')
+
+      const storedErrors = (mockStore.setState as jest.Mock).mock.calls
+        .map(([update]) => update?.error)
+        .filter(Boolean)
+      expect(storedErrors.length).toBeGreaterThan(0)
+      for (const message of storedErrors) {
+        expect(message).not.toMatch(/Abandon|Ability/)
+      }
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
   describe('reset', () => {
     it('clears worklet init state and addresses', () => {
       getWalletStore().setState({ addresses: { 'wallet-1': { ethereum: { 0: '0xabc' } } } })

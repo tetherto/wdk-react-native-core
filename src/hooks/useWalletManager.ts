@@ -24,6 +24,7 @@ import {
   WalletState,
 } from '../store/walletStore'
 import { getWorkletStore } from '../store/workletStore'
+import { normalizeError } from '../utils/errorUtils'
 import { log, logError } from '../utils/logger'
 import { memzero } from '../utils/memzero'
 import { withOperationMutex } from '../utils/operationMutex'
@@ -386,13 +387,15 @@ export function useWalletManager(): UseWalletManagerResult {
 
           return walletId
         } catch (err) {
-          logError('Failed to restore wallet:', err)
-          const errorMessage = err instanceof Error ? err.message : String(err)
+          const normalizedError = normalizeError(err, undefined, {
+            component: 'useWalletManager',
+            operation: 'restoreWallet',
+          })
           walletStore.setState((prev) =>
             updateWalletLoadingState(prev, {
               type: 'error',
               identifier: walletId,
-              error: new Error(errorMessage),
+              error: normalizedError,
             }),
           )
           throw err

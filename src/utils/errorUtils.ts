@@ -18,8 +18,8 @@
  * ## Usage Guidelines
  * 
  * **For Services**: Use `handleServiceError()` from `errorHandling.ts` - this provides
- * consistent normalization and logging for service-layer errors. Errors are NOT sanitized
- * (sanitizeLevel: false) because services log internally and need full error details.
+ * consistent normalization and logging for service-layer errors. Errors are sanitized
+ * with the environment default level before they are logged or thrown.
  * 
  * **For Hooks/UI**: Use `normalizeError()` directly with appropriate sanitization level.
  * Hooks should sanitize errors before exposing them to UI components to prevent information leakage.
@@ -62,8 +62,6 @@ export enum SanitizationLevel {
 const SENSITIVE_PATTERNS = [
   // Cryptographic keys and secrets (more specific)
   /\b(encryption[_-]?key|encryptionKey|encrypted[_-]?seed|encryptedSeed|secret[_-]?key|private[_-]?key)\s*[:=]\s*([a-f0-9]{32,}|[A-Za-z0-9+/]{40,})/gi,
-  // Mnemonic phrases (12 or 24 words) - allow alphanumeric words
-  /\b(mnemonic|seed[_-]?phrase|recovery[_-]?phrase)\s*[:=]\s*([a-zA-Z0-9]+\s+){11,23}[a-zA-Z0-9]+/gi,
   // Base64 encoded keys (long base64 strings)
   /[A-Za-z0-9+/]{40,}={0,2}/g,
   // Hex strings that look like keys (32+ chars, even length)
@@ -76,6 +74,18 @@ const SENSITIVE_PATTERNS = [
   /\b(api[_-]?key|access[_-]?token|bearer[_-]?token|auth[_-]?token)\s*[:=]\s*[^\s]{20,}/gi,
   // Passwords (but not "password" as a word)
   /\bpassword\s*[:=]\s*[^\s]{8,}/gi,
+]
+
+/**
+ * Mnemonic patterns, applied at every sanitization level (development and production)
+ */
+const MNEMONIC_PATTERNS = [
+  // Labelled mnemonic phrases (12 or 24 words) - allow alphanumeric words
+  /\b(mnemonic|seed[_-]?phrase|recovery[_-]?phrase)\s*[:=]\s*([a-zA-Z0-9]+\s+){11,23}[a-zA-Z0-9]+/gi,
+  // JSON mnemonic values, e.g. {"mnemonic":"abandon ability ..."}
+  /"(mnemonic|seed[_-]?phrase|recovery[_-]?phrase)"\s*:\s*"(?:[^"\\]|\\.)*"/gi,
+  // Worklet validation word lists, e.g. "Abandon" at position 1, "Ability" at position 2
+  /"[^"]*"\s+at\s+position\s+\d+(?:\s*,\s*"[^"]*"\s+at\s+position\s+\d+)*/gi,
 ]
 
 /**
@@ -108,6 +118,16 @@ function maskSensitiveStrings(message: string): string {
     .replace(/\b[A-Za-z0-9+/]{40,}={0,2}\b/g, (match) => {
       return `${match.substring(0, 8)}...${match.substring(match.length - 4)}`
     })
+}
+
+/**
+ * Redact mnemonic phrases from error messages
+ */
+function redactMnemonics(message: string): string {
+  return MNEMONIC_PATTERNS.reduce(
+    (sanitized, pattern) => sanitized.replace(pattern, '[mnemonic phrase]'),
+    message
+  )
 }
 
 /**
@@ -179,12 +199,14 @@ export function sanitizeErrorMessage(
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   context?: { operation?: string; component?: string }
 ): string {
+  const redacted = redactMnemonics(message)
+
   if (isDevelopment) {
-    return maskSensitiveStrings(message)
+    return maskSensitiveStrings(redacted)
   }
 
   // In production, be more aggressive with sanitization
-  let sanitized = removeFilePaths(message)
+  let sanitized = removeFilePaths(redacted)
   sanitized = applySensitivePatternSanitization(sanitized)
   
   // Additional cleanup: remove any remaining long hex/base64 strings
