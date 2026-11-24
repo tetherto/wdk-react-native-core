@@ -21,8 +21,8 @@
  * ## Usage Guidelines
  * 
  * **For Services**: Use `handleServiceError()` - this provides consistent normalization
- * and logging for service-layer errors. Errors are NOT sanitized (sanitizeLevel: false)
- * because services log internally and need full error details for debugging.
+ * and logging for service-layer errors. Errors are sanitized with the environment default
+ * level (DEVELOPMENT in dev, PRODUCTION in prod) before they are logged or thrown.
  * 
  * **For Hooks/UI**: Use `normalizeError()` directly with appropriate sanitization level.
  * Hooks should sanitize errors before exposing them to UI components.
@@ -53,8 +53,8 @@ import { logError } from './logger'
 /**
  * Handle service errors with consistent normalization and logging
  * 
- * **Use this in services** - provides consistent error handling with full error details
- * (no sanitization) for internal logging and debugging.
+ * **Use this in services** - provides consistent error handling, sanitizing the error
+ * with the environment default level before logging and re-throwing it.
  * 
  * @param error - Error to handle
  * @param component - Component/service name where error occurred
@@ -68,7 +68,7 @@ export function handleServiceError(
   operation: string,
   context?: Record<string, unknown> & { silent?: boolean }
 ): never {
-  const normalized = normalizeError(error, false, { component, operation, ...context })
+  const normalized = normalizeError(error, undefined, { component, operation, ...context })
   if (!context?.silent) {
     logError(`[${component}] ${operation} failed:`, normalized)
   }

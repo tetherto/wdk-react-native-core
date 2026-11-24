@@ -180,5 +180,56 @@ describe('errorUtils', () => {
       const sanitized = sanitizeErrorMessage(message, false)
       expect(sanitized).toContain('[mnemonic phrase]')
     })
+
+    describe('mnemonic shapes', () => {
+      const phrase = 'abandon ability able about above absent absorb abstract absurd abuse access accident'
+      const shapes = [
+        [
+          'worklet prose',
+          'mnemonic contains invalid words: "Abandon" at position 1, "Ability" at position 2, "Able" at position 3',
+        ],
+        ['JSON', `Invalid payload {"mnemonic":"${phrase}"}`],
+        ['JSON seedPhrase', `Invalid payload {"seedPhrase": "${phrase}"}`],
+        ['labelled', `Invalid input mnemonic: ${phrase}`],
+      ]
+
+      it.each(shapes)('should redact the %s shape in production', (_shape, message) => {
+        const sanitized = sanitizeErrorMessage(message, false)
+        expect(sanitized).toContain('[mnemonic phrase]')
+        expect(sanitized).not.toMatch(/abandon|ability|able/i)
+      })
+
+      it.each(shapes)('should redact the %s shape in development', (_shape, message) => {
+        const sanitized = sanitizeErrorMessage(message, true)
+        expect(sanitized).toContain('[mnemonic phrase]')
+        expect(sanitized).not.toMatch(/abandon|ability|able/i)
+      })
+
+      it('should keep the surrounding message text', () => {
+        const sanitized = sanitizeErrorMessage(
+          'mnemonic contains invalid words: "Abandon" at position 1, "Ability" at position 2',
+          true
+        )
+        expect(sanitized).toBe('mnemonic contains invalid words: [mnemonic phrase]')
+      })
+
+      it('should redact JSON values containing escaped quotes', () => {
+        const sanitized = sanitizeErrorMessage('{"mnemonic":"abandon \\"ability\\" able","ok":true}', true)
+        expect(sanitized).toBe('{[mnemonic phrase],"ok":true}')
+      })
+
+      it('should not redact a bare run of words without a mnemonic shape', () => {
+        const message = 'the quick brown fox jumps over the lazy dog and runs far away'
+        expect(sanitizeErrorMessage(message, false)).toBe(message)
+        expect(sanitizeErrorMessage(message, true)).toBe(message)
+      })
+
+      it('should redact mnemonics in the normalized error message and stack', () => {
+        const error = new Error(`Invalid payload {"mnemonic":"${phrase}"}`)
+        const normalized = normalizeError(error, SanitizationLevel.DEVELOPMENT)
+        expect(normalized.message).toBe('Invalid payload {[mnemonic phrase]}')
+        expect(normalized.stack).not.toContain('abandon')
+      })
+    })
   })
 })

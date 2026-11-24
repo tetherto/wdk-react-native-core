@@ -924,6 +924,36 @@ describe('useWalletManager', () => {
       expect((state.walletLoadingState as any).error.message).toBe('init fail');
     });
 
+    it('should store a sanitized error and not log again when restoreWallet fails', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const walletId = 'restore-fail-wallet';
+      const rejection = new Error(
+        'mnemonic contains invalid words: "Abandon" at position 1, "Ability" at position 2',
+      );
+      mockWalletSetupService.initializeFromMnemonic.mockRejectedValueOnce(rejection);
+      const { result } = renderHook(() => useWalletManager());
+
+      let caught: unknown;
+      await act(async () => {
+        try {
+          await result.current.restoreWallet('Abandon Ability', walletId);
+        } catch (e) {
+          caught = e;
+        }
+      });
+
+      expect(caught).toBe(rejection);
+
+      const state = mockWalletStoreInstance.getState();
+      expect(state.walletLoadingState.type).toBe('error');
+      expect((state.walletLoadingState as any).identifier).toBe(walletId);
+      expect((state.walletLoadingState as any).error.message).toBe(
+        'mnemonic contains invalid words: [mnemonic phrase]',
+      );
+      expect(consoleErrorSpy).not.toHaveBeenCalledWith('Failed to restore wallet:', expect.anything());
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should handle non-Error catch in unlock', async () => {
       mockWalletSetupService.initializeWallet.mockRejectedValue('string error');
       const { result } = renderHook(() => useWalletManager());

@@ -40,7 +40,7 @@ describe('errorHandling', () => {
         handleServiceError(error, 'TestService', 'testOperation')
       }).toThrow('Normalized error')
 
-      expect(normalizeError).toHaveBeenCalledWith(error, false, {
+      expect(normalizeError).toHaveBeenCalledWith(error, undefined, {
         component: 'TestService',
         operation: 'testOperation',
       })
@@ -58,14 +58,14 @@ describe('errorHandling', () => {
         handleServiceError(error, 'TestService', 'testOperation', context)
       }).toThrow('Normalized error')
 
-      expect(normalizeError).toHaveBeenCalledWith(error, false, {
+      expect(normalizeError).toHaveBeenCalledWith(error, undefined, {
         component: 'TestService',
         operation: 'testOperation',
         ...context,
       })
     })
 
-    it('should not sanitize errors (sanitizeLevel: false)', () => {
+    it('should sanitize errors with the environment default level', () => {
       const error = new Error('Test error')
       const normalizedError = new Error('Normalized error')
       ;(normalizeError as jest.Mock).mockReturnValue(normalizedError)
@@ -74,7 +74,7 @@ describe('errorHandling', () => {
         handleServiceError(error, 'TestService', 'testOperation')
       }).toThrow()
 
-      expect(normalizeError).toHaveBeenCalledWith(error, false, expect.any(Object))
+      expect(normalizeError).toHaveBeenCalledWith(error, undefined, expect.any(Object))
     })
 
     it('should handle non-Error objects', () => {
@@ -86,7 +86,7 @@ describe('errorHandling', () => {
         handleServiceError(error, 'TestService', 'testOperation')
       }).toThrow('Normalized error')
 
-      expect(normalizeError).toHaveBeenCalledWith(error, false, {
+      expect(normalizeError).toHaveBeenCalledWith(error, undefined, {
         component: 'TestService',
         operation: 'testOperation',
       })
@@ -100,7 +100,7 @@ describe('errorHandling', () => {
         handleServiceError(null, 'TestService', 'testOperation')
       }).toThrow('Normalized error')
 
-      expect(normalizeError).toHaveBeenCalledWith(null, false, {
+      expect(normalizeError).toHaveBeenCalledWith(null, undefined, {
         component: 'TestService',
         operation: 'testOperation',
       })
@@ -145,7 +145,7 @@ describe('errorHandling', () => {
         handleServiceError(error, 'TestService', 'testOperation')
       }).toThrow('Normalized error')
 
-      expect(normalizeError).toHaveBeenCalledWith(error, false, {
+      expect(normalizeError).toHaveBeenCalledWith(error, undefined, {
         component: 'TestService',
         operation: 'testOperation',
       })

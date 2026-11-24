@@ -428,7 +428,7 @@ export class WorkletLifecycleService {
     operation: string,
     errorMessagePrefix: string,
   ): never {
-    const normalizedError = normalizeError(error, false, {
+    const normalizedError = normalizeError(error, undefined, {
       component: 'WorkletLifecycleService',
       operation,
     })
@@ -445,7 +445,7 @@ export class WorkletLifecycleService {
     operation: string,
     stateUpdate: (normalizedError: Error) => Partial<WorkletState>,
   ): never {
-    const normalizedError = normalizeError(error, false, {
+    const normalizedError = normalizeError(error, undefined, {
       component: 'WorkletLifecycleService',
       operation,
     })
