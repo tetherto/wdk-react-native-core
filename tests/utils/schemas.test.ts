@@ -52,14 +52,13 @@ describe('schemas', () => {
 
     it('should reject invalid worklet response', () => {
       const invalid = {
-        result: null,
+        result: 42,
       }
       expect(() => workletResponseSchema.parse(invalid)).toThrow()
     })
 
-    it('should require result field', () => {
-      const invalid = {}
-      expect(() => workletResponseSchema.parse(invalid)).toThrow()
+    it.each([null, undefined])('should accept a void worklet result (%p)', (result) => {
+      expect(workletResponseSchema.parse({ result })).toEqual({ result })
     })
   })
 

@@ -72,8 +72,8 @@ export class AccountService {
       // Validate response structure
       const validatedResponse = workletResponseSchema.parse(response)
 
-      if (!validatedResponse.result) {
-        throw new Error(`Method ${methodName} returned no result`)
+      if (validatedResponse.result === undefined || validatedResponse.result === null || validatedResponse.result === '') {
+        return undefined
       }
 
       let parsed
@@ -143,8 +143,8 @@ export class AccountService {
 
       const validatedResponse = workletResponseSchema.parse(response)
 
-      if (!validatedResponse.result) {
-        throw new Error(`Protocol method ${methodName} returned no result`)
+      if (validatedResponse.result === undefined || validatedResponse.result === null || validatedResponse.result === '') {
+        return undefined
       }
 
       let parsed
