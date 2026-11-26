@@ -16,6 +16,7 @@ import { BalanceService, fetchBalance, fetchBalances } from '../../src/services/
 import { getWalletStore } from '../../src/store/walletStore'
 import { AccountService } from '../../src/services/accountService'
 import { bumpEpoch } from '../../src/utils/workletEpoch'
+import * as logger from '../../src/utils/logger'
 import type { IAsset } from '../../src/types'
 
 // Mock stores
@@ -549,6 +550,107 @@ describe('fetchBalance / fetchBalances', () => {
       ])
 
       expect(mockAccountService.callAccountMethod).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('failed fetches', () => {
+    const PROVIDER_ERROR =
+      'missing revert data (action="call", data=null, reason=null, transaction={ "data": "0x70a08231", "to": "0xabc" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.14.4)'
+    const REVERT_ERROR =
+      'execution reverted (no data present; likely require(false) occurred (action="call", data="0x", reason="require(false)", transaction={ "data": "0x70a08231", "to": "0xabc" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.14.4)'
+
+    function mockStoredBalances(balances: Record<string, string>) {
+      mockWalletStore.getState = jest.fn(() => ({
+        balances: { 'active-wallet': { ethereum: { 0: balances } } },
+        balanceLoading: {},
+        lastBalanceUpdate: {},
+        activeWalletId: 'active-wallet',
+      }))
+    }
+
+    let logWarnSpy: jest.SpyInstance
+    let logErrorSpy: jest.SpyInstance
+
+    beforeEach(() => {
+      logWarnSpy = jest.spyOn(logger, 'logWarn').mockImplementation(() => {})
+      logErrorSpy = jest.spyOn(logger, 'logError').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      logWarnSpy.mockRestore()
+      logErrorSpy.mockRestore()
+    })
+
+    it('fetchBalance returns the last known balance and a provider errorType on a provider failure', async () => {
+      mockStoredBalances({ 'eth-native': '1000' })
+      mockAccountService.callAccountMethod.mockRejectedValue(new Error(PROVIDER_ERROR))
+
+      const result = await fetchBalance(0, nativeAsset)
+
+      expect(result).toEqual({
+        success: false,
+        network: 'ethereum',
+        accountIndex: 0,
+        assetId: 'eth-native',
+        balance: null,
+        error: PROVIDER_ERROR,
+        errorType: 'provider',
+        lastKnownBalance: '1000',
+      })
+      expect(logWarnSpy).toHaveBeenCalledWith(expect.stringContaining('provider error'))
+      expect(logErrorSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not overwrite the stored balance on a failure', async () => {
+      mockStoredBalances({ 'eth-native': '1000' })
+      mockAccountService.callAccountMethod.mockRejectedValue(new Error(PROVIDER_ERROR))
+
+      await fetchBalance(0, nativeAsset)
+
+      expect(mockWalletStore.setState).not.toHaveBeenCalled()
+    })
+
+    it('fetchBalance logs a revert as an error and returns null lastKnownBalance when nothing was stored', async () => {
+      mockAccountService.callAccountMethod.mockRejectedValue(new Error(REVERT_ERROR))
+
+      const result = await fetchBalance(0, nativeAsset)
+
+      expect(result.errorType).toBe('revert')
+      expect(result.lastKnownBalance).toBeNull()
+      expect(result.balance).toBeNull()
+      expect(logErrorSpy).toHaveBeenCalled()
+      expect(logWarnSpy).not.toHaveBeenCalledWith(expect.stringContaining('provider error'))
+    })
+
+    it('fetchBalances keeps successful results and adds lastKnownBalance only to failed ones', async () => {
+      mockStoredBalances({ 'eth-native': '1000', usdt: '2000' })
+      mockAccountService.callAccountMethod.mockImplementation(async (_network, _index, method) => {
+        if (method === 'getBalance') {
+          return '3000'
+        }
+        throw new Error(PROVIDER_ERROR)
+      })
+
+      const results = await fetchBalances(0, [nativeAsset, usdtAsset])
+      const native = results.find((r) => r.assetId === 'eth-native')
+      const usdt = results.find((r) => r.assetId === 'usdt')
+
+      expect(native).toEqual({ success: true, network: 'ethereum', accountIndex: 0, assetId: 'eth-native', balance: '3000' })
+      expect(usdt).toMatchObject({
+        success: false,
+        balance: null,
+        errorType: 'provider',
+        lastKnownBalance: '2000',
+      })
+    })
+
+    it('treats a non-Error rejection as unknown', async () => {
+      mockAccountService.callAccountMethod.mockRejectedValue('boom')
+
+      const [result] = await fetchBalances(0, [nativeAsset])
+
+      expect(result).toMatchObject({ success: false, error: 'boom', errorType: 'unknown', lastKnownBalance: null })
+      expect(logErrorSpy).toHaveBeenCalled()
     })
   })
 

@@ -53,6 +53,7 @@ import { validateBalance, validateWalletParams } from '../utils/validation'
 import { BalanceFetchResult, IAsset } from '../types'
 import { AccountService } from './accountService'
 import { convertBalanceToString } from '../utils/balanceUtils'
+import { classifyBalanceError } from '../utils/balanceErrors'
 import { log, logError, logWarn } from '../utils/logger'
 
 /**
@@ -456,21 +457,49 @@ export async function fetchBalances(
         balance: result.balance,
       };
     }
-    const errorMessage =
-      result.error instanceof Error ? result.error.message : String(result.error);
-    logError(
-      `Failed to fetch balance for ${network}:${accountIndex}:${assetId}:`,
-      result.error,
-    );
-    return {
-      success: false,
-      network,
-      accountIndex,
-      assetId,
-      balance: null,
-      error: errorMessage,
-    };
+    return buildFailedBalanceResult(accountIndex, network, assetId, result.error, targetWalletId);
   });
+}
+
+/**
+ * Build the result for a failed balance fetch.
+ *
+ * `balance` stays null, because the fetch did not produce a balance. The last
+ * balance committed to the store is returned separately as `lastKnownBalance`,
+ * so callers can keep showing it instead of flashing to empty on a transient
+ * RPC failure. Provider failures (rate limit, timeout, 5xx) are logged as a
+ * warning, since ethers v6 reports them as "missing revert data" call exceptions
+ * that otherwise look like contract reverts.
+ */
+export function buildFailedBalanceResult(
+  accountIndex: number,
+  network: string,
+  assetId: string,
+  error: unknown,
+  walletId: string,
+): BalanceFetchResult {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorType = classifyBalanceError(errorMessage);
+  const lastKnownBalance = BalanceService.getBalance(accountIndex, network, assetId, walletId) ?? null;
+
+  if (errorType === 'provider') {
+    logWarn(
+      `Failed to fetch balance for ${network}:${accountIndex}:${assetId} (provider error, keeping last known balance): ${errorMessage}`,
+    );
+  } else {
+    logError(`Failed to fetch balance for ${network}:${accountIndex}:${assetId}:`, error);
+  }
+
+  return {
+    success: false,
+    network,
+    accountIndex,
+    assetId,
+    balance: null,
+    error: errorMessage,
+    errorType,
+    lastKnownBalance,
+  };
 }
 
 /** Fetches and caches balances for one network, deduped by cache key. */
@@ -572,15 +601,5 @@ export async function fetchBalance(
     };
   }
 
-  const errorMessage = result!.error instanceof Error ? result!.error.message : String(result!.error);
-  logError(`Failed to fetch balance for ${network}:${accountIndex}:${result!.asset.getId()}:`, result!.error);
-
-  return {
-    success: false,
-    network,
-    accountIndex,
-    assetId: result!.asset.getId(),
-    balance: null,
-    error: errorMessage,
-  };
+  return buildFailedBalanceResult(accountIndex, network, result!.asset.getId(), result!.error, targetWalletId);
 }

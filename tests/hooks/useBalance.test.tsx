@@ -17,6 +17,7 @@ import { create, StoreApi } from 'zustand';
 import {
   useBalance,
   useBalancesForWallet,
+  useBalancesForWallets,
   useRefreshBalance,
   balanceQueryKeys,
   RefreshBalanceParams,
@@ -318,6 +319,8 @@ describe('useBalance', () => {
       assetId: mockAssetNative.getId(),
       balance: null,
       error: 'Balance fetch failed',
+      errorType: 'unknown',
+      lastKnownBalance: mockBalanceService.getBalance(mockAccountIndex, mockAssetNative.getNetwork(), mockAssetNative.getId(), 'mock-active-wallet'),
     });
     expect(mockLogger.logError).toHaveBeenCalled();
   });
@@ -426,6 +429,46 @@ describe('useBalancesForWallet', () => {
     expect(errorResults[0]?.error).toBe('Network error');
 
     expect(mockLogger.logError).toHaveBeenCalled();
+  });
+});
+
+describe('useBalancesForWallets', () => {
+  const mockAssets: IAsset[] = Object.values(MOCK_ASSETS);
+
+  it('returns the last known balance for every asset of an account whose fetch throws', async () => {
+    mockUseMultiAddressLoader.mockReturnValue({ addresses: {}, isLoading: false, error: null });
+    mockResolveWalletId.mockImplementationOnce(() => {
+      throw new Error('Wallet not ready');
+    });
+    mockBalanceService.getBalance.mockReturnValue('500');
+
+    let queryFn: any;
+    mockUseQuery.mockImplementation(({ queryFn: qf }) => {
+      queryFn = qf;
+      return { data: undefined, isLoading: false, error: null };
+    });
+
+    renderHook(() => useBalancesForWallets([0], mockAssets));
+
+    const results = await queryFn() as BalanceFetchResult[];
+
+    expect(results).toHaveLength(mockAssets.length);
+    for (const result of results) {
+      expect(result).toMatchObject({
+        success: false,
+        accountIndex: 0,
+        balance: null,
+        error: 'Wallet not ready',
+        errorType: 'unknown',
+        lastKnownBalance: '500',
+      });
+    }
+    expect(mockBalanceService.getBalance).toHaveBeenCalledWith(
+      0,
+      mockAssets[0]!.getNetwork(),
+      mockAssets[0]!.getId(),
+      'mock-active-wallet',
+    );
   });
 });
 
