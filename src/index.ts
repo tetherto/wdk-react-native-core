@@ -23,6 +23,7 @@ export type {
   WdkConfigs,
   AssetConfig,
   BalanceFetchResult,
+  BalanceFetchErrorType,
   IAsset,
   BundleConfig,
   AddressInfo,

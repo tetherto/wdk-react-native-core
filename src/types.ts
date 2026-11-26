@@ -130,7 +130,27 @@ export interface BalanceFetchResult {
   balance: string | null
   /** Error message (only present if success is false) */
   error?: string
+  /**
+   * Kind of failure (only present if success is false).
+   * `provider` means the RPC provider failed (rate limit, timeout, 5xx), so the
+   * on-chain balance is unknown rather than changed; see {@link BalanceFetchErrorType}.
+   */
+  errorType?: BalanceFetchErrorType
+  /**
+   * Last balance successfully fetched for this asset, from the persisted store
+   * (only present if success is false; null if it was never fetched).
+   * Use it to keep showing a value while a fetch is failing.
+   */
+  lastKnownBalance?: string | null
 }
+
+/**
+ * Kind of balance fetch failure:
+ * - `provider`: RPC provider or transport failure (retryable)
+ * - `revert`: the contract call reverted
+ * - `unknown`: anything else
+ */
+export type BalanceFetchErrorType = 'provider' | 'revert' | 'unknown'
 
 /**
  * Wallet Store Interface

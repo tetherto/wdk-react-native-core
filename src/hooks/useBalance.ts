@@ -61,7 +61,12 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query'
 
-import { BalanceService, fetchBalance, fetchBalances } from '../services/balanceService'
+import {
+  BalanceService,
+  buildFailedBalanceResult,
+  fetchBalance,
+  fetchBalances,
+} from '../services/balanceService'
 import { getWalletStore } from '../store/walletStore'
 import { resolveWalletId } from '../utils/storeHelpers'
 import {
@@ -436,14 +441,9 @@ export function useBalancesForWallets(
         try {
           return await fetchBalances(accountIndex, assetConfigs);
         } catch (error) {
-          return assetConfigs.map((asset) => ({
-            success: false,
-            network: asset.getNetwork(),
-            accountIndex,
-            assetId: asset.getId(),
-            balance: null,
-            error: error instanceof Error ? error.message : String(error),
-          }));
+          return assetConfigs.map((asset) =>
+            buildFailedBalanceResult(accountIndex, asset.getNetwork(), asset.getId(), error, walletId!),
+          );
         }
       });
       const results = await promisePool(tasks, concurrency);
